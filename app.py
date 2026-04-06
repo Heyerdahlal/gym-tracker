@@ -11,11 +11,16 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="centered")
 
 # --- GOOGLE SHEETS SETUP ---
+import json
+
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 
 @st.cache_resource
 def init_connection():
-    creds = Credentials.from_service_account_file('secrets.json', scopes=SCOPES)
+    # Read the JSON string from Streamlit's secret vault
+    creds_dict = json.loads(st.secrets["google_credentials"])
+    # Connect using that dictionary
+    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     return gspread.authorize(creds)
 
 gc = init_connection()
