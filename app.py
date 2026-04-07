@@ -6,20 +6,17 @@ import gspread
 from google.oauth2.service_account import Credentials
 import plotly.express as px
 import plotly.graph_objects as go
+import json
 
 # Set up the page layout
 st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="centered")
 
 # --- GOOGLE SHEETS SETUP ---
-import json
-
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 
 @st.cache_resource
 def init_connection():
-    # Read the JSON string from Streamlit's secret vault
     creds_dict = json.loads(st.secrets["google_credentials"])
-    # Connect using that dictionary
     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     return gspread.authorize(creds)
 
@@ -104,7 +101,6 @@ def load_data():
         return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km'])
     
     df = pd.DataFrame(records)
-    # Ensure all missing columns exist to prevent errors
     if 'Distance_km' not in df.columns:
         df['Distance_km'] = 0.0
         
@@ -117,7 +113,6 @@ def load_data():
 def save_data(df):
     df_to_save = df.fillna('')
     worksheet.clear()
-    # By explicitly stating values= and range_name="A1", we force Google to overwrite everything
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
@@ -148,15 +143,11 @@ with tab1:
     
     date_input = st.date_input("Date", date.today())
     workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
-    exercise = st.selectbox("Select Exercise", PROGRAM[workout_day])
-    
-    st.info(f"**Target:** {REP_TARGETS.get(exercise, 'Not set')}")
     
     is_cardio = "Cardio" in workout_day
-    uses_band = exercise in BANDED_EXERCISES
-    target_sets, top_rep = get_target_reps_and_sets(exercise)
     
     if is_cardio:
+        exercise = st.selectbox("Select Cardio", PROGRAM[workout_day])
         col1, col2 = st.columns(2)
         with col1:
             duration = st.number_input("Duration (Minutes)", min_value=1, value=60, step=5)
@@ -172,58 +163,79 @@ with tab1:
             st.rerun()
             
     else:
-        st.write("---")
+        # THE FIX: Multiselect for Supersets
+        selected_exercises = st.multiselect("Select Exercise(s) - Pick multiple for Supersets!", PROGRAM[workout_day], default=[PROGRAM[workout_day][0]])
         
-        if uses_band:
-            c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
-            c1.markdown("**Set**")
-            c2.markdown("**Kg**")
-            c3.markdown("**Reps**")
-            c4.markdown("**Band**")
+        if not selected_exercises:
+            st.info("👆 Please select at least one exercise to log.")
         else:
-            c1, c2, c3 = st.columns([1, 2, 2])
-            c1.markdown("**Set**")
-            c2.markdown("**Kg**")
-            c3.markdown("**Reps**")
+            st.write("---")
+            weights = {}
+            reps = {}
+            bands = {}
             
-        weights = {}
-        reps = {}
-        bands = {}
-        
-        for i in range(1, target_sets + 1):
-            if uses_band:
-                c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
-                c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                weights[i] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{exercise}_{i}", label_visibility="collapsed")
-                reps[i] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{exercise}_{i}", label_visibility="collapsed")
-                bands[i] = c4.selectbox("Band", BAND_OPTIONS, key=f"b_{exercise}_{i}", label_visibility="collapsed")
-            else:
-                c1, c2, c3 = st.columns([1, 2, 2])
-                c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                weights[i] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{exercise}_{i}", label_visibility="collapsed")
-                reps[i] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{exercise}_{i}", label_visibility="collapsed")
-        
-        st.write("---")
-        
-        if st.button("Save All Sets", type="primary", use_container_width=True):
-            new_rows = []
-            for i in range(1, target_sets + 1):
-                band_val = bands[i] if uses_band else "None"
-                new_rows.append({
-                    'Date': date_input.strftime("%Y-%m-%d"),
-                    'Workout_Day': workout_day,
-                    'Exercise': exercise,
-                    'Set_Number': i,
-                    'Weight': weights[i],
-                    'Band': band_val,
-                    'Reps_or_Mins': reps[i],
-                    'Distance_km': 0.0
-                })
+            # Loop through every exercise selected and generate their sets
+            for exercise in selected_exercises:
+                st.markdown(f"### {exercise}")
+                st.caption(f"**Target:** {REP_TARGETS.get(exercise, 'Not set')}")
+                
+                uses_band = exercise in BANDED_EXERCISES
+                target_sets, top_rep = get_target_reps_and_sets(exercise)
+                
+                if uses_band:
+                    c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
+                    c1.markdown("**Set**")
+                    c2.markdown("**Kg**")
+                    c3.markdown("**Reps**")
+                    c4.markdown("**Band**")
+                else:
+                    c1, c2, c3 = st.columns([1, 2, 2])
+                    c1.markdown("**Set**")
+                    c2.markdown("**Kg**")
+                    c3.markdown("**Reps**")
+                    
+                for i in range(1, target_sets + 1):
+                    # We use a unique key for every single box so Streamlit doesn't get confused
+                    key = f"{exercise}_{i}" 
+                    
+                    if uses_band:
+                        c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
+                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                        reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
+                        bands[key] = c4.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
+                    else:
+                        c1, c2, c3 = st.columns([1, 2, 2])
+                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                        reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
+                
+                st.write("---")
             
-            df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
-            save_data(df)
-            st.success(f"Logged all {target_sets} sets for {exercise}!")
-            st.rerun()
+            if st.button("Save All Selected Sets", type="primary", use_container_width=True):
+                new_rows = []
+                for exercise in selected_exercises:
+                    uses_band = exercise in BANDED_EXERCISES
+                    target_sets, top_rep = get_target_reps_and_sets(exercise)
+                    
+                    for i in range(1, target_sets + 1):
+                        key = f"{exercise}_{i}"
+                        band_val = bands[key] if uses_band else "None"
+                        new_rows.append({
+                            'Date': date_input.strftime("%Y-%m-%d"),
+                            'Workout_Day': workout_day,
+                            'Exercise': exercise,
+                            'Set_Number': i,
+                            'Weight': weights[key],
+                            'Band': band_val,
+                            'Reps_or_Mins': reps[key],
+                            'Distance_km': 0.0
+                        })
+                
+                df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+                save_data(df)
+                st.success(f"Logged {len(new_rows)} total sets securely to your database!")
+                st.rerun()
 
 # --- TAB 2: VIEWING PROGRESS & COACHING ALERTS ---
 with tab2:
@@ -241,23 +253,19 @@ with tab2:
             is_cardio_view = "Rowing" in exercise_to_view or "Bike" in exercise_to_view
             
             if is_cardio_view:
-                # Calculate speed for cardio
                 ex_df['Speed_kmh'] = ex_df.apply(lambda row: row['Distance_km'] / (row['Reps_or_Mins'] / 60) if row['Reps_or_Mins'] > 0 else 0, axis=1)
                 daily_stats = ex_df.groupby('Date').agg({'Speed_kmh': 'max', 'Distance_km': 'max', 'Reps_or_Mins': 'max'}).reset_index()
                 
-                # Cardio Metrics
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Max Distance", f"{daily_stats['Distance_km'].max():.2f} km")
                 c2.metric("Best Avg Speed", f"{daily_stats['Speed_kmh'].max():.1f} km/h")
                 c3.metric("Longest Session", f"{daily_stats['Reps_or_Mins'].max():.0f} min")
                 
-                # Cardio Speed Plotly Chart
                 fig = px.line(daily_stats, x='Date', y='Speed_kmh', markers=True, title='Average Speed Trend (km/h)')
                 fig.update_traces(line_color='#FF4B4B', marker=dict(size=8))
                 st.plotly_chart(fig, use_container_width=True)
                 
             else:
-                # Lifting Math
                 ex_df['Est_1RM'] = ex_df['Weight'] * (1 + ex_df['Reps_or_Mins'] / 30)
                 ex_df['Volume'] = ex_df['Weight'] * ex_df['Reps_or_Mins']
                 
@@ -266,7 +274,6 @@ with tab2:
                     Total_Volume=('Volume', 'sum')
                 ).reset_index()
                 
-                # Progression Alert Logic
                 target_sets, top_rep = get_target_reps_and_sets(exercise_to_view)
                 latest_date = ex_df['Date'].max()
                 latest_session = ex_df[ex_df['Date'] == latest_date]
@@ -277,13 +284,11 @@ with tab2:
                     if sets_completed >= target_sets and hit_top_reps:
                         st.success(f"🟢 **PROGRESSION ACHIEVED!** Hit {top_rep} reps for all sets on {latest_date}. Increase weight next time!")
                 
-                # Lifting Metrics
                 c1, c2, c3 = st.columns(3)
                 c1.metric("All-Time 1RM", f"{daily_stats['Est_1RM'].max():.1f} kg")
                 c2.metric("Max Session Volume", f"{daily_stats['Total_Volume'].max():.0f} kg")
                 c3.metric("Sessions Tracked", f"{len(daily_stats)}")
                 
-                # Combo Chart: Volume & 1RM
                 fig = go.Figure()
                 fig.add_trace(go.Bar(x=daily_stats['Date'], y=daily_stats['Total_Volume'], name='Tonnage (kg)', opacity=0.5, marker_color='#1f77b4'))
                 fig.add_trace(go.Scatter(x=daily_stats['Date'], y=daily_stats['Est_1RM'], name='Est 1RM (kg)', mode='lines+markers', yaxis='y2', line=dict(color='#FF4B4B', width=3)))
@@ -296,7 +301,6 @@ with tab2:
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Fatigue Scatter Chart
                 fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', markers=True, title="Set-by-Set Endurance Drop-off")
                 fig2.update_layout(yaxis_title="Reps Completed")
                 st.plotly_chart(fig2, use_container_width=True)
