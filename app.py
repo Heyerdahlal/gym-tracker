@@ -32,12 +32,12 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# Your specific workout program parameters
+# --- THE UPDATED PROGRAM ---
 PROGRAM = {
     "Day 1: Quad Focus & Verticality": [
         "Heels-Elevated Landmine Squat", "Neutral Grip Pull-Ups", "Band-Assisted Dips",
         "Bulgarian Split Squats", "Nordic Curls", "Banded Face Pulls",
-        "Anchored Reverse Crunch", "Squat Wedge Dumbbell Calf Raises"
+        "Anchored Reverse Crunch", "Glute-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises"
     ],
     "Day 2: Hinge Focus & Horizontal Load": [
         "Romanian Deadlift (RDL)", "Barbell Hip Thrusts", "T-Bar Landmine Row",
@@ -45,7 +45,7 @@ PROGRAM = {
         "Overhead Tricep Extension", "Banded Crossovers", "Ab-Wheel Rollouts"
     ],
     "Day 3: Hybrid Hypertrophy & Stability": [
-        "Hex Bar Deadlift", "Landmine Press", "Chest-Supported Lateral Raise",
+        "Erector-Focused Roman Chair Extension", "Landmine Press", "Chest-Supported Lateral Raise",
         "Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns",
         "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"
     ],
@@ -62,6 +62,7 @@ REP_TARGETS = {
     "Nordic Curls": "3 Sets × 5–8 Reps",
     "Banded Face Pulls": "3 Sets × 15–20 Reps",
     "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
+    "Glute-Focused Roman Chair Extension": "3 Sets × 12–15 Reps",
     "Squat Wedge Dumbbell Calf Raises": "3 Sets × 10–12 Reps",
     "Romanian Deadlift (RDL)": "4 Sets × 6–8 Reps",
     "Barbell Hip Thrusts": "4 Sets × 10–12 Reps",
@@ -72,7 +73,8 @@ REP_TARGETS = {
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps",
     "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps",
-    "Hex Bar Deadlift": "3 Sets × 8–10 Reps",
+    "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps",
+    "Hex Bar Deadlift": "3 Sets × 8–10 Reps", # Kept in the database targets just in case you ever switch back!
     "Landmine Press": "3 Sets × 8–10 Reps",
     "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
     "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
@@ -90,6 +92,14 @@ BANDED_EXERCISES = [
     "Half-Kneeling Pallof Press"
 ]
 
+UNILATERAL_EXERCISES = [
+    "Bulgarian Split Squats", 
+    "Meadows Row", 
+    "Half-Kneeling Pallof Press", 
+    "Heavy Suitcase Holds", 
+    "Front-Rack Kettlebell Marches"
+]
+
 BAND_OPTIONS = ["Yellow (13.6kg)", "Red (22.6kg)", "Black (36.3kg)", "Purple (45.4kg)", "Green (68.0kg)", "Blue (88.5kg)", "Orange (113.4kg)"]
 
 ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list]
@@ -98,16 +108,19 @@ ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list]
 def load_data():
     records = worksheet.get_all_records()
     if not records:
-        return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km'])
+        return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side'])
     
     df = pd.DataFrame(records)
     if 'Distance_km' not in df.columns:
         df['Distance_km'] = 0.0
+    if 'Side' not in df.columns:
+        df['Side'] = 'Both'
         
     df['Weight'] = pd.to_numeric(df['Weight'], errors='coerce').fillna(0)
     df['Set_Number'] = pd.to_numeric(df['Set_Number'], errors='coerce').fillna(1)
     df['Reps_or_Mins'] = pd.to_numeric(df['Reps_or_Mins'], errors='coerce').fillna(0)
     df['Distance_km'] = pd.to_numeric(df['Distance_km'], errors='coerce').fillna(0)
+    df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     return df
 
 def save_data(df):
@@ -155,7 +168,7 @@ with tab1:
             distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.5)
             
         if st.button("Log Cardio", type="primary"):
-            new_row = pd.DataFrame({'Date': [date_input.strftime("%Y-%m-%d")], 'Workout_Day': [workout_day], 'Exercise': [exercise], 'Set_Number': [1], 'Weight': [0], 'Band': ['None'], 'Reps_or_Mins': [duration], 'Distance_km': [distance]})
+            new_row = pd.DataFrame({'Date': [date_input.strftime("%Y-%m-%d")], 'Workout_Day': [workout_day], 'Exercise': [exercise], 'Set_Number': [1], 'Weight': [0], 'Band': ['None'], 'Reps_or_Mins': [duration], 'Distance_km': [distance], 'Side': ['Both']})
             df = pd.concat([df, new_row], ignore_index=True)
             save_data(df)
             speed = distance / (duration / 60) if duration > 0 else 0
@@ -163,7 +176,6 @@ with tab1:
             st.rerun()
             
     else:
-        # THE FIX: Multiselect for Supersets
         selected_exercises = st.multiselect("Select Exercise(s) - Pick multiple for Supersets!", PROGRAM[workout_day], default=[PROGRAM[workout_day][0]])
         
         if not selected_exercises:
@@ -172,17 +184,32 @@ with tab1:
             st.write("---")
             weights = {}
             reps = {}
+            reps_l = {}
+            reps_r = {}
             bands = {}
             
-            # Loop through every exercise selected and generate their sets
             for exercise in selected_exercises:
                 st.markdown(f"### {exercise}")
                 st.caption(f"**Target:** {REP_TARGETS.get(exercise, 'Not set')}")
                 
                 uses_band = exercise in BANDED_EXERCISES
+                is_unilateral = exercise in UNILATERAL_EXERCISES
                 target_sets, top_rep = get_target_reps_and_sets(exercise)
                 
-                if uses_band:
+                if is_unilateral and uses_band:
+                    c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
+                    c1.markdown("**Set**")
+                    c2.markdown("**Kg**")
+                    c3.markdown("**L**")
+                    c4.markdown("**R**")
+                    c5.markdown("**Band**")
+                elif is_unilateral and not uses_band:
+                    c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
+                    c1.markdown("**Set**")
+                    c2.markdown("**Kg**")
+                    c3.markdown("**L**")
+                    c4.markdown("**R**")
+                elif not is_unilateral and uses_band:
                     c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
                     c1.markdown("**Set**")
                     c2.markdown("**Kg**")
@@ -195,10 +222,22 @@ with tab1:
                     c3.markdown("**Reps**")
                     
                 for i in range(1, target_sets + 1):
-                    # We use a unique key for every single box so Streamlit doesn't get confused
                     key = f"{exercise}_{i}" 
                     
-                    if uses_band:
+                    if is_unilateral and uses_band:
+                        c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
+                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                        reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                        reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                        bands[key] = c5.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
+                    elif is_unilateral and not uses_band:
+                        c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
+                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                        reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                        reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                    elif not is_unilateral and uses_band:
                         c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
                         c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
                         weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
@@ -216,25 +255,22 @@ with tab1:
                 new_rows = []
                 for exercise in selected_exercises:
                     uses_band = exercise in BANDED_EXERCISES
+                    is_unilateral = exercise in UNILATERAL_EXERCISES
                     target_sets, top_rep = get_target_reps_and_sets(exercise)
                     
                     for i in range(1, target_sets + 1):
                         key = f"{exercise}_{i}"
                         band_val = bands[key] if uses_band else "None"
-                        new_rows.append({
-                            'Date': date_input.strftime("%Y-%m-%d"),
-                            'Workout_Day': workout_day,
-                            'Exercise': exercise,
-                            'Set_Number': i,
-                            'Weight': weights[key],
-                            'Band': band_val,
-                            'Reps_or_Mins': reps[key],
-                            'Distance_km': 0.0
-                        })
+                        
+                        if is_unilateral:
+                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_l[key], 'Distance_km': 0.0, 'Side': 'Left'})
+                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_r[key], 'Distance_km': 0.0, 'Side': 'Right'})
+                        else:
+                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps[key], 'Distance_km': 0.0, 'Side': 'Both'})
                 
                 df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
                 save_data(df)
-                st.success(f"Logged {len(new_rows)} total sets securely to your database!")
+                st.success(f"Logged {len(new_rows)} total rows securely to your database!")
                 st.rerun()
 
 # --- TAB 2: VIEWING PROGRESS & COACHING ALERTS ---
@@ -251,6 +287,7 @@ with tab2:
             st.warning(f"No data found for {exercise_to_view}.")
         else:
             is_cardio_view = "Rowing" in exercise_to_view or "Bike" in exercise_to_view
+            is_unilateral_view = exercise_to_view in UNILATERAL_EXERCISES
             
             if is_cardio_view:
                 ex_df['Speed_kmh'] = ex_df.apply(lambda row: row['Distance_km'] / (row['Reps_or_Mins'] / 60) if row['Reps_or_Mins'] > 0 else 0, axis=1)
@@ -279,9 +316,10 @@ with tab2:
                 latest_session = ex_df[ex_df['Date'] == latest_date]
                 
                 if target_sets > 0 and top_rep > 0:
+                    expected_rows = target_sets * 2 if is_unilateral_view else target_sets
                     sets_completed = len(latest_session)
                     hit_top_reps = all(r >= top_rep for r in latest_session['Reps_or_Mins'])
-                    if sets_completed >= target_sets and hit_top_reps:
+                    if sets_completed >= expected_rows and hit_top_reps:
                         st.success(f"🟢 **PROGRESSION ACHIEVED!** Hit {top_rep} reps for all sets on {latest_date}. Increase weight next time!")
                 
                 c1, c2, c3 = st.columns(3)
@@ -301,12 +339,15 @@ with tab2:
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
-                fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', markers=True, title="Set-by-Set Endurance Drop-off")
+                if is_unilateral_view:
+                    fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', symbol='Side', markers=True, title="Set-by-Set Endurance Drop-off (Left vs Right)")
+                else:
+                    fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', markers=True, title="Set-by-Set Endurance Drop-off")
                 fig2.update_layout(yaxis_title="Reps Completed")
                 st.plotly_chart(fig2, use_container_width=True)
                 
             st.write("**Recent Session Logs:**")
-            st.dataframe(ex_df[['Date', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km']].sort_values(by=['Date', 'Set_Number'], ascending=[False, True]).head(15))
+            st.dataframe(ex_df[['Date', 'Set_Number', 'Weight', 'Side', 'Reps_or_Mins', 'Band', 'Distance_km']].sort_values(by=['Date', 'Set_Number'], ascending=[False, True]).head(15))
 
 # --- TAB 3: MANAGE DATA (DELETE/EDIT) ---
 with tab3:
