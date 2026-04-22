@@ -51,6 +51,9 @@ PROGRAM = {
     ],
     "Thursday/Friday: The Engine Stack (Cardio)": [
         "4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"
+    ],
+    "🧬 Life Event (Sick/Travel)": [
+        "Rest / Recovery / Frozen Week"
     ]
 }
 
@@ -74,7 +77,7 @@ REP_TARGETS = {
     "Banded Crossovers": "3 Sets × 15–20 Reps",
     "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps",
     "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps",
-    "Hex Bar Deadlift": "3 Sets × 8–10 Reps", # Kept in the database targets just in case you ever switch back!
+    "Hex Bar Deadlift": "3 Sets × 8–10 Reps", 
     "Landmine Press": "3 Sets × 8–10 Reps",
     "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
     "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
@@ -102,7 +105,7 @@ UNILATERAL_EXERCISES = [
 
 BAND_OPTIONS = ["Yellow (13.6kg)", "Red (22.6kg)", "Black (36.3kg)", "Purple (45.4kg)", "Green (68.0kg)", "Blue (88.5kg)", "Orange (113.4kg)"]
 
-ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list]
+ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list if ex != "Rest / Recovery / Frozen Week"]
 
 @st.cache_data(ttl=600)
 def load_data():
@@ -121,10 +124,14 @@ def load_data():
     df['Reps_or_Mins'] = pd.to_numeric(df['Reps_or_Mins'], errors='coerce').fillna(0)
     df['Distance_km'] = pd.to_numeric(df['Distance_km'], errors='coerce').fillna(0)
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
+    
+    # Calculate Volume right away for XP tracking
+    df['Volume'] = df['Weight'] * df['Reps_or_Mins']
     return df
 
 def save_data(df):
-    df_to_save = df.fillna('')
+    # Drop the calculated Volume column before saving so it doesn't break the Google Sheet structure
+    df_to_save = df.drop(columns=['Volume'], errors='ignore').fillna('')
     worksheet.clear()
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
@@ -143,228 +150,215 @@ df = load_data()
 st.title("🏋️‍♂️ The Daily System Tracker")
 
 if not df.empty:
-    first_workout_date = datetime.strptime(df['Date'].min(), "%Y-%m-%d").date()
-    days_since_start = (date.today() - first_workout_date).days
-    if days_since_start >= 42:
-        st.warning(f"⏳ **Deload Alert:** It has been {days_since_start // 7} weeks since you started this cycle. Remember to take a Deload week soon (2 sets, 70% weight).")
+    real_workouts = df[df['Workout_Day'] != '🧬 Life Event (Sick/Travel)']
+    if not real_workouts.empty:
+        first_workout_date = datetime.strptime(real_workouts['Date'].min(), "%Y-%m-%d").date()
+        days_since_start = (date.today() - first_workout_date).days
+        if days_since_start >= 42:
+            st.warning(f"⏳ **Deload Alert:** It has been {days_since_start // 7} weeks since you started this cycle. Remember to take a Deload week soon.")
 
-tab1, tab2, tab3 = st.tabs(["📝 Log Workout", "📈 View Progress", "⚙️ Manage Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["📝 Log", "📈 Trends", "🏆 Trophy Room", "⚙️ Data"])
 
 # --- TAB 1: LOGGING A WORKOUT ---
 with tab1:
-    st.subheader("Log Your Sets & Cardio")
+    st.subheader("Log Your Session")
     
     date_input = st.date_input("Date", date.today())
     workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
     
-    is_cardio = "Cardio" in workout_day
-    
-    if is_cardio:
-        exercise = st.selectbox("Select Cardio", PROGRAM[workout_day])
-        col1, col2 = st.columns(2)
-        with col1:
-            duration = st.number_input("Duration (Minutes)", min_value=1, value=60, step=5)
-        with col2:
-            distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.5)
-            
-        if st.button("Log Cardio", type="primary"):
-            new_row = pd.DataFrame({'Date': [date_input.strftime("%Y-%m-%d")], 'Workout_Day': [workout_day], 'Exercise': [exercise], 'Set_Number': [1], 'Weight': [0], 'Band': ['None'], 'Reps_or_Mins': [duration], 'Distance_km': [distance], 'Side': ['Both']})
+    if "Life Event" in workout_day:
+        st.info("🧊 **Streak Frozen.** Take the time you need to recover or travel. Your momentum will be waiting for you when you get back.")
+        if st.button("Log Rest Week", type="primary"):
+            new_row = pd.DataFrame({'Date': [date_input.strftime("%Y-%m-%d")], 'Workout_Day': [workout_day], 'Exercise': ["Rest / Recovery / Frozen Week"], 'Set_Number': [1], 'Weight': [0], 'Band': ['None'], 'Reps_or_Mins': [0], 'Distance_km': [0.0], 'Side': ['Both']})
             df = pd.concat([df, new_row], ignore_index=True)
             save_data(df)
-            speed = distance / (duration / 60) if duration > 0 else 0
-            st.success(f"Logged: {distance}km in {duration} mins. Average Speed: {speed:.1f} km/h!")
+            st.success("Life Event logged securely.")
             st.rerun()
             
     else:
-        selected_exercises = st.multiselect("Select Exercise(s) - Pick multiple for Supersets!", PROGRAM[workout_day], default=[PROGRAM[workout_day][0]])
+        is_cardio = "Cardio" in workout_day
         
-        if not selected_exercises:
-            st.info("👆 Please select at least one exercise to log.")
+        if is_cardio:
+            exercise = st.selectbox("Select Cardio", PROGRAM[workout_day])
+            col1, col2 = st.columns(2)
+            with col1:
+                duration = st.number_input("Duration (Minutes)", min_value=1, value=60, step=5)
+            with col2:
+                distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.5)
+                
+            if st.button("Log Cardio", type="primary"):
+                new_row = pd.DataFrame({'Date': [date_input.strftime("%Y-%m-%d")], 'Workout_Day': [workout_day], 'Exercise': [exercise], 'Set_Number': [1], 'Weight': [0], 'Band': ['None'], 'Reps_or_Mins': [duration], 'Distance_km': [distance], 'Side': ['Both']})
+                df = pd.concat([df, new_row], ignore_index=True)
+                save_data(df)
+                st.success("Cardio logged!")
+                st.rerun()
+                
         else:
-            st.write("---")
-            weights = {}
-            reps = {}
-            reps_l = {}
-            reps_r = {}
-            bands = {}
+            selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day], default=[PROGRAM[workout_day][0]])
             
-            for exercise in selected_exercises:
-                st.markdown(f"### {exercise}")
-                st.caption(f"**Target:** {REP_TARGETS.get(exercise, 'Not set')}")
-                
-                uses_band = exercise in BANDED_EXERCISES
-                is_unilateral = exercise in UNILATERAL_EXERCISES
-                target_sets, top_rep = get_target_reps_and_sets(exercise)
-                
-                if is_unilateral and uses_band:
-                    c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
-                    c1.markdown("**Set**")
-                    c2.markdown("**Kg**")
-                    c3.markdown("**L**")
-                    c4.markdown("**R**")
-                    c5.markdown("**Band**")
-                elif is_unilateral and not uses_band:
-                    c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
-                    c1.markdown("**Set**")
-                    c2.markdown("**Kg**")
-                    c3.markdown("**L**")
-                    c4.markdown("**R**")
-                elif not is_unilateral and uses_band:
-                    c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
-                    c1.markdown("**Set**")
-                    c2.markdown("**Kg**")
-                    c3.markdown("**Reps**")
-                    c4.markdown("**Band**")
-                else:
-                    c1, c2, c3 = st.columns([1, 2, 2])
-                    c1.markdown("**Set**")
-                    c2.markdown("**Kg**")
-                    c3.markdown("**Reps**")
-                    
-                for i in range(1, target_sets + 1):
-                    key = f"{exercise}_{i}" 
-                    
-                    if is_unilateral and uses_band:
-                        c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
-                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
-                        reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
-                        reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
-                        bands[key] = c5.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
-                    elif is_unilateral and not uses_band:
-                        c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
-                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
-                        reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
-                        reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
-                    elif not is_unilateral and uses_band:
-                        c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
-                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
-                        reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
-                        bands[key] = c4.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
-                    else:
-                        c1, c2, c3 = st.columns([1, 2, 2])
-                        c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                        weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
-                        reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
-                
+            if not selected_exercises:
+                st.info("👆 Please select at least one exercise to log.")
+            else:
                 st.write("---")
-            
-            if st.button("Save All Selected Sets", type="primary", use_container_width=True):
-                new_rows = []
+                weights, reps, reps_l, reps_r, bands = {}, {}, {}, {}, {}
+                
                 for exercise in selected_exercises:
+                    st.markdown(f"### {exercise}")
+                    st.caption(f"**Target:** {REP_TARGETS.get(exercise, 'Not set')}")
+                    
                     uses_band = exercise in BANDED_EXERCISES
                     is_unilateral = exercise in UNILATERAL_EXERCISES
                     target_sets, top_rep = get_target_reps_and_sets(exercise)
                     
-                    for i in range(1, target_sets + 1):
-                        key = f"{exercise}_{i}"
-                        band_val = bands[key] if uses_band else "None"
+                    if is_unilateral and uses_band:
+                        c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
+                        c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**L**"); c4.markdown("**R**"); c5.markdown("**Band**")
+                    elif is_unilateral and not uses_band:
+                        c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
+                        c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**L**"); c4.markdown("**R**")
+                    elif not is_unilateral and uses_band:
+                        c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
+                        c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**Reps**"); c4.markdown("**Band**")
+                    else:
+                        c1, c2, c3 = st.columns([1, 2, 2])
+                        c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**Reps**")
                         
-                        if is_unilateral:
-                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_l[key], 'Distance_km': 0.0, 'Side': 'Left'})
-                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_r[key], 'Distance_km': 0.0, 'Side': 'Right'})
+                    for i in range(1, target_sets + 1):
+                        key = f"{exercise}_{i}" 
+                        
+                        if is_unilateral and uses_band:
+                            c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 1.5, 2])
+                            c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                            weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                            reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                            reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                            bands[key] = c5.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
+                        elif is_unilateral and not uses_band:
+                            c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
+                            c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                            weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                            reps_l[key] = c3.number_input("L", min_value=1, value=top_rep, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                            reps_r[key] = c4.number_input("R", min_value=1, value=top_rep, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                        elif not is_unilateral and uses_band:
+                            c1, c2, c3, c4 = st.columns([1, 2, 2, 3])
+                            c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                            weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                            reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
+                            bands[key] = c4.selectbox("Band", BAND_OPTIONS, key=f"b_{key}", label_visibility="collapsed")
                         else:
-                            new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps[key], 'Distance_km': 0.0, 'Side': 'Both'})
+                            c1, c2, c3 = st.columns([1, 2, 2])
+                            c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                            weights[key] = c2.number_input("Kg", min_value=0.0, value=20.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                            reps[key] = c3.number_input("Reps", min_value=1, value=top_rep, step=1, key=f"r_{key}", label_visibility="collapsed")
+                    
+                    st.write("---")
                 
-                df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
-                save_data(df)
-                st.success(f"Logged {len(new_rows)} total rows securely to your database!")
-                st.rerun()
+                if st.button("Save All Selected Sets", type="primary", use_container_width=True):
+                    new_rows = []
+                    for exercise in selected_exercises:
+                        uses_band = exercise in BANDED_EXERCISES
+                        is_unilateral = exercise in UNILATERAL_EXERCISES
+                        target_sets, top_rep = get_target_reps_and_sets(exercise)
+                        
+                        for i in range(1, target_sets + 1):
+                            key = f"{exercise}_{i}"
+                            band_val = bands[key] if uses_band else "None"
+                            
+                            if is_unilateral:
+                                new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_l[key], 'Distance_km': 0.0, 'Side': 'Left'})
+                                new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps_r[key], 'Distance_km': 0.0, 'Side': 'Right'})
+                            else:
+                                new_rows.append({'Date': date_input.strftime("%Y-%m-%d"), 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Reps_or_Mins': reps[key], 'Distance_km': 0.0, 'Side': 'Both'})
+                    
+                    df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+                    save_data(df)
+                    st.success(f"Logged {len(new_rows)} rows securely to your database!")
+                    st.rerun()
 
-# --- TAB 2: VIEWING PROGRESS & COACHING ALERTS ---
+# --- TAB 2: DAILY TRENDS ---
 with tab2:
-    st.subheader("Interactive Analytics Dashboard")
-    
-    if df.empty:
-        st.info("No data yet! Log your first workout to see trends.")
+    st.subheader("Daily Analytics")
+    if df.empty or len(df[df['Exercise'] != "Rest / Recovery / Frozen Week"]) == 0:
+        st.info("Log your first workout to see analytics.")
     else:
-        exercise_to_view = st.selectbox("Select Exercise to Analyze", ALL_EXERCISES)
+        exercise_to_view = st.selectbox("Select Exercise", ALL_EXERCISES, key="tab2_ex")
         ex_df = df[df['Exercise'] == exercise_to_view].copy()
         
         if ex_df.empty:
-            st.warning(f"No data found for {exercise_to_view}.")
+            st.warning("No data found.")
         else:
-            is_cardio_view = "Rowing" in exercise_to_view or "Bike" in exercise_to_view
-            is_unilateral_view = exercise_to_view in UNILATERAL_EXERCISES
-            
-            if is_cardio_view:
+            if "Rowing" in exercise_to_view or "Bike" in exercise_to_view:
                 ex_df['Speed_kmh'] = ex_df.apply(lambda row: row['Distance_km'] / (row['Reps_or_Mins'] / 60) if row['Reps_or_Mins'] > 0 else 0, axis=1)
-                daily_stats = ex_df.groupby('Date').agg({'Speed_kmh': 'max', 'Distance_km': 'max', 'Reps_or_Mins': 'max'}).reset_index()
-                
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Max Distance", f"{daily_stats['Distance_km'].max():.2f} km")
-                c2.metric("Best Avg Speed", f"{daily_stats['Speed_kmh'].max():.1f} km/h")
-                c3.metric("Longest Session", f"{daily_stats['Reps_or_Mins'].max():.0f} min")
-                
+                daily_stats = ex_df.groupby('Date').agg({'Speed_kmh': 'max'}).reset_index()
                 fig = px.line(daily_stats, x='Date', y='Speed_kmh', markers=True, title='Average Speed Trend (km/h)')
-                fig.update_traces(line_color='#FF4B4B', marker=dict(size=8))
                 st.plotly_chart(fig, use_container_width=True)
-                
             else:
                 ex_df['Est_1RM'] = ex_df['Weight'] * (1 + ex_df['Reps_or_Mins'] / 30)
-                ex_df['Volume'] = ex_df['Weight'] * ex_df['Reps_or_Mins']
-                
-                daily_stats = ex_df.groupby('Date').agg(
-                    Est_1RM=('Est_1RM', 'max'),
-                    Total_Volume=('Volume', 'sum')
-                ).reset_index()
-                
-                target_sets, top_rep = get_target_reps_and_sets(exercise_to_view)
-                latest_date = ex_df['Date'].max()
-                latest_session = ex_df[ex_df['Date'] == latest_date]
-                
-                if target_sets > 0 and top_rep > 0:
-                    expected_rows = target_sets * 2 if is_unilateral_view else target_sets
-                    sets_completed = len(latest_session)
-                    hit_top_reps = all(r >= top_rep for r in latest_session['Reps_or_Mins'])
-                    if sets_completed >= expected_rows and hit_top_reps:
-                        st.success(f"🟢 **PROGRESSION ACHIEVED!** Hit {top_rep} reps for all sets on {latest_date}. Increase weight next time!")
-                
-                c1, c2, c3 = st.columns(3)
-                c1.metric("All-Time 1RM", f"{daily_stats['Est_1RM'].max():.1f} kg")
-                c2.metric("Max Session Volume", f"{daily_stats['Total_Volume'].max():.0f} kg")
-                c3.metric("Sessions Tracked", f"{len(daily_stats)}")
+                daily_stats = ex_df.groupby('Date').agg(Est_1RM=('Est_1RM', 'max'), Total_Volume=('Volume', 'sum')).reset_index()
                 
                 fig = go.Figure()
                 fig.add_trace(go.Bar(x=daily_stats['Date'], y=daily_stats['Total_Volume'], name='Tonnage (kg)', opacity=0.5, marker_color='#1f77b4'))
                 fig.add_trace(go.Scatter(x=daily_stats['Date'], y=daily_stats['Est_1RM'], name='Est 1RM (kg)', mode='lines+markers', yaxis='y2', line=dict(color='#FF4B4B', width=3)))
-                fig.update_layout(
-                    title="Volume vs. 1RM Progression",
-                    yaxis=dict(title='Total Volume (kg)', side='left'),
-                    yaxis2=dict(title='Estimated 1RM (kg)', side='right', overlaying='y', showgrid=False),
-                    hovermode='x unified',
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
+                fig.update_layout(yaxis=dict(title='Volume (kg)', side='left'), yaxis2=dict(title='Est 1RM (kg)', side='right', overlaying='y', showgrid=False), hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                 st.plotly_chart(fig, use_container_width=True)
-                
-                if is_unilateral_view:
-                    fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', symbol='Side', markers=True, title="Set-by-Set Endurance Drop-off (Left vs Right)")
-                else:
-                    fig2 = px.line(ex_df, x='Date', y='Reps_or_Mins', color='Set_Number', markers=True, title="Set-by-Set Endurance Drop-off")
-                fig2.update_layout(yaxis_title="Reps Completed")
-                st.plotly_chart(fig2, use_container_width=True)
-                
-            st.write("**Recent Session Logs:**")
-            st.dataframe(ex_df[['Date', 'Set_Number', 'Weight', 'Side', 'Reps_or_Mins', 'Band', 'Distance_km']].sort_values(by=['Date', 'Set_Number'], ascending=[False, True]).head(15))
 
-# --- TAB 3: MANAGE DATA (DELETE/EDIT) ---
+# --- TAB 3: THE TROPHY ROOM (GAMIFICATION) ---
 with tab3:
+    st.subheader("🏆 The Trophy Room")
+    if df.empty:
+        st.info("Complete workouts to earn XP and unlock stats!")
+    else:
+        lifting_df = df[~df['Exercise'].isin(["Rest / Recovery / Frozen Week", "4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])].copy()
+        lifting_df['Month'] = pd.to_datetime(lifting_df['Date']).dt.strftime('%Y-%m')
+        
+        # Grand Total XP
+        total_xp = lifting_df['Volume'].sum()
+        st.markdown(f"### **Total Lifetime XP:** {total_xp:,.0f} kg moved")
+        st.progress(min(total_xp / 100000, 1.0)) # Visual bar up to 100,000kg
+        st.caption("Bar fills up every 100,000kg moved.")
+        st.write("---")
+        
+        # Monthly Comparison
+        st.markdown("#### 📅 Month-over-Month XP")
+        monthly_xp = lifting_df.groupby('Month')['Volume'].sum().reset_index()
+        fig_month = px.bar(monthly_xp, x='Month', y='Volume', text='Volume', color_discrete_sequence=['#FF4B4B'])
+        fig_month.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+        fig_month.update_layout(yaxis_title="Total Volume (XP)", xaxis_title="")
+        st.plotly_chart(fig_month, use_container_width=True)
+        st.write("---")
+        
+        # Volume Mastery (The Longevity Skill Tree)
+        st.markdown("#### ⚔️ Exercise Mastery Levels")
+        st.write("*Gain +1 Level for every 5,000kg (5 tons) moved.*")
+        
+        ex_xp = lifting_df.groupby('Exercise')['Volume'].sum().reset_index()
+        ex_xp['Level'] = (ex_xp['Volume'] // 5000) + 1
+        ex_xp = ex_xp.sort_values(by='Level', ascending=False)
+        
+        # Display as a clean dataframe
+        st.dataframe(
+            ex_xp[['Exercise', 'Level', 'Volume']].rename(columns={'Volume': 'Total XP'}),
+            column_config={
+                "Level": st.column_config.ProgressColumn("Mastery Level", format="Lvl %d", min_value=0, max_value=20),
+                "Total XP": st.column_config.NumberColumn("Total XP (kg)", format="%d")
+            },
+            hide_index=True, use_container_width=True
+        )
+
+# --- TAB 4: MANAGE DATA ---
+with tab4:
     st.subheader("Edit or Delete Logs")
-    
     if not df.empty:
         st.write("### Option 1: Quick Undo")
-        if st.button("⏪ Delete Last Logged Set", type="secondary"):
+        if st.button("⏪ Delete Last Logged Row", type="secondary"):
             df = df.iloc[:-1] 
             save_data(df)
-            st.success("Last set deleted!")
+            st.success("Last row deleted!")
             st.rerun()
             
         st.write("---")
         st.write("### Option 2: The Spreadsheet Editor")
-        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True, key="data_editor")
-        
+        edited_df = st.data_editor(df.drop(columns=['Volume'], errors='ignore'), num_rows="dynamic", use_container_width=True, key="data_editor")
         if st.button("Save Spreadsheet Changes", type="primary"):
             save_data(edited_df)
             st.success("Database updated successfully!")
