@@ -140,8 +140,17 @@ def load_data():
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     df['Date'] = pd.to_datetime(df['Date'])
     
-    def calc_effective_weight(row):
-        eff_wt = row['Weight'] + (row['Bodyweight'] * BW_MULTIPLIERS.get(row['Exercise'], 0.0)) - BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
+def calc_effective_weight(row):
+        ex = row['Exercise']
+        bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
+        base_body_load = row['Bodyweight'] * bw_mod
+        
+        # Hooke's Law Approximation: Band manufacturers list PEAK tension. 
+        # The average assistance across a full Range of Motion is roughly 50%.
+        peak_band_assistance = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
+        avg_band_assistance = peak_band_assistance * 0.5
+        
+        eff_wt = row['Weight'] + base_body_load - avg_band_assistance
         return max(eff_wt, 0.0) 
         
     df['Effective_Weight'] = df.apply(calc_effective_weight, axis=1)
