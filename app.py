@@ -129,10 +129,10 @@ def get_target_reps_and_sets(exercise_name):
 def load_data():
     records = worksheet.get_all_records()
     if not records:
-        return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RPE'])
+        return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'])
     
     df = pd.DataFrame(records)
-    for col in ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RPE']:
+    for col in ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR']:
         if col not in df.columns: df[col] = 0.0
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
@@ -177,14 +177,12 @@ with tab1:
     
     if selected_exercises and "Cardio" not in workout_day:
         
-        # DYNAMIC SETS CONTROLLER
         default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
         num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
         st.write("---")
         
-        weights, reps, reps_l, reps_r, rpes, bands = {}, {}, {}, {}, {}, {}
+        weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
         
-        # ROUND-FIRST SUPERSET LOOP
         for i in range(1, num_sets + 1):
             st.markdown(f"#### 🔁 Round {i}")
             
@@ -197,7 +195,6 @@ with tab1:
                 
                 key = f"{exercise}_{i}" 
                 
-                # Using standard Streamlit labels for a cleaner, responsive UI
                 if uses_band:
                     c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
                     weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
@@ -208,7 +205,7 @@ with tab1:
                     else:
                         reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
                     bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}")
-                    rpes[key] = c4.slider("RPE", 1.0, 10.0, 8.0, 0.5, key=f"rpe_{key}")
+                    rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}", help="How many more clean reps could you have done?")
                 else:
                     c1, c2, c3 = st.columns([1, 1, 2])
                     weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
@@ -218,9 +215,9 @@ with tab1:
                         reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                     else:
                         reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                    rpes[key] = c3.slider("RPE", 1.0, 10.0, 8.0, 0.5, key=f"rpe_{key}")
+                    rirs[key] = c3.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}", help="How many more clean reps could you have done?")
                     
-            st.write("---") # Line break after the full superset round is complete
+            st.write("---") 
             
         if st.button("Save To Database", type="primary"):
             new_rows = []
@@ -228,13 +225,12 @@ with tab1:
                 is_unilateral = exercise in UNILATERAL_EXERCISES
                 uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
                 
-                # Saving logic updated to follow the new dynamic 'num_sets' variable
                 for i in range(1, num_sets + 1):
                     key = f"{exercise}_{i}"
                     band_val = bands[key] if uses_band else "None"
                     
                     if (is_unilateral and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_unilateral and reps[key] > 0):
-                        base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Distance_km': 0.0, 'Bodyweight': bw_input, 'RPE': rpes[key]}
+                        base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Distance_km': 0.0, 'Bodyweight': bw_input, 'RIR': rirs[key]}
                         if is_unilateral:
                             if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
                             if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
@@ -246,7 +242,7 @@ with tab1:
             st.success(f"Logged {len(new_rows)} rows!")
             st.rerun()
 
-# --- TAB 2 & 3 REMAIN THE SAME ---
+# --- TAB 2: ANALYTICS ENGINE ---
 with tab2:
     if df.empty:
         st.info("Awaiting Data...")
