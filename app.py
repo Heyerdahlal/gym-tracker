@@ -39,12 +39,40 @@ PROGRAM = {
 
 # Muscle Heatmap Multipliers (Primary = 1.0, Secondary = 0.5)
 MUSCLE_MAP = {
+    # --- DAY 1: QUADS & VERTICALITY ---
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
+    "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
+    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Front Delts": 0.5},
     "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
+    "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
+    "Banded Face Pulls": {"Rear Delts": 1.0, "Upper Back": 0.5},
+    "Anchored Reverse Crunch": {"Abs": 1.0},
+    "Glute-Focused Roman Chair Extension": {"Glutes": 1.0, "Hamstrings": 0.5},
+    "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
+
+    # --- DAY 2: HINGE & HORIZONTAL LOAD ---
     "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0, "Erectors": 0.5},
+    "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
+    "T-Bar Landmine Row": {"Lats": 1.0, "Upper Back": 1.0, "Biceps": 0.5},
     "Dumbbell Bench Press": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
-    "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5},
-    # Add your other exercises here to build out the full heatmap!
+    "Incline Bar Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
+    "Meadows Row": {"Upper Back": 1.0, "Lats": 0.5, "Biceps": 0.5},
+    "Overhead Tricep Extension": {"Triceps": 1.0},
+    "Banded Crossovers": {"Chest": 1.0, "Front Delts": 0.5},
+    "Ab-Wheel Rollouts": {"Abs": 1.0, "Erectors": 0.5},
+
+    # --- DAY 3: HYBRID HYPERTROPHY & STABILITY ---
+    "Erector-Focused Roman Chair Extension": {"Erectors": 1.0, "Glutes": 0.5},
+    "Landmine Press": {"Front Delts": 1.0, "Chest": 0.5, "Triceps": 0.5},
+    "Chest-Supported Lateral Raise": {"Side Delts": 1.0},
+    "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
+    "Banded Tricep Pushdowns": {"Triceps": 1.0},
+    "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
+    "Heavy Suitcase Holds": {"Obliques": 1.0, "Forearms": 0.5},
+    "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5},
+    
+    # --- LEGACY / ROTATIONAL EXERCISES ---
+    "Hex Bar Deadlift": {"Quads": 1.0, "Glutes": 1.0, "Hamstrings": 0.5, "Erectors": 0.5}
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Meadows Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
