@@ -116,6 +116,7 @@ BAND_SUBTRACTIONS = {
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Meadows Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list]
+CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
 
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
@@ -128,11 +129,18 @@ def get_target_reps_and_sets(exercise_name):
 @st.cache_data(ttl=600)
 def load_data():
     records = worksheet.get_all_records()
+    
+    # Define the baseline columns including the new Cardio ones
+    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
+    
     if not records:
-        return pd.DataFrame(columns=['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'])
+        return pd.DataFrame(columns=baseline_cols)
     
     df = pd.DataFrame(records)
-    for col in ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR']:
+    
+    # Ensure all columns exist and are numeric where appropriate
+    numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
+    for col in numeric_cols:
         if col not in df.columns: df[col] = 0.0
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
@@ -140,13 +148,12 @@ def load_data():
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     df['Date'] = pd.to_datetime(df['Date'])
     
-def calc_effective_weight(row):
+    # Hooke's Law & Effective Weight Calculation
+    def calc_effective_weight(row):
         ex = row['Exercise']
         bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
         base_body_load = row['Bodyweight'] * bw_mod
         
-        # Hooke's Law Approximation: Band manufacturers list PEAK tension. 
-        # The average assistance across a full Range of Motion is roughly 50%.
         peak_band_assistance = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
         avg_band_assistance = peak_band_assistance * 0.5
         
@@ -184,147 +191,242 @@ with tab1:
     
     st.write("---")
     
-    if selected_exercises and "Cardio" not in workout_day:
+    if selected_exercises:
+        is_cardio = "Cardio" in workout_day
         
-        default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
-        num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
-        st.write("---")
-        
-        weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
-        
-        for i in range(1, num_sets + 1):
-            st.markdown(f"#### 🔁 Round {i}")
+        if is_cardio:
+            exercise = selected_exercises[0] # Usually only log one cardio session at a time
+            st.markdown(f"### {exercise} (Garmin Data Integration)")
             
-            for exercise in selected_exercises:
-                is_unilateral = exercise in UNILATERAL_EXERCISES
-                uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
-                
-                _, top_rep = get_target_reps_and_sets(exercise)
-                st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
-                
-                key = f"{exercise}_{i}" 
-                
-                if uses_band:
-                    c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                    weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
-                    if is_unilateral:
-                        sc1, sc2 = c2.columns(2)
-                        reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                        reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                    else:
-                        reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                    bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}")
-                    rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}", help="How many more clean reps could you have done?")
-                else:
-                    c1, c2, c3 = st.columns([1, 1, 2])
-                    weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
-                    if is_unilateral:
-                        sc1, sc2 = c2.columns(2)
-                        reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                        reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                    else:
-                        reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                    rirs[key] = c3.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}", help="How many more clean reps could you have done?")
-                    
-            st.write("---") 
+            c1, c2 = st.columns(2)
+            with c1:
+                duration = st.number_input("Duration (Minutes)", min_value=1.0, value=60.0, step=1.0)
+                distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.1)
+                avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
+            with c2:
+                avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=130.0, step=1.0)
+                max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=165.0, step=1.0)
             
-        if st.button("Save To Database", type="primary"):
-            new_rows = []
-            for exercise in selected_exercises:
-                is_unilateral = exercise in UNILATERAL_EXERCISES
-                uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
+            st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
+            zc1, zc2, zc3, zc4, zc5 = st.columns(5)
+            z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
+            z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
+            z3 = zc3.number_input("Zone 3", min_value=0.0, step=1.0)
+            z4 = zc4.number_input("Zone 4", min_value=0.0, step=1.0)
+            z5 = zc5.number_input("Zone 5", min_value=0.0, step=1.0)
+            
+            if st.button("Save Cardio Data", type="primary"):
+                cardio_data = {
+                    'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 
+                    'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
+                    'Reps_or_Mins': duration, 'Bodyweight': bw_input, 'RIR': 0.0, 'Side': 'Both',
+                    'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
+                    'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5
+                }
+                df = pd.concat([df, pd.DataFrame([cardio_data])], ignore_index=True)
+                save_data(df)
+                st.success("High-Fidelity Cardio Data Saved!")
+                st.rerun()
+
+        else:
+            default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
+            num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
+            st.write("---")
+            
+            weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
+            
+            for i in range(1, num_sets + 1):
+                st.markdown(f"#### 🔁 Round {i}")
                 
-                for i in range(1, num_sets + 1):
-                    key = f"{exercise}_{i}"
-                    band_val = bands[key] if uses_band else "None"
+                for exercise in selected_exercises:
+                    is_unilateral = exercise in UNILATERAL_EXERCISES
+                    uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
                     
-                    if (is_unilateral and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_unilateral and reps[key] > 0):
-                        base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Distance_km': 0.0, 'Bodyweight': bw_input, 'RIR': rirs[key]}
+                    _, top_rep = get_target_reps_and_sets(exercise)
+                    st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
+                    
+                    key = f"{exercise}_{i}" 
+                    
+                    if uses_band:
+                        c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
+                        weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
                         if is_unilateral:
-                            if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
-                            if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
+                            sc1, sc2 = c2.columns(2)
+                            reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                            reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                         else:
-                            new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
-            
-            df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
-            save_data(df)
-            st.success(f"Logged {len(new_rows)} rows!")
-            st.rerun()
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
+                        bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}")
+                        rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
+                    else:
+                        c1, c2, c3 = st.columns([1, 1, 2])
+                        weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
+                        if is_unilateral:
+                            sc1, sc2 = c2.columns(2)
+                            reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                            reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
+                        else:
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
+                        rirs[key] = c3.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
+                        
+                st.write("---") 
+                
+            if st.button("Save To Database", type="primary"):
+                new_rows = []
+                for exercise in selected_exercises:
+                    is_unilateral = exercise in UNILATERAL_EXERCISES
+                    uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
+                    
+                    for i in range(1, num_sets + 1):
+                        key = f"{exercise}_{i}"
+                        band_val = bands[key] if uses_band else "None"
+                        
+                        if (is_unilateral and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_unilateral and reps[key] > 0):
+                            base_data = {
+                                'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 
+                                'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 
+                                'Distance_km': 0.0, 'Bodyweight': bw_input, 'RIR': rirs[key],
+                                'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
+                                'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0
+                            }
+                            if is_unilateral:
+                                if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
+                                if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
+                            else:
+                                new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
+                
+                df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+                save_data(df)
+                st.success(f"Logged {len(new_rows)} rows!")
+                st.rerun()
 
 # --- TAB 2: ANALYTICS ENGINE ---
 with tab2:
     if df.empty:
         st.info("Awaiting Data...")
     else:
-        lift_df = df[df['Reps_or_Mins'] > 0].copy()
-        lift_df = lift_df[~lift_df['Exercise'].str.contains("Rowing|Bike|Rest", na=False)]
-        at1, at2, at3, at4 = st.tabs(["👻 The Ghost", "📈 e1RM Velocity", "🔥 INOL & Volume", "🦵 Muscle Heatmap"])
+        # Separate datasets for Lifting vs Cardio
+        lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
+        cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
+        at1, at2, at3, at4, at5 = st.tabs(["👻 The Ghost", "📈 e1RM Velocity", "🔥 INOL & Volume", "🦵 Muscle Heatmap", "🫀 Cardio Engine"])
+        
+        # ... [Tabs at1 to at4 remain identical to previous versions] ...
         with at1:
             st.subheader("Historical Milestones")
-            one_year_ago = pd.to_datetime(date.today()) - pd.DateOffset(years=1)
-            past_workouts = lift_df[(lift_df['Date'] >= one_year_ago - pd.Timedelta(days=7)) & (lift_df['Date'] <= one_year_ago + pd.Timedelta(days=7))]
-            if not past_workouts.empty:
-                st.success(f"**Exactly one year ago:** You were grinding. Look at how far you've come.")
-                st.dataframe(past_workouts[['Date', 'Exercise', 'Effective_Weight', 'Reps_or_Mins', 'Epley_1RM']].sort_values(by='Date').head(10))
-            else:
-                st.info("No data from exactly one year ago found yet. Keep building the database!")
-                
-            st.markdown("### All-Time PRs by Rep Range")
-            pr_ex = st.selectbox("Select Exercise for PRs", lift_df['Exercise'].unique())
-            pr_df = lift_df[lift_df['Exercise'] == pr_ex]
-            c1, c2, c3, c4 = st.columns(4)
-            try:
-                c1.metric("1RM (Epley)", f"{pr_df['Epley_1RM'].max():.1f} kg")
-                c2.metric("3RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 3]['Effective_Weight'].max():.1f} kg")
-                c3.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Effective_Weight'].max():.1f} kg")
-                c4.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Effective_Weight'].max():.1f} kg")
-            except:
-                st.warning("Not enough data for all rep ranges yet.")
+            if not lift_df.empty:
+                one_year_ago = pd.to_datetime(date.today()) - pd.DateOffset(years=1)
+                past_workouts = lift_df[(lift_df['Date'] >= one_year_ago - pd.Timedelta(days=7)) & (lift_df['Date'] <= one_year_ago + pd.Timedelta(days=7))]
+                if not past_workouts.empty:
+                    st.success(f"**Exactly one year ago:** You were grinding. Look at how far you've come.")
+                    st.dataframe(past_workouts[['Date', 'Exercise', 'Effective_Weight', 'Reps_or_Mins', 'Epley_1RM']].sort_values(by='Date').head(10))
+                else:
+                    st.info("No data from exactly one year ago found yet.")
+                    
+                st.markdown("### All-Time PRs by Rep Range")
+                pr_ex = st.selectbox("Select Exercise for PRs", lift_df['Exercise'].unique())
+                pr_df = lift_df[lift_df['Exercise'] == pr_ex]
+                c1, c2, c3, c4 = st.columns(4)
+                try:
+                    c1.metric("1RM (Epley)", f"{pr_df['Epley_1RM'].max():.1f} kg")
+                    c2.metric("3RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 3]['Effective_Weight'].max():.1f} kg")
+                    c3.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Effective_Weight'].max():.1f} kg")
+                    c4.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Effective_Weight'].max():.1f} kg")
+                except:
+                    st.warning("Not enough data for all rep ranges yet.")
 
         with at2:
             st.subheader("Progression Velocity & Plateaus")
-            vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
-            v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date')['Epley_1RM'].max().reset_index()
-            v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3).mean()
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='markers', name='Daily e1RM', opacity=0.5))
-            fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
-            st.plotly_chart(fig, use_container_width=True)
+            if not lift_df.empty:
+                vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
+                v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date')['Epley_1RM'].max().reset_index()
+                v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3).mean()
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='markers', name='Daily e1RM', opacity=0.5))
+                fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
+                st.plotly_chart(fig, use_container_width=True)
 
         with at3:
             st.subheader("INOL & Fatigue Curves")
-            inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
-            i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
-            global_max = i_df['Epley_1RM'].max()
-            i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
-            i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
-            i_df['INOL'] = i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])
-            daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
-            fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
-            fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
-            st.plotly_chart(fig2, use_container_width=True)
-            
-            st.markdown("### Fatigue Degradation (Intra-Workout)")
-            fatigue_df = i_df.groupby(['Date', 'Set_Number'])['Reps_or_Mins'].max().reset_index()
-            fig3 = px.line(fatigue_df, x='Set_Number', y='Reps_or_Mins', color='Date', markers=True, title="Rep Drop-off Across Sets")
-            st.plotly_chart(fig3, use_container_width=True)
+            if not lift_df.empty:
+                inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
+                i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
+                global_max = i_df['Epley_1RM'].max()
+                i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
+                i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
+                i_df['INOL'] = i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])
+                daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
+                fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
+                fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
+                st.plotly_chart(fig2, use_container_width=True)
+                
+                st.markdown("### Fatigue Degradation (Intra-Workout)")
+                fatigue_df = i_df.groupby(['Date', 'Set_Number'])['Reps_or_Mins'].max().reset_index()
+                fig3 = px.line(fatigue_df, x='Set_Number', y='Reps_or_Mins', color='Date', markers=True, title="Rep Drop-off Across Sets")
+                st.plotly_chart(fig3, use_container_width=True)
 
         with at4:
             st.subheader("Muscle Volume Heatmap")
-            recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
-            muscle_vols = {}
-            for index, row in recent_df.iterrows():
-                ex, vol = row['Exercise'], row['Volume']
-                if ex in MUSCLE_MAP:
-                    for muscle, multiplier in MUSCLE_MAP[ex].items():
-                        muscle_vols[muscle] = muscle_vols.get(muscle, 0) + (vol * multiplier)
-            if muscle_vols:
-                heat_df = pd.DataFrame(list(muscle_vols.items()), columns=['Muscle', 'Total Load (kg)']).sort_values(by='Total Load (kg)')
-                fig4 = px.bar(heat_df, x='Total Load (kg)', y='Muscle', orientation='h', color='Total Load (kg)', color_continuous_scale='Viridis')
-                st.plotly_chart(fig4, use_container_width=True)
+            if not lift_df.empty:
+                recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                muscle_vols = {}
+                for index, row in recent_df.iterrows():
+                    ex, vol = row['Exercise'], row['Volume']
+                    if ex in MUSCLE_MAP:
+                        for muscle, multiplier in MUSCLE_MAP[ex].items():
+                            muscle_vols[muscle] = muscle_vols.get(muscle, 0) + (vol * multiplier)
+                if muscle_vols:
+                    heat_df = pd.DataFrame(list(muscle_vols.items()), columns=['Muscle', 'Total Load (kg)']).sort_values(by='Total Load (kg)')
+                    fig4 = px.bar(heat_df, x='Total Load (kg)', y='Muscle', orientation='h', color='Total Load (kg)', color_continuous_scale='Viridis')
+                    st.plotly_chart(fig4, use_container_width=True)
+                else:
+                    st.info("Log some data to populate the heatmap!")
+
+        with at5:
+            st.subheader("🫀 Cardio Engine Analytics")
+            if cardio_df.empty:
+                st.info("Log a cardio session with your Garmin data to see analytics.")
             else:
-                st.info("Log some data to populate the heatmap!")
+                c_ex = st.selectbox("Select Cardio Type", cardio_df['Exercise'].unique())
+                cx_df = cardio_df[cardio_df['Exercise'] == c_ex].copy()
+                
+                # Biomechanical Split/Speed Calcs
+                if "Rowing" in c_ex:
+                    # Pace per 500m (in seconds)
+                    cx_df['Pace_Sec'] = (cx_df['Reps_or_Mins'] * 60) / (cx_df['Distance_km'] * 1000 / 500)
+                    cx_df['Metric_Value'] = cx_df['Pace_Sec']
+                    metric_title = "Avg Split Pace (Seconds per 500m) 📉 Lower is Better"
+                else:
+                    # Speed in km/h
+                    cx_df['Speed_kmh'] = cx_df['Distance_km'] / (cx_df['Reps_or_Mins'] / 60)
+                    cx_df['Metric_Value'] = cx_df['Speed_kmh']
+                    metric_title = "Avg Speed (km/h) 📈 Higher is Better"
+                
+                # Aerobic Efficiency Chart
+                st.markdown("### Aerobic Efficiency")
+                st.write("*Compare your external mechanical output (Speed/Pace) against your internal physiological cost (Heart Rate).*")
+                
+                fig_aerobic = go.Figure()
+                fig_aerobic.add_trace(go.Bar(x=cx_df['Date'], y=cx_df['Metric_Value'], name='Speed/Pace Output', marker_color='#1f77b4', yaxis='y1'))
+                fig_aerobic.add_trace(go.Scatter(x=cx_df['Date'], y=cx_df['Avg_HR'], name='Avg Heart Rate', mode='lines+markers', line=dict(color='#FF4B4B', width=3), yaxis='y2'))
+                
+                fig_aerobic.update_layout(
+                    yaxis=dict(title=metric_title, side='left'),
+                    yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False),
+                    hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_aerobic, use_container_width=True)
+                
+                # Zone Distribution
+                st.markdown("### Heart Rate Zone Distribution")
+                zone_df = cx_df[['Date', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']].melt(id_vars='Date', var_name='Zone', value_name='Minutes')
+                zone_df['Zone'] = zone_df['Zone'].str.replace('_Mins', '')
+                
+                # Custom colors for HR Zones (Blue to Red)
+                zone_colors = {'Z1': '#4287f5', 'Z2': '#42f56f', 'Z3': '#f5d742', 'Z4': '#f58442', 'Z5': '#f54242'}
+                
+                fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
+                st.plotly_chart(fig_zones, use_container_width=True)
 
 with tab3:
     edited_df = st.data_editor(df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", use_container_width=True)
