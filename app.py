@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 
-st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="wide") # Changed to wide layout for dashboards
+st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="wide")
 
 # --- GOOGLE SHEETS SETUP ---
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
@@ -29,7 +29,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & MUSCLE DICTIONARY ---
+# --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
     "Day 1: Quad Focus & Verticality": ["Heels-Elevated Landmine Squat", "Neutral Grip Pull-Ups", "Band-Assisted Dips", "Bulgarian Split Squats", "Nordic Curls", "Banded Face Pulls", "Anchored Reverse Crunch", "Glute-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises"],
     "Day 2: Hinge Focus & Horizontal Load": ["Romanian Deadlift (RDL)", "Barbell Hip Thrusts", "T-Bar Landmine Row", "Dumbbell Bench Press", "Incline Bar Push-Ups", "Meadows Row", "Overhead Tricep Extension", "Banded Crossovers", "Ab-Wheel Rollouts"],
@@ -37,9 +37,7 @@ PROGRAM = {
     "Thursday/Friday: Cardio": ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"]
 }
 
-# Muscle Heatmap Multipliers (Primary = 1.0, Secondary = 0.5)
 MUSCLE_MAP = {
-    # --- DAY 1: QUADS & VERTICALITY ---
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
     "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Front Delts": 0.5},
@@ -49,8 +47,6 @@ MUSCLE_MAP = {
     "Anchored Reverse Crunch": {"Abs": 1.0},
     "Glute-Focused Roman Chair Extension": {"Glutes": 1.0, "Hamstrings": 0.5},
     "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
-
-    # --- DAY 2: HINGE & HORIZONTAL LOAD ---
     "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0, "Erectors": 0.5},
     "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
     "T-Bar Landmine Row": {"Lats": 1.0, "Upper Back": 1.0, "Biceps": 0.5},
@@ -60,8 +56,6 @@ MUSCLE_MAP = {
     "Overhead Tricep Extension": {"Triceps": 1.0},
     "Banded Crossovers": {"Chest": 1.0, "Front Delts": 0.5},
     "Ab-Wheel Rollouts": {"Abs": 1.0, "Erectors": 0.5},
-
-    # --- DAY 3: HYBRID HYPERTROPHY & STABILITY ---
     "Erector-Focused Roman Chair Extension": {"Erectors": 1.0, "Glutes": 0.5},
     "Landmine Press": {"Front Delts": 1.0, "Chest": 0.5, "Triceps": 0.5},
     "Chest-Supported Lateral Raise": {"Side Delts": 1.0},
@@ -69,10 +63,33 @@ MUSCLE_MAP = {
     "Banded Tricep Pushdowns": {"Triceps": 1.0},
     "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
     "Heavy Suitcase Holds": {"Obliques": 1.0, "Forearms": 0.5},
-    "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5},
-    
-    # --- LEGACY / ROTATIONAL EXERCISES ---
-    "Hex Bar Deadlift": {"Quads": 1.0, "Glutes": 1.0, "Hamstrings": 0.5, "Erectors": 0.5}
+    "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5}
+}
+
+# BIOMECHANICS: What percentage of your BW are you lifting?
+BW_MULTIPLIERS = {
+    "Neutral Grip Pull-Ups": 0.95, # You don't lift your forearms
+    "Band-Assisted Dips": 0.95,
+    "Incline Bar Push-Ups": 0.50, # Incline shifts weight to feet
+    "Nordic Curls": 0.60, # Torso weight
+    "Anchored Reverse Crunch": 0.40, # Leg/pelvis weight
+    "Ab-Wheel Rollouts": 0.50,
+    "Squat Wedge Dumbbell Calf Raises": 1.0, # Moving entire bodyweight + DBs
+    "Bulgarian Split Squats": 0.85, # One leg supports most of the BW
+    "Erector-Focused Roman Chair Extension": 0.50,
+    "Glute-Focused Roman Chair Extension": 0.50
+}
+
+# KINEMATICS: Band Assistance equivalent (kg)
+BAND_SUBTRACTIONS = {
+    "None": 0.0,
+    "Yellow (13.6kg)": 13.6,
+    "Red (22.6kg)": 22.6,
+    "Black (36.3kg)": 36.3,
+    "Purple (45.4kg)": 45.4,
+    "Green (68.0kg)": 68.0,
+    "Blue (88.5kg)": 88.5,
+    "Orange (113.4kg)": 113.4
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Meadows Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
@@ -86,24 +103,40 @@ def load_data():
     
     df = pd.DataFrame(records)
     for col in ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RPE']:
-        if col not in df.columns:
-            df[col] = 0.0
+        if col not in df.columns: df[col] = 0.0
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
     if 'Side' not in df.columns: df['Side'] = 'Both'
-    
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
-    df['Volume'] = df['Weight'] * df['Reps_or_Mins']
-    df['Epley_1RM'] = df['Weight'] * (1 + df['Reps_or_Mins'] / 30)
-    df['Brzycki_1RM'] = df['Weight'] * (36 / (37 - df['Reps_or_Mins']))
     
-    # Ensure Date is a datetime object for rolling averages
+    # Ensure Date is a datetime object
     df['Date'] = pd.to_datetime(df['Date'])
+    
+    # --- EFFECTIVE WEIGHT CALCULATION ---
+    def calc_effective_weight(row):
+        logged_wt = row['Weight']
+        bw = row['Bodyweight']
+        ex = row['Exercise']
+        band = row.get('Band', 'None')
+        
+        bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
+        band_sub = BAND_SUBTRACTIONS.get(band, 0.0)
+        
+        eff_wt = logged_wt + (bw * bw_mod) - band_sub
+        return max(eff_wt, 0.0) # Prevents negative weight if band is too heavy
+        
+    df['Effective_Weight'] = df.apply(calc_effective_weight, axis=1)
+    
+    # Calculate Volume and 1RMs using EFFECTIVE Weight
+    df['Volume'] = df['Effective_Weight'] * df['Reps_or_Mins']
+    df['Epley_1RM'] = df['Effective_Weight'] * (1 + df['Reps_or_Mins'] / 30)
+    
     return df
 
 def save_data(df):
-    df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Brzycki_1RM'], errors='ignore').copy()
-    df_to_save['Date'] = df_to_save['Date'].dt.strftime('%Y-%m-%d') # Convert back to string for Google Sheets
+    # Drop calculated columns before saving to keep Sheets clean
+    df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
+    df_to_save['Date'] = df_to_save['Date'].dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
     worksheet.clear()
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
@@ -128,40 +161,60 @@ with tab1:
     st.write("---")
     
     if selected_exercises and "Cardio" not in workout_day:
-        weights, reps, reps_l, reps_r, rpes = {}, {}, {}, {}, {}
+        weights, reps, reps_l, reps_r, rpes, bands = {}, {}, {}, {}, {}, {}
         
         for exercise in selected_exercises:
             st.markdown(f"### {exercise}")
             is_unilateral = exercise in UNILATERAL_EXERCISES
+            uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
             
-            c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
-            c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**Reps (L/R)**" if is_unilateral else "**Reps**"); c4.markdown("**RPE (1-10)**")
-                
-            for i in range(1, 4): # Defaulting to 3 sets for UI cleanliness
-                key = f"{exercise}_{i}" 
+            if uses_band:
+                c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 2, 2])
+                c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**Reps (L/R)**" if is_unilateral else "**Reps**"); c4.markdown("**Band**"); c5.markdown("**RPE**")
+            else:
                 c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
-                c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
-                weights[key] = c2.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                c1.markdown("**Set**"); c2.markdown("**Kg**"); c3.markdown("**Reps (L/R)**" if is_unilateral else "**Reps**"); c4.markdown("**RPE**")
                 
-                if is_unilateral:
-                    sc1, sc2 = c3.columns(2)
-                    reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}", label_visibility="collapsed")
-                    reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}", label_visibility="collapsed")
+            for i in range(1, 4): 
+                key = f"{exercise}_{i}" 
+                
+                if uses_band:
+                    c1, c2, c3, c4, c5 = st.columns([1, 1.5, 1.5, 2, 2])
+                    c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                    weights[key] = c2.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                    if is_unilateral:
+                        sc1, sc2 = c3.columns(2)
+                        reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                        reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                    else:
+                        reps[key] = c3.number_input("Reps", min_value=0, step=1, key=f"r_{key}", label_visibility="collapsed")
+                    bands[key] = c4.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}", label_visibility="collapsed")
+                    rpes[key] = c5.slider("RPE", 1.0, 10.0, 8.0, 0.5, key=f"rpe_{key}", label_visibility="collapsed")
                 else:
-                    reps[key] = c3.number_input("Reps", min_value=0, step=1, key=f"r_{key}", label_visibility="collapsed")
-                
-                rpes[key] = c4.slider("RPE", 1.0, 10.0, 8.0, 0.5, key=f"rpe_{key}", label_visibility="collapsed")
+                    c1, c2, c3, c4 = st.columns([1, 2, 2, 2])
+                    c1.markdown(f"<div style='margin-top: 8px;'><b>{i}</b></div>", unsafe_allow_html=True)
+                    weights[key] = c2.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}", label_visibility="collapsed")
+                    if is_unilateral:
+                        sc1, sc2 = c3.columns(2)
+                        reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}", label_visibility="collapsed")
+                        reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}", label_visibility="collapsed")
+                    else:
+                        reps[key] = c3.number_input("Reps", min_value=0, step=1, key=f"r_{key}", label_visibility="collapsed")
+                    rpes[key] = c4.slider("RPE", 1.0, 10.0, 8.0, 0.5, key=f"rpe_{key}", label_visibility="collapsed")
             st.write("---")
             
         if st.button("Save To Database", type="primary"):
             new_rows = []
             for exercise in selected_exercises:
                 is_unilateral = exercise in UNILATERAL_EXERCISES
+                uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press"]
+                
                 for i in range(1, 4):
                     key = f"{exercise}_{i}"
-                    # Only save if reps were logged
+                    band_val = bands[key] if uses_band else "None"
+                    
                     if (is_unilateral and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_unilateral and reps[key] > 0):
-                        base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': 'None', 'Distance_km': 0.0, 'Bodyweight': bw_input, 'RPE': rpes[key]}
+                        base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 'Distance_km': 0.0, 'Bodyweight': bw_input, 'RPE': rpes[key]}
                         if is_unilateral:
                             if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
                             if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
@@ -178,7 +231,6 @@ with tab2:
     if df.empty:
         st.info("Awaiting Data...")
     else:
-        # Filter out rest/cardio for lifting metrics
         lift_df = df[df['Reps_or_Mins'] > 0].copy()
         lift_df = lift_df[~lift_df['Exercise'].str.contains("Rowing|Bike|Rest", na=False)]
         
@@ -186,14 +238,12 @@ with tab2:
         
         with at1:
             st.subheader("Historical Milestones")
-            # Calculate exactly 1 year ago
             one_year_ago = pd.to_datetime(date.today()) - pd.DateOffset(years=1)
-            # Find the closest workout around that time (within a 14 day window)
             past_workouts = lift_df[(lift_df['Date'] >= one_year_ago - pd.Timedelta(days=7)) & (lift_df['Date'] <= one_year_ago + pd.Timedelta(days=7))]
             
             if not past_workouts.empty:
                 st.success(f"**Exactly one year ago:** You were grinding. Look at how far you've come.")
-                st.dataframe(past_workouts[['Date', 'Exercise', 'Weight', 'Reps_or_Mins', 'Epley_1RM']].sort_values(by='Date').head(10))
+                st.dataframe(past_workouts[['Date', 'Exercise', 'Effective_Weight', 'Reps_or_Mins', 'Epley_1RM']].sort_values(by='Date').head(10))
             else:
                 st.info("No data from exactly one year ago found yet. Keep building the database!")
                 
@@ -204,9 +254,9 @@ with tab2:
             c1, c2, c3, c4 = st.columns(4)
             try:
                 c1.metric("1RM (Epley)", f"{pr_df['Epley_1RM'].max():.1f} kg")
-                c2.metric("3RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 3]['Weight'].max():.1f} kg")
-                c3.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Weight'].max():.1f} kg")
-                c4.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Weight'].max():.1f} kg")
+                c2.metric("3RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 3]['Effective_Weight'].max():.1f} kg")
+                c3.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Effective_Weight'].max():.1f} kg")
+                c4.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Effective_Weight'].max():.1f} kg")
             except:
                 st.warning("Not enough data for all rep ranges yet.")
 
@@ -214,27 +264,24 @@ with tab2:
             st.subheader("Progression Velocity & Plateaus")
             vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
             v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date')['Epley_1RM'].max().reset_index()
-            
-            # Rolling Average (Plateau Detection) - Needs at least 3 sessions
             v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3).mean()
             
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='markers', name='Daily e1RM', opacity=0.5))
             fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
-            fig.update_layout(title="Plateau Detector (Smoothing out the noise)")
+            fig.update_layout(title="Plateau Detector (Calculated via True Effective Weight)")
             st.plotly_chart(fig, use_container_width=True)
 
         with at3:
             st.subheader("INOL & Fatigue Curves")
-            st.markdown("*(Intensity Number of Lifts)*")
-            
             inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
             i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
             
-            # Approximate Max e1RM to calculate Intensity %
             global_max = i_df['Epley_1RM'].max()
-            i_df['Intensity_%'] = (i_df['Weight'] / global_max) * 100
-            # INOL Formula
+            # Calculate Intensity using EFFECTIVE weight vs Max Effective 1RM
+            i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
+            # Cap Intensity at 99% so math doesn't break
+            i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
             i_df['INOL'] = i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])
             
             daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
@@ -249,16 +296,15 @@ with tab2:
             st.plotly_chart(fig3, use_container_width=True)
 
         with at4:
-            st.subheader("Muscle Volume Heatmap (Beta)")
-            st.write("This maps your total tonnage directly to the primary/secondary muscles worked over the last 30 days.")
+            st.subheader("Muscle Volume Heatmap")
+            st.write("This maps your **True Systemic Load (Effective Weight × Reps)** to the primary/secondary muscles worked over the last 30 days.")
             
-            # Filter for last 30 days
             recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
             
             muscle_vols = {}
             for index, row in recent_df.iterrows():
                 ex = row['Exercise']
-                vol = row['Volume']
+                vol = row['Volume'] # This is now Effective Volume
                 if ex in MUSCLE_MAP:
                     for muscle, multiplier in MUSCLE_MAP[ex].items():
                         muscle_vols[muscle] = muscle_vols.get(muscle, 0) + (vol * multiplier)
@@ -268,11 +314,11 @@ with tab2:
                 fig4 = px.bar(heat_df, x='Total Load (kg)', y='Muscle', orientation='h', color='Total Load (kg)', color_continuous_scale='Viridis')
                 st.plotly_chart(fig4, use_container_width=True)
             else:
-                st.info("Update the `MUSCLE_MAP` dictionary in your code to see the heatmap!")
+                st.info("Log some data to populate the heatmap!")
 
 # --- TAB 3: DATABASE ---
 with tab3:
-    edited_df = st.data_editor(df.drop(columns=['Volume', 'Epley_1RM', 'Brzycki_1RM'], errors='ignore'), num_rows="dynamic", use_container_width=True)
+    edited_df = st.data_editor(df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", use_container_width=True)
     if st.button("Save Changes"):
         save_data(edited_df)
         st.success("Database Saved!")
