@@ -365,22 +365,37 @@ with tab2:
                 fig3 = px.line(fatigue_df, x='Set_Number', y='Reps_or_Mins', color='Date', markers=True, title="Rep Drop-off Across Sets")
                 st.plotly_chart(fig3, use_container_width=True)
 
-        with at4:
-            st.subheader("Muscle Volume Heatmap")
-            if not lift_df.empty:
-                recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
-                muscle_vols = {}
-                for index, row in recent_df.iterrows():
-                    ex, vol = row['Exercise'], row['Volume']
-                    if ex in MUSCLE_MAP:
-                        for muscle, multiplier in MUSCLE_MAP[ex].items():
-                            muscle_vols[muscle] = muscle_vols.get(muscle, 0) + (vol * multiplier)
-                if muscle_vols:
-                    heat_df = pd.DataFrame(list(muscle_vols.items()), columns=['Muscle', 'Total Load (kg)']).sort_values(by='Total Load (kg)')
-                    fig4 = px.bar(heat_df, x='Total Load (kg)', y='Muscle', orientation='h', color='Total Load (kg)', color_continuous_scale='Viridis')
-                    st.plotly_chart(fig4, use_container_width=True)
-                else:
-                    st.info("Log some data to populate the heatmap!")
+    with at4:
+            st.subheader("Muscle Volume (Hard Sets)")
+            st.write("This tracks **Total Hard Sets** per muscle over the last 30 days. It equalizes heavy compound lifts and light isolation work to reveal true training imbalances.")
+            
+            recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+            
+            muscle_sets = {}
+            for index, row in recent_df.iterrows():
+                ex = row['Exercise']
+                # Every row logged is 1 Set.
+                if ex in MUSCLE_MAP:
+                    for muscle, multiplier in MUSCLE_MAP[ex].items():
+                        # Accumulate sets instead of tonnage
+                        muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
+            
+            if muscle_sets:
+                heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
+                
+                # Inferno color scale: Cold (purple) to Hot (yellow)
+                fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
+                              color='Total Sets', color_continuous_scale='Inferno',
+                              title="Set Distribution (Last 30 Days)")
+                
+                # Add Sports Science Reference Lines 
+                # (Assuming 10 sets/week is MEV, 20 sets/week is MRV. Multiplied by 4 weeks)
+                fig4.add_vline(x=40, line_dash="dash", line_color="#00CC96", annotation_text="MEV (40/mo)", annotation_position="top left")
+                fig4.add_vline(x=80, line_dash="dash", line_color="#EF553B", annotation_text="MRV (80/mo)", annotation_position="top left")
+                
+                st.plotly_chart(fig4, use_container_width=True)
+            else:
+                st.info("Log some data to populate the heatmap!")
 
         with at5:
             st.subheader("🫀 Cardio Engine Analytics")
