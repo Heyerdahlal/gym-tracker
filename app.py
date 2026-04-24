@@ -31,66 +31,89 @@ except Exception as e:
 
 # --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
-    "Day 1: Quad Focus & Verticality": ["Heels-Elevated Landmine Squat", "Neutral Grip Pull-Ups", "Band-Assisted Dips", "Bulgarian Split Squats", "Nordic Curls", "Banded Face Pulls", "Anchored Reverse Crunch", "Glute-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises"],
-    "Day 2: Hinge Focus & Horizontal Load": ["Romanian Deadlift (RDL)", "Barbell Hip Thrusts", "T-Bar Landmine Row", "Dumbbell Bench Press", "Incline Bar Push-Ups", "Meadows Row", "Overhead Tricep Extension", "Banded Crossovers", "Ab-Wheel Rollouts"],
-    "Day 3: Hybrid Hypertrophy & Stability": ["Erector-Focused Roman Chair Extension", "Landmine Press", "Chest-Supported Lateral Raise", "Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"],
-    "Thursday/Friday: Cardio": ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"]
+    "Day 1: Upper A (Horizontal Push/Pull)": [
+        "T-Bar Landmine Row", "Dumbbell Bench Press", "Meadows Row", 
+        "Incline Bar Push-Ups", "Overhead Tricep Extension", "Banded Crossovers", "Chest-Supported Lateral Raise"
+    ],
+    "Day 2: Lower A (Strength & Quads)": [
+        "Heavy Barbell Front Squat", "Heels-Elevated Landmine Squat", "Bulgarian Split Squats", 
+        "Anchored Reverse Crunch", "Wall Tibialis Raises", "Squat Wedge Dumbbell Calf Raises", "Half-Kneeling Pallof Press"
+    ],
+    "Day 3: Upper B (Vertical Push/Pull)": [
+        "Neutral Grip Pull-Ups", "Band-Assisted Dips", "Landmine Press", 
+        "Banded Face Pulls", "Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns", "Chest-Supported Lateral Raise"
+    ],
+    "Day 4: Lower B (Hinge, Power & Anti-Extension)": [
+        "Romanian Deadlift (RDL)", "Heavy Russian Kettlebell Swings", "Barbell Hip Thrusts", 
+        "Ab-Wheel Rollouts", "Nordic Curls", "Erector-Focused Roman Chair Extension", 
+        "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"
+    ],
+    "Day 5: The Cardio Engine": [
+        "4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"
+    ],
+    "🧬 Life Event (Sick/Travel)": [
+        "Rest / Recovery / Frozen Week"
+    ]
 }
 
 REP_TARGETS = {
-    "Heels-Elevated Landmine Squat": "3 Sets × 6–8 Reps",
-    "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
-    "Band-Assisted Dips": "4 Sets × 10–12 Reps",
-    "Bulgarian Split Squats": "3 Sets × 8–10 Reps/leg",
-    "Nordic Curls": "3 Sets × 5–8 Reps",
-    "Banded Face Pulls": "3 Sets × 15–20 Reps",
-    "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
-    "Glute-Focused Roman Chair Extension": "3 Sets × 12–15 Reps",
-    "Squat Wedge Dumbbell Calf Raises": "3 Sets × 10–12 Reps",
-    "Romanian Deadlift (RDL)": "4 Sets × 6–8 Reps",
-    "Barbell Hip Thrusts": "4 Sets × 10–12 Reps",
     "T-Bar Landmine Row": "4 Sets × 8–10 Reps",
     "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
-    "Incline Bar Push-Ups": "3 Sets × 10–15 Reps",
     "Meadows Row": "3 Sets × 10–12 Reps/arm",
+    "Incline Bar Push-Ups": "3 Sets × 10–15 Reps",
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps",
-    "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps",
-    "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps",
-    "Landmine Press": "3 Sets × 8–10 Reps",
     "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
-    "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
-    "Banded Tricep Pushdowns": "4 Sets × 15–20 Reps",
+    "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
+    "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps",
+    "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
+    "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
+    "Wall Tibialis Raises": "3 Sets × 15–20 Reps",
+    "Squat Wedge Dumbbell Calf Raises": "4 Sets × 10–12 Reps",
     "Half-Kneeling Pallof Press": "3 Sets × 10–12 Reps/side",
+    "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
+    "Band-Assisted Dips": "4 Sets × 10–12 Reps",
+    "Landmine Press": "3 Sets × 8–10 Reps",
+    "Banded Face Pulls": "3 Sets × 15–20 Reps",
+    "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
+    "Banded Tricep Pushdowns": "3 Sets × 15–20 Reps",
+    "Romanian Deadlift (RDL)": "4 Sets × 6–8 Reps",
+    "Heavy Russian Kettlebell Swings": "3 Sets × 12–15 Reps",
+    "Barbell Hip Thrusts": "3 Sets × 10–12 Reps",
+    "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps",
+    "Nordic Curls": "3 Sets × 5–8 Reps",
+    "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps",
     "Heavy Suitcase Holds": "3 Sets × 45 Seconds/side",
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
 MUSCLE_MAP = {
-    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
-    "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
-    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Front Delts": 0.5},
-    "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
-    "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
-    "Banded Face Pulls": {"Rear Delts": 1.0, "Upper Back": 0.5},
-    "Anchored Reverse Crunch": {"Abs": 1.0},
-    "Glute-Focused Roman Chair Extension": {"Glutes": 1.0, "Hamstrings": 0.5},
-    "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
-    "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0, "Erectors": 0.5},
-    "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
     "T-Bar Landmine Row": {"Lats": 1.0, "Upper Back": 1.0, "Biceps": 0.5},
     "Dumbbell Bench Press": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
-    "Incline Bar Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
     "Meadows Row": {"Upper Back": 1.0, "Lats": 0.5, "Biceps": 0.5},
+    "Incline Bar Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
     "Overhead Tricep Extension": {"Triceps": 1.0},
     "Banded Crossovers": {"Chest": 1.0, "Front Delts": 0.5},
-    "Ab-Wheel Rollouts": {"Abs": 1.0, "Erectors": 0.5},
-    "Erector-Focused Roman Chair Extension": {"Erectors": 1.0, "Glutes": 0.5},
-    "Landmine Press": {"Front Delts": 1.0, "Chest": 0.5, "Triceps": 0.5},
     "Chest-Supported Lateral Raise": {"Side Delts": 1.0},
+    "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5, "Erectors": 0.5},
+    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
+    "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
+    "Anchored Reverse Crunch": {"Abs": 1.0},
+    "Wall Tibialis Raises": {"Calves": 1.0}, # Grouped with lower leg volume
+    "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
+    "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
+    "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
+    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Front Delts": 0.5},
+    "Landmine Press": {"Front Delts": 1.0, "Chest": 0.5, "Triceps": 0.5},
+    "Banded Face Pulls": {"Rear Delts": 1.0, "Upper Back": 0.5},
     "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
     "Banded Tricep Pushdowns": {"Triceps": 1.0},
-    "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
+    "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0, "Erectors": 0.5},
+    "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5, "Erectors": 0.5},
+    "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
+    "Ab-Wheel Rollouts": {"Abs": 1.0, "Erectors": 0.5},
+    "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
+    "Erector-Focused Roman Chair Extension": {"Erectors": 1.0, "Glutes": 0.5},
     "Heavy Suitcase Holds": {"Obliques": 1.0, "Forearms": 0.5},
     "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5}
 }
@@ -105,7 +128,9 @@ BW_MULTIPLIERS = {
     "Squat Wedge Dumbbell Calf Raises": 1.0, 
     "Bulgarian Split Squats": 0.85, 
     "Erector-Focused Roman Chair Extension": 0.50,
-    "Glute-Focused Roman Chair Extension": 0.50
+    "Glute-Focused Roman Chair Extension": 0.50,
+    "Heavy Barbell Front Squat": 0.85,
+    "Wall Tibialis Raises": 0.30
 }
 
 BAND_SUBTRACTIONS = {
