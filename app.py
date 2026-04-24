@@ -11,6 +11,22 @@ import json
 
 st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="wide")
 
+# --- CSS HACK: KILL THE + / - BUTTONS GLOBALLY ---
+st.markdown("""
+    <style>
+    /* Chrome, Safari, Edge, Opera */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    /* Firefox */
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- GOOGLE SHEETS SETUP ---
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 
@@ -29,7 +45,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 13.4) ---
+# --- PROGRAM & DICTIONARIES (VERSION 13.5) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": [
         "T-Bar Landmine Row", "Dumbbell Bench Press", "Meadows Row", 
@@ -224,20 +240,20 @@ with tab1:
             
             c1, c2 = st.columns(2)
             with c1:
-                duration = st.number_input("Duration (Minutes)", min_value=1.0, value=60.0, step=None)
-                distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=None)
-                avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=None)
+                duration = st.number_input("Duration (Minutes)", min_value=1.0, value=60.0, step=1.0)
+                distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.1)
+                avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
             with c2:
-                avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=130.0, step=None)
-                max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=165.0, step=None)
+                avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=130.0, step=1.0)
+                max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=165.0, step=1.0)
             
             st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
             zc1, zc2, zc3, zc4, zc5 = st.columns(5)
-            z1 = zc1.number_input("Zone 1", min_value=0.0, step=None)
-            z2 = zc2.number_input("Zone 2", min_value=0.0, step=None)
-            z3 = zc3.number_input("Zone 3", min_value=0.0, step=None)
-            z4 = zc4.number_input("Zone 4", min_value=0.0, step=None)
-            z5 = zc5.number_input("Zone 5", min_value=0.0, step=None)
+            z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
+            z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
+            z3 = zc3.number_input("Zone 3", min_value=0.0, step=1.0)
+            z4 = zc4.number_input("Zone 4", min_value=0.0, step=1.0)
+            z5 = zc5.number_input("Zone 5", min_value=0.0, step=1.0)
             
             if st.button("Save Cardio Data", type="primary"):
                 cardio_data = {
@@ -273,24 +289,24 @@ with tab1:
                     
                     if uses_band:
                         c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                        weights[key] = c1.number_input("Kg", min_value=0.0, step=None, key=f"w_{key}")
+                        weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
                         if is_unilateral:
                             sc1, sc2 = c2.columns(2)
-                            reps_l[key] = sc1.number_input("L", min_value=0, step=None, key=f"rl_{key}")
-                            reps_r[key] = sc2.number_input("R", min_value=0, step=None, key=f"rr_{key}")
+                            reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                            reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                         else:
-                            reps[key] = c2.number_input("Reps", min_value=0, step=None, key=f"r_{key}")
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
                         bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}")
                         rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
                     else:
                         c1, c2, c3 = st.columns([1, 1, 2])
-                        weights[key] = c1.number_input("Kg", min_value=0.0, step=None, key=f"w_{key}")
+                        weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
                         if is_unilateral:
                             sc1, sc2 = c2.columns(2)
-                            reps_l[key] = sc1.number_input("L", min_value=0, step=None, key=f"rl_{key}")
-                            reps_r[key] = sc2.number_input("R", min_value=0, step=None, key=f"rr_{key}")
+                            reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                            reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                         else:
-                            reps[key] = c2.number_input("Reps", min_value=0, step=None, key=f"r_{key}")
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
                         rirs[key] = c3.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
                         
                 st.write("---") 
