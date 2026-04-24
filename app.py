@@ -208,7 +208,7 @@ def load_data():
 
 def save_data(df):
     df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
-    df_to_save['Date'] = df_to_save['Date'].dt.strftime('%Y-%m-%d')
+    df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
     worksheet.clear()
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
