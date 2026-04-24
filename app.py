@@ -29,7 +29,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES ---
+# --- PROGRAM & DICTIONARIES (VERSION 13.3) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": [
         "T-Bar Landmine Row", "Dumbbell Bench Press", "Meadows Row", 
@@ -37,7 +37,8 @@ PROGRAM = {
     ],
     "Day 2: Lower A (Strength & Quads)": [
         "Heavy Barbell Front Squat", "Heels-Elevated Landmine Squat", "Bulgarian Split Squats", 
-        "Anchored Reverse Crunch", "Wall Tibialis Raises", "Squat Wedge Dumbbell Calf Raises", "Half-Kneeling Pallof Press"
+        "Hamstring-Focused Roman Chair Extension", "Anchored Reverse Crunch", "Wall Tibialis Raises", 
+        "Squat Wedge Dumbbell Calf Raises", "Half-Kneeling Pallof Press"
     ],
     "Day 3: Upper B (Vertical Push/Pull)": [
         "Neutral Grip Pull-Ups", "Band-Assisted Dips", "Landmine Press", 
@@ -67,6 +68,7 @@ REP_TARGETS = {
     "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
     "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps",
     "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
+    "Hamstring-Focused Roman Chair Extension": "3 Sets × 12–15 Reps",
     "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
     "Wall Tibialis Raises": "3 Sets × 15–20 Reps",
     "Squat Wedge Dumbbell Calf Raises": "4 Sets × 10–12 Reps",
@@ -98,8 +100,9 @@ MUSCLE_MAP = {
     "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5, "Erectors": 0.5},
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
+    "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5},
     "Anchored Reverse Crunch": {"Abs": 1.0},
-    "Wall Tibialis Raises": {"Calves": 1.0}, # Grouped with lower leg volume
+    "Wall Tibialis Raises": {"Calves": 1.0},
     "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
     "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
     "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
@@ -129,6 +132,7 @@ BW_MULTIPLIERS = {
     "Bulgarian Split Squats": 0.85, 
     "Erector-Focused Roman Chair Extension": 0.50,
     "Glute-Focused Roman Chair Extension": 0.50,
+    "Hamstring-Focused Roman Chair Extension": 0.50,
     "Heavy Barbell Front Squat": 0.85,
     "Wall Tibialis Raises": 0.30
 }
@@ -140,7 +144,6 @@ BAND_SUBTRACTIONS = {
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Meadows Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
-ALL_EXERCISES = [ex for day_list in PROGRAM.values() for ex in day_list]
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
 
 def get_target_reps_and_sets(exercise_name):
@@ -201,7 +204,6 @@ st.title("🔬 Sports Science Dashboard")
 
 tab1, tab2, tab3 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database"])
 
-# --- TAB 1: DATA COLLECTION ---
 with tab1:
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -322,7 +324,6 @@ with tab1:
                 st.success(f"Logged {len(new_rows)} rows!")
                 st.rerun()
 
-# --- TAB 2: ANALYTICS ENGINE ---
 with tab2:
     if df.empty:
         st.info("Awaiting Data...")
