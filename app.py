@@ -130,7 +130,6 @@ def get_target_reps_and_sets(exercise_name):
 def load_data():
     records = worksheet.get_all_records()
     
-    # Define the baseline columns including the new Cardio ones
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
     
     if not records:
@@ -138,7 +137,6 @@ def load_data():
     
     df = pd.DataFrame(records)
     
-    # Ensure all columns exist and are numeric where appropriate
     numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
     for col in numeric_cols:
         if col not in df.columns: df[col] = 0.0
@@ -148,7 +146,6 @@ def load_data():
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     df['Date'] = pd.to_datetime(df['Date'])
     
-    # Hooke's Law & Effective Weight Calculation
     def calc_effective_weight(row):
         ex = row['Exercise']
         bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
@@ -195,7 +192,7 @@ with tab1:
         is_cardio = "Cardio" in workout_day
         
         if is_cardio:
-            exercise = selected_exercises[0] # Usually only log one cardio session at a time
+            exercise = selected_exercises[0]
             st.markdown(f"### {exercise} (Garmin Data Integration)")
             
             c1, c2 = st.columns(2)
@@ -305,13 +302,11 @@ with tab2:
     if df.empty:
         st.info("Awaiting Data...")
     else:
-        # Separate datasets for Lifting vs Cardio
         lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
-        at1, at2, at3, at4, at5 = st.tabs(["👻 The Ghost", "📈 e1RM Velocity", "🔥 INOL & Volume", "🦵 Muscle Heatmap", "🫀 Cardio Engine"])
+        at1, at2, at3, at4, at5 = st.tabs(["👻 The Ghost", "📈 e1RM Velocity", "🔥 INOL & Volume", "🦵 Muscle Sets", "🫀 Cardio Engine"])
         
-        # ... [Tabs at1 to at4 remain identical to previous versions] ...
         with at1:
             st.subheader("Historical Milestones")
             if not lift_df.empty:
@@ -365,37 +360,30 @@ with tab2:
                 fig3 = px.line(fatigue_df, x='Set_Number', y='Reps_or_Mins', color='Date', markers=True, title="Rep Drop-off Across Sets")
                 st.plotly_chart(fig3, use_container_width=True)
 
-    with at4:
+        with at4:
             st.subheader("Muscle Volume (Hard Sets)")
             st.write("This tracks **Total Hard Sets** per muscle over the last 30 days. It equalizes heavy compound lifts and light isolation work to reveal true training imbalances.")
             
-            recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
-            
-            muscle_sets = {}
-            for index, row in recent_df.iterrows():
-                ex = row['Exercise']
-                # Every row logged is 1 Set.
-                if ex in MUSCLE_MAP:
-                    for muscle, multiplier in MUSCLE_MAP[ex].items():
-                        # Accumulate sets instead of tonnage
-                        muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
-            
-            if muscle_sets:
-                heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
+            if not lift_df.empty:
+                recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                muscle_sets = {}
+                for index, row in recent_df.iterrows():
+                    ex = row['Exercise']
+                    if ex in MUSCLE_MAP:
+                        for muscle, multiplier in MUSCLE_MAP[ex].items():
+                            muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
                 
-                # Inferno color scale: Cold (purple) to Hot (yellow)
-                fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
-                              color='Total Sets', color_continuous_scale='Inferno',
-                              title="Set Distribution (Last 30 Days)")
-                
-                # Add Sports Science Reference Lines 
-                # (Assuming 10 sets/week is MEV, 20 sets/week is MRV. Multiplied by 4 weeks)
-                fig4.add_vline(x=40, line_dash="dash", line_color="#00CC96", annotation_text="MEV (40/mo)", annotation_position="top left")
-                fig4.add_vline(x=80, line_dash="dash", line_color="#EF553B", annotation_text="MRV (80/mo)", annotation_position="top left")
-                
-                st.plotly_chart(fig4, use_container_width=True)
-            else:
-                st.info("Log some data to populate the heatmap!")
+                if muscle_sets:
+                    heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
+                    fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
+                                  color='Total Sets', color_continuous_scale='Inferno',
+                                  title="Set Distribution (Last 30 Days)")
+                    
+                    fig4.add_vline(x=40, line_dash="dash", line_color="#00CC96", annotation_text="MEV (40/mo)", annotation_position="top left")
+                    fig4.add_vline(x=80, line_dash="dash", line_color="#EF553B", annotation_text="MRV (80/mo)", annotation_position="top left")
+                    st.plotly_chart(fig4, use_container_width=True)
+                else:
+                    st.info("Log some data to populate the heatmap!")
 
         with at5:
             st.subheader("🫀 Cardio Engine Analytics")
@@ -405,19 +393,15 @@ with tab2:
                 c_ex = st.selectbox("Select Cardio Type", cardio_df['Exercise'].unique())
                 cx_df = cardio_df[cardio_df['Exercise'] == c_ex].copy()
                 
-                # Biomechanical Split/Speed Calcs
                 if "Rowing" in c_ex:
-                    # Pace per 500m (in seconds)
                     cx_df['Pace_Sec'] = (cx_df['Reps_or_Mins'] * 60) / (cx_df['Distance_km'] * 1000 / 500)
                     cx_df['Metric_Value'] = cx_df['Pace_Sec']
                     metric_title = "Avg Split Pace (Seconds per 500m) 📉 Lower is Better"
                 else:
-                    # Speed in km/h
                     cx_df['Speed_kmh'] = cx_df['Distance_km'] / (cx_df['Reps_or_Mins'] / 60)
                     cx_df['Metric_Value'] = cx_df['Speed_kmh']
                     metric_title = "Avg Speed (km/h) 📈 Higher is Better"
                 
-                # Aerobic Efficiency Chart
                 st.markdown("### Aerobic Efficiency")
                 st.write("*Compare your external mechanical output (Speed/Pace) against your internal physiological cost (Heart Rate).*")
                 
@@ -432,12 +416,10 @@ with tab2:
                 )
                 st.plotly_chart(fig_aerobic, use_container_width=True)
                 
-                # Zone Distribution
                 st.markdown("### Heart Rate Zone Distribution")
                 zone_df = cx_df[['Date', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']].melt(id_vars='Date', var_name='Zone', value_name='Minutes')
                 zone_df['Zone'] = zone_df['Zone'].str.replace('_Mins', '')
                 
-                # Custom colors for HR Zones (Blue to Red)
                 zone_colors = {'Z1': '#4287f5', 'Z2': '#42f56f', 'Z3': '#f5d742', 'Z4': '#f58442', 'Z5': '#f54242'}
                 
                 fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
