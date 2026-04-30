@@ -45,11 +45,12 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 13.5) ---
+# --- PROGRAM & DICTIONARIES (VERSION 14.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": [
-        "T-Bar Landmine Row", "Dumbbell Bench Press", "Meadows Row", 
-        "Incline Bar Push-Ups", "Overhead Tricep Extension", "Banded Crossovers", "Chest-Supported Lateral Raise"
+        "T-Bar Landmine Row", "Dumbbell Bench Press", "Single-Arm Bench-Supported Dumbbell Row", 
+        "Push-Ups", "Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers", 
+        "Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"
     ],
     "Day 2: Lower A (Strength & Quads)": [
         "Heavy Barbell Front Squat", "Heels-Elevated Landmine Squat", "Bulgarian Split Squats", 
@@ -76,11 +77,13 @@ PROGRAM = {
 REP_TARGETS = {
     "T-Bar Landmine Row": "4 Sets × 8–10 Reps",
     "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
-    "Meadows Row": "3 Sets × 10–12 Reps/arm",
-    "Incline Bar Push-Ups": "3 Sets × 10–15 Reps",
+    "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm",
+    "Push-Ups": "3 Sets × 10–15 Reps",
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps",
+    "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps",
     "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
+    "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps",
     "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
     "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps",
     "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
@@ -108,11 +111,13 @@ REP_TARGETS = {
 MUSCLE_MAP = {
     "T-Bar Landmine Row": {"Lats": 1.0, "Upper Back": 1.0, "Biceps": 0.5},
     "Dumbbell Bench Press": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
-    "Meadows Row": {"Upper Back": 1.0, "Lats": 0.5, "Biceps": 0.5},
-    "Incline Bar Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
+    "Single-Arm Bench-Supported Dumbbell Row": {"Lats": 1.0, "Upper Back": 0.5, "Biceps": 0.5},
+    "Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
     "Overhead Tricep Extension": {"Triceps": 1.0},
+    "Dumbbell Hammer Curls": {"Biceps": 1.0, "Forearms": 0.5},
     "Banded Crossovers": {"Chest": 1.0, "Front Delts": 0.5},
     "Chest-Supported Lateral Raise": {"Side Delts": 1.0},
+    "Chest-Supported Rear Delt Flye": {"Rear Delts": 1.0, "Upper Back": 0.5},
     "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5, "Erectors": 0.5},
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
@@ -140,7 +145,7 @@ MUSCLE_MAP = {
 BW_MULTIPLIERS = {
     "Neutral Grip Pull-Ups": 0.95, 
     "Band-Assisted Dips": 0.95,
-    "Incline Bar Push-Ups": 0.50, 
+    "Push-Ups": 0.65, 
     "Nordic Curls": 0.60, 
     "Anchored Reverse Crunch": 0.40, 
     "Ab-Wheel Rollouts": 0.50,
@@ -159,7 +164,7 @@ BAND_SUBTRACTIONS = {
     "Green (68.0kg)": 68.0, "Blue (88.5kg)": 88.5, "Orange (113.4kg)": 113.4
 }
 
-UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Meadows Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
 
 def get_target_reps_and_sets(exercise_name):
