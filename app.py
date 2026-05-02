@@ -195,20 +195,34 @@ def load_data():
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     df['Date'] = pd.to_datetime(df['Date'])
     
+    # --- THE NEW BAND MATH LOGIC ---
+    ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
+    RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+    
     def calc_effective_weight(row):
         ex = row['Exercise']
         bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
         base_body_load = row['Bodyweight'] * bw_mod
         
-        peak_band_assistance = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
-        avg_band_assistance = peak_band_assistance * 0.5
+        peak_band_force = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
+        avg_band_force = peak_band_force * 0.5
         
-        eff_wt = row['Weight'] + base_body_load - avg_band_assistance
+        if ex in ASSISTED_EXERCISES:
+            # The band helps you, so we subtract its force
+            eff_wt = row['Weight'] + base_body_load - avg_band_force
+        elif ex in RESISTED_EXERCISES:
+            # The band fights you, so we add its force to your total weight
+            eff_wt = row['Weight'] + base_body_load + avg_band_force
+        else:
+            # Standard free weight / bodyweight exercise with no bands
+            eff_wt = row['Weight'] + base_body_load
+            
         return max(eff_wt, 0.0) 
         
     df['Effective_Weight'] = df.apply(calc_effective_weight, axis=1)
+    # --------------------------------
     
-    # FIX: Separate lifting math from cardio math
+    # Separate lifting math from cardio math
     is_lift = ~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
     df['Volume'] = 0.0
     df['Epley_1RM'] = 0.0
