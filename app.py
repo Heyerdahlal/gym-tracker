@@ -307,10 +307,32 @@ with tab1:
                     st.success("High-Fidelity Cardio Data Saved!")
                     st.rerun()
 
-        else:
+      else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
+            
+            # --- NEW: AUTOMATED PROGRESSIVE OVERLOAD TARGETS ---
+            st.markdown("#### 📈 Target to Beat (Last Session)")
+            for exercise in selected_exercises:
+                ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)]
+                if not ex_df.empty:
+                    last_date = ex_df['Date'].max()
+                    last_session = ex_df[ex_df['Date'] == last_date]
+                    
+                    # Find the hardest set from that last session based on Epley 1RM
+                    best_set = last_session.loc[last_session['Epley_1RM'].idxmax()]
+                    target_weight = best_set['Weight']
+                    target_reps = int(best_set['Reps_or_Mins'])
+                    target_band = best_set['Band']
+                    
+                    band_str = f" [{target_band} Band]" if target_band != "None" else ""
+                    st.success(f"**{exercise}:** Last done {last_date.strftime('%b %d')} ➔ **{target_weight}kg × {target_reps} reps**{band_str}")
+                else:
+                    st.info(f"**{exercise}:** No history. Establish your baseline today!")
+            
+            st.write("---")
+            # ---------------------------------------------------
             
             # FIX: Wrapped in st.form to prevent state ghosts
             with st.form("lifting_form", clear_on_submit=True):
