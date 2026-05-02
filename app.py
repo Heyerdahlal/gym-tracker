@@ -307,7 +307,7 @@ with tab1:
                     st.success("High-Fidelity Cardio Data Saved!")
                     st.rerun()
 
-         else:
+          else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
