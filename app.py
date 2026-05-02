@@ -436,7 +436,7 @@ with tab2:
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
 
-with at3:
+        with at3:
             st.subheader("INOL & Fatigue Curves")
             if not lift_df.empty:
                 inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
