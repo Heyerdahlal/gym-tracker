@@ -325,19 +325,7 @@ with tab1:
                 ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 
                 if not ex_df.empty:
-                    # --- NEW: IGNORE DELOAD WEEKS FOR TARGET SETTING ---
-                    # 1. Find your historical absolute max weight for this exercise
-                    max_all_time_weight = ex_df['Weight'].max()
-                    
-                    # 2. Filter out any sessions where you lifted less than 85% of your max (Deloads/Warmups)
-                    working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
-                    
-                    # 3. Use the working sessions to find the last date, fallback to normal if empty
-                    if not working_sessions.empty:
-                        dates = working_sessions['Date'].unique()
-                    else:
-                        dates = ex_df['Date'].unique()
-                        
+                    dates = ex_df['Date'].unique()
                     last_date = dates[-1]
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
