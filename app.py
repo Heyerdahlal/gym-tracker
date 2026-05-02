@@ -259,7 +259,6 @@ with tab1:
         date_input = st.date_input("Date", date.today())
         bw_input = st.number_input("Daily Bodyweight (kg)", value=80.0, step=0.5)
     with col2:
-        # --- NEW: BLOCK DROPDOWNS ---
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
         workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
         selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=PROGRAM[workout_day][workout_block])
@@ -311,15 +310,17 @@ with tab1:
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
             
-            # --- THE FIRST-SET PROGRESSION ENGINE ---
-            st.markdown("#### 🧠 Today's Mission (First-Set Rule)")
+            # --- THE HYPER-INTELLIGENT PROGRESSION ENGINE ---
+            st.markdown("#### 🧠 Today's Mission Control")
             for exercise in selected_exercises:
-                ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)]
+                ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
+                
                 if not ex_df.empty:
-                    last_date = ex_df['Date'].max()
+                    dates = ex_df['Date'].unique()
+                    last_date = dates[-1]
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
-                    # Isolate Set 1 from the last session
+                    # 1. Grab Set 1 for the Progression Engine
                     set_1 = last_session[last_session['Set_Number'] == 1]
                     
                     if not set_1.empty:
@@ -328,14 +329,38 @@ with tab1:
                         last_reps = int(s1_data['Reps_or_Mins'])
                         last_band = s1_data['Band']
                         
-                        _, top_rep = get_target_reps_and_sets(exercise)
+                        target_sets, top_rep = get_target_reps_and_sets(exercise)
                         band_str = f" [{last_band} Band]" if last_band != "None" else ""
                         
-                        # Apply your custom rule: Did they hit the top of the rep range?
+                        # --- DELOAD OVERRIDE ---
+                        if "Sick/Travel" in workout_day or "Deload" in workout_day: 
+                            deload_weight = max(0, last_weight * 0.8) # 20% weight drop
+                            st.info(f"🧘 **DELOAD PRESCRIBED:** **{exercise}** ➔ Do {max(1, target_sets - 1)} Sets @ {deload_weight:.1f}kg for {last_reps} reps.")
+                            continue # Skip the rest of the checks for this exercise
+                        
+                        # --- PROGRESSION DIRECTIVE ---
                         if last_reps >= top_rep:
-                            st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** Set 1 hit {last_reps} reps @ {last_weight}kg{band_str}. You own this weight.")
+                            st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. You own this weight.")
                         else:
-                            st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** Set 1 hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
+                            st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
+                        
+                        # --- BOTTOM RANGE FATIGUE CHECK ---
+                        min_reps_last_session = last_session['Reps_or_Mins'].min()
+                        if min_reps_last_session < 5:
+                            st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but **drop the weight by 10-15% for Sets 2 & 3** to stay in the hypertrophy zone.")
+                            
+                        # --- TRUE PLATEAU DETECTOR ---
+                        if len(dates) >= 3:
+                            last_3_dates = dates[-3:]
+                            recent_history = ex_df[(ex_df['Date'].isin(last_3_dates)) & (ex_df['Set_Number'] == 1)]
+                            
+                            if len(recent_history) == 3:
+                                weights_used = recent_history['Weight'].nunique()
+                                reps_hit = recent_history['Reps_or_Mins'].nunique()
+                                
+                                if weights_used == 1 and reps_hit == 1:
+                                    st.error(f"🛑 **TRUE PLATEAU DETECTED:** You have been stuck at {last_weight}kg for {last_reps} reps for 3 straight sessions. It is time to swap this exercise or take a Deload.")
+
                     else:
                         st.info(f"**{exercise}:** No Set 1 data found for last session.")
                 else:
