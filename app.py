@@ -195,7 +195,6 @@ def load_data():
     df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
     df['Date'] = pd.to_datetime(df['Date'])
     
-    # --- THE NEW BAND MATH LOGIC ---
     ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
     RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
     
@@ -208,21 +207,16 @@ def load_data():
         avg_band_force = peak_band_force * 0.5
         
         if ex in ASSISTED_EXERCISES:
-            # The band helps you, so we subtract its force
             eff_wt = row['Weight'] + base_body_load - avg_band_force
         elif ex in RESISTED_EXERCISES:
-            # The band fights you, so we add its force to your total weight
             eff_wt = row['Weight'] + base_body_load + avg_band_force
         else:
-            # Standard free weight / bodyweight exercise with no bands
             eff_wt = row['Weight'] + base_body_load
             
         return max(eff_wt, 0.0) 
         
     df['Effective_Weight'] = df.apply(calc_effective_weight, axis=1)
-    # --------------------------------
     
-    # Separate lifting math from cardio math
     is_lift = ~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
     df['Volume'] = 0.0
     df['Epley_1RM'] = 0.0
@@ -232,7 +226,6 @@ def load_data():
     
     return df
 
-# FIX: New function for appending rows efficiently
 def append_new_data(new_rows_df):
     df_to_append = new_rows_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
@@ -240,7 +233,6 @@ def append_new_data(new_rows_df):
     worksheet.append_rows(df_to_append.values.tolist())
     st.cache_data.clear()
 
-# Keeps original functionality for Tab 3 bulk edits
 def overwrite_database(df):
     df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
@@ -273,7 +265,6 @@ with tab1:
             exercise = selected_exercises[0]
             st.markdown(f"### {exercise} (Garmin Data Integration)")
             
-            # FIX: Wrapped in st.form to prevent state ghosts
             with st.form("cardio_form", clear_on_submit=True):
                 c1, c2 = st.columns(2)
                 with c1:
@@ -307,12 +298,11 @@ with tab1:
                     st.success("High-Fidelity Cardio Data Saved!")
                     st.rerun()
 
-          else:
+        else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
             
-            # --- NEW: AUTOMATED PROGRESSIVE OVERLOAD TARGETS ---
             st.markdown("#### 📈 Target to Beat (Last Session)")
             for exercise in selected_exercises:
                 ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)]
@@ -320,7 +310,6 @@ with tab1:
                     last_date = ex_df['Date'].max()
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
-                    # Find the hardest set from that last session based on Epley 1RM
                     best_set = last_session.loc[last_session['Epley_1RM'].idxmax()]
                     target_weight = best_set['Weight']
                     target_reps = int(best_set['Reps_or_Mins'])
@@ -332,9 +321,7 @@ with tab1:
                     st.info(f"**{exercise}:** No history. Establish your baseline today!")
             
             st.write("---")
-            # ---------------------------------------------------
             
-            # FIX: Wrapped in st.form to prevent state ghosts
             with st.form("lifting_form", clear_on_submit=True):
                 weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
                 
@@ -432,7 +419,6 @@ with tab2:
                 pr_ex = st.selectbox("Select Exercise for PRs", lift_df['Exercise'].unique())
                 pr_df = lift_df[lift_df['Exercise'] == pr_ex]
                 
-                # FIX: Check if dataframe is empty before calculating max to prevent crash
                 if not pr_df.empty:
                     c1, c2, c3, c4 = st.columns(4)
                     c1.metric("1RM (Epley)", f"{pr_df['Epley_1RM'].max():.1f} kg")
@@ -448,11 +434,10 @@ with tab2:
                 vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
                 v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date')['Epley_1RM'].max().reset_index()
                 
-                # FIX: Check if dataframe is empty before plotting
                 if not v_df.empty:
-                    v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3).mean()
+                    v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3, min_periods=1).mean()
                     fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='markers', name='Daily e1RM', opacity=0.5))
+                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM', opacity=0.5, line=dict(dash='dot', width=1)))
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
                     st.plotly_chart(fig, use_container_width=True)
                 else:
@@ -464,7 +449,6 @@ with tab2:
                 inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
                 i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
                 
-                # --- NEW: SYSTEMIC FATIGUE MODIFIERS ---
                 SYSTEMIC_MODIFIERS = {
                     "Romanian Deadlift (RDL)": 1.0, "Heavy Barbell Front Squat": 1.0,
                     "Neutral Grip Pull-Ups": 0.8, "Bulgarian Split Squats": 0.8, "Heavy Russian Kettlebell Swings": 0.8, "Barbell Hip Thrusts": 0.8, "Heels-Elevated Landmine Squat": 0.8,
@@ -474,26 +458,16 @@ with tab2:
                     "Chest-Supported Lateral Raise": 0.3, "Chest-Supported Rear Delt Flye": 0.3, "Overhead Tricep Extension": 0.3, "Dumbbell Hammer Curls": 0.3, "Banded Crossovers": 0.3, "Incline Supinated Dumbbell Curls": 0.3, "Banded Tricep Pushdowns": 0.3, "Banded Face Pulls": 0.3, "Wall Tibialis Raises": 0.3, "Squat Wedge Dumbbell Calf Raises": 0.3, "Half-Kneeling Pallof Press": 0.3, "Anchored Reverse Crunch": 0.3
                 }
                 
-                # FIX: Empty check
                 if not i_df.empty:
                     global_max = i_df['Epley_1RM'].max()
                     i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
                     i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
                     
-                    # --- NEW: APPLYING THE MODIFIER ---
-                    fatigue_factor = SYSTEMIC_MODIFIERS.get(inol_ex, 0.5) # Defaults to a mid-tier 0.5 if an exercise isn't in the list
+                    fatigue_factor = SYSTEMIC_MODIFIERS.get(inol_ex, 0.5)
                     i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])) * fatigue_factor
                     
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
-                    fig2 = px.bar(
-                    daily_inol, 
-                    x='Date', 
-                    y='INOL', 
-                    title="Daily Session INOL Score (Adjusted for Systemic Load)", 
-                    color='INOL', 
-                    color_continuous_scale='RdYlGn_r',
-                    range_color=[0, 2.0] # This forces 0.48 to stay green!
-                    )
+                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r', range_color=[0, 2.0])
                     fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
                     st.plotly_chart(fig2, use_container_width=True)
                     
@@ -574,15 +548,12 @@ with tab3:
     st.subheader("⚙️ Database Editor")
     st.write("Loading thousands of rows can cause lag. Select how much recent history you need to edit.")
     
-    # 1. Choose how far back to look
     days_to_edit = st.slider("Days of history to load", min_value=7, max_value=365, value=30, step=7)
     cutoff_date = pd.to_datetime(date.today()) - pd.Timedelta(days=days_to_edit)
     
-    # 2. Split the database into "Hidden Historical" and "Visible Recent"
     historical_df = df[df['Date'] < cutoff_date].copy()
     recent_df = df[df['Date'] >= cutoff_date].copy()
     
-    # 3. Only put the recent data in the interactive editor
     edited_recent = st.data_editor(
         recent_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), 
         num_rows="dynamic", 
@@ -590,10 +561,7 @@ with tab3:
     )
     
     if st.button("Save Changes", type="primary"):
-        # 4. Stitch the hidden history and the edited recent data back together
         final_df = pd.concat([historical_df, edited_recent], ignore_index=True)
-        
-        # 5. Save the combined, complete database
         overwrite_database(final_df)
         st.success("Database Saved safely!")
         st.rerun()
