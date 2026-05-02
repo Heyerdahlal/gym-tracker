@@ -463,7 +463,15 @@ with tab2:
                     i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])) * fatigue_factor
                     
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
-                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r')
+                    fig2 = px.bar(
+                    daily_inol, 
+                    x='Date', 
+                    y='INOL', 
+                    title="Daily Session INOL Score (Adjusted for Systemic Load)", 
+                    color='INOL', 
+                    color_continuous_scale='RdYlGn_r',
+                    range_color=[0, 2.0] # This forces 0.48 to stay green!
+                    )
                     fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
                     st.plotly_chart(fig2, use_container_width=True)
                     
