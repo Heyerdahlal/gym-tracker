@@ -8,6 +8,7 @@ from google.oauth2.service_account import Credentials
 import plotly.express as px
 import plotly.graph_objects as go
 import json
+from garminconnect import Garmin
 
 st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="wide")
 
@@ -45,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 16.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 19.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -115,36 +116,36 @@ REP_TARGETS = {
 }
 
 MUSCLE_MAP = {
-    "T-Bar Landmine Row": {"Lats": 1.0, "Upper Back": 1.0, "Biceps": 0.5},
-    "Dumbbell Bench Press": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
-    "Single-Arm Bench-Supported Dumbbell Row": {"Lats": 1.0, "Upper Back": 0.5, "Biceps": 0.5},
-    "Push-Ups": {"Chest": 1.0, "Front Delts": 0.5, "Triceps": 0.5},
+    "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5},
+    "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
+    "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5},
+    "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
     "Overhead Tricep Extension": {"Triceps": 1.0},
-    "Dumbbell Hammer Curls": {"Biceps": 1.0, "Forearms": 0.5},
-    "Banded Crossovers": {"Chest": 1.0, "Front Delts": 0.5},
-    "Chest-Supported Lateral Raise": {"Side Delts": 1.0},
-    "Chest-Supported Rear Delt Flye": {"Rear Delts": 1.0, "Upper Back": 0.5},
-    "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5, "Erectors": 0.5},
+    "Dumbbell Hammer Curls": {"Biceps": 1.0},
+    "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5},
+    "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
+    "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5},
+    "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
     "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5},
     "Anchored Reverse Crunch": {"Abs": 1.0},
     "Wall Tibialis Raises": {"Calves": 1.0},
     "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
-    "Half-Kneeling Pallof Press": {"Obliques": 1.0, "Abs": 1.0},
-    "Neutral Grip Pull-Ups": {"Lats": 1.0, "Biceps": 0.5, "Upper Back": 0.5},
-    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Front Delts": 0.5},
-    "Landmine Press": {"Front Delts": 1.0, "Chest": 0.5, "Triceps": 0.5},
-    "Banded Face Pulls": {"Rear Delts": 1.0, "Upper Back": 0.5},
+    "Half-Kneeling Pallof Press": {"Abs": 1.0},
+    "Neutral Grip Pull-Ups": {"Back": 1.0, "Biceps": 0.5},
+    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Shoulders": 0.5},
+    "Landmine Press": {"Shoulders": 1.0, "Chest": 0.5, "Triceps": 0.5},
+    "Banded Face Pulls": {"Shoulders": 1.0, "Back": 0.5},
     "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
     "Banded Tricep Pushdowns": {"Triceps": 1.0},
-    "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0, "Erectors": 0.5},
-    "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5, "Erectors": 0.5},
+    "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0},
+    "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5},
     "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
-    "Ab-Wheel Rollouts": {"Abs": 1.0, "Erectors": 0.5},
+    "Ab-Wheel Rollouts": {"Abs": 1.0},
     "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
-    "Erector-Focused Roman Chair Extension": {"Erectors": 1.0, "Glutes": 0.5},
-    "Heavy Suitcase Holds": {"Obliques": 1.0, "Forearms": 0.5},
+    "Erector-Focused Roman Chair Extension": {"Back": 1.0, "Glutes": 0.5},
+    "Heavy Suitcase Holds": {"Abs": 1.0},
     "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5}
 }
 
@@ -247,6 +248,8 @@ def overwrite_database(df):
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
+if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
+
 df = load_data()
 
 st.title("🔬 Sports Science Dashboard")
@@ -258,7 +261,6 @@ with tab1:
     with col1:
         date_input = st.date_input("Date", date.today())
         bw_input = st.number_input("Daily Bodyweight (kg)", value=80.0, step=0.5)
-        # --- NEW: DELOAD TOGGLE ---
         is_deload = st.toggle("🧘 Activate Deload Week")
         
     with col2:
@@ -275,17 +277,41 @@ with tab1:
             exercise = selected_exercises[0]
             st.markdown(f"### {exercise} (Garmin Data Integration)")
             
-            with st.form("cardio_form", clear_on_submit=True):
+            if st.button("🔄 Auto-Sync Latest Garmin Activity"):
+                with st.spinner("Connecting to Garmin API..."):
+                    try:
+                        g_email = st.secrets.get("garmin_email")
+                        g_pass = st.secrets.get("garmin_password")
+                        if not g_email or not g_pass:
+                            st.error("Missing Garmin credentials in Streamlit secrets!")
+                        else:
+                            garmin = Garmin(g_email, g_pass)
+                            garmin.login()
+                            activities = garmin.get_activities(0, 1) 
+                            if activities:
+                                act = activities[0]
+                                st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
+                                st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
+                                st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
+                                st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
+                                st.success(f"Synced! Grabbed activity: {act.get('activityName', 'Unknown')}. Review data below.")
+                            else:
+                                st.warning("No activities found on your Garmin account.")
+                    except Exception as e:
+                        st.error(f"Garmin Sync Failed: {e}")
+            
+            with st.form("cardio_form", clear_on_submit=False):
                 c1, c2 = st.columns(2)
                 with c1:
-                    duration = st.number_input("Duration (Minutes)", min_value=1.0, value=60.0, step=1.0)
-                    distance = st.number_input("Distance (km)", min_value=0.0, value=10.0, step=0.1)
+                    duration = st.number_input("Duration (Minutes)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
+                    distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
                     avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
                 with c2:
-                    avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=130.0, step=1.0)
-                    max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=165.0, step=1.0)
+                    avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
+                    max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
                 
                 st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
+                st.caption("Note: Zone breakdown must be entered manually from the Garmin app chart.")
                 zc1, zc2, zc3, zc4, zc5 = st.columns(5)
                 z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
                 z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
@@ -318,14 +344,20 @@ with tab1:
             
             st.markdown("#### 🧠 Today's Mission Control")
             
-            # --- NEW: AUTO-FILL DICTIONARY ---
             default_vals = {}
             
             for exercise in selected_exercises:
                 ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 
                 if not ex_df.empty:
-                    dates = ex_df['Date'].unique()
+                    max_all_time_weight = ex_df['Weight'].max()
+                    working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
+                    
+                    if not working_sessions.empty:
+                        dates = working_sessions['Date'].unique()
+                    else:
+                        dates = ex_df['Date'].unique()
+                        
                     last_date = dates[-1]
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
@@ -341,7 +373,6 @@ with tab1:
                         band_str = f" [{last_band} Band]" if last_band != "None" else ""
                         
                         if is_deload:
-                            # Mathematical 20% drop, snapped to nearest 2.5kg plate
                             calc_w = max(0.0, last_weight * 0.8)
                             calc_w = round(calc_w / 2.5) * 2.5 
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
@@ -349,7 +380,6 @@ with tab1:
                             st.info(f"🧘 **DELOAD PRESCRIBED:** **{exercise}** ➔ Auto-dropped weight to {calc_w}kg.")
                             continue
                             
-                        # If normal day, store the exact last weight for auto-fill
                         default_vals[exercise] = {'w': last_weight, 'r': last_reps, 'b': last_band}
                         
                         if last_reps >= top_rep:
@@ -394,7 +424,6 @@ with tab1:
                         _, top_rep = get_target_reps_and_sets(exercise)
                         st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
                         
-                        # Grab auto-fill values
                         def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
                         def_b = default_vals.get(exercise, {}).get('b', "None")
                         band_list = list(BAND_SUBTRACTIONS.keys())
@@ -467,10 +496,37 @@ with tab2:
         lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
-        at1, at2, at3, at4, at5 = st.tabs(["👻 The Ghost", "📈 e1RM Velocity", "🔥 INOL & Volume", "🦵 Muscle Sets", "🫀 Cardio Engine"])
+        at1, at2, at3, at4, at5 = st.tabs(["👻 Milestones & Tonnage", "📈 Relative Strength", "🔥 INOL & Fatigue", "🦵 7-Day Muscle Radar", "🫀 Cardio Engine"])
         
         with at1:
-            st.subheader("Historical Milestones")
+            st.subheader("Historical Milestones & Gamification")
+            
+            # --- NEW: TONNAGE GAME ---
+            if not lift_df.empty:
+                recent_30_lift = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                monthly_tonnage = recent_30_lift['Volume'].sum()
+                
+                if monthly_tonnage > 0:
+                    st.markdown("### 🎮 The Monthly Tonnage Game")
+                    
+                    if monthly_tonnage < 2500:
+                        emoji, item = "🦈", "A Great White Shark"
+                    elif monthly_tonnage < 5000:
+                        emoji, item = "🐘", "An African Elephant"
+                    elif monthly_tonnage < 10000:
+                        emoji, item = "🛻", "A Monster Truck"
+                    elif monthly_tonnage < 40000:
+                        emoji, item = "🚌", "A School Bus"
+                    elif monthly_tonnage < 100000:
+                        emoji, item = "✈️", "A Boeing 737"
+                    else:
+                        emoji, item = "🚀", "A Space Shuttle"
+                        
+                    st.info(f"**Total Volume (Last 30 Days):** {monthly_tonnage:,.1f} kg")
+                    st.success(f"**{emoji} Achievement Unlocked:** You have officially lifted the equivalent weight of **{item}** this month.")
+                
+            st.write("---")
+            
             if not lift_df.empty:
                 one_year_ago = pd.to_datetime(date.today()) - pd.DateOffset(years=1)
                 past_workouts = lift_df[(lift_df['Date'] >= one_year_ago - pd.Timedelta(days=7)) & (lift_df['Date'] <= one_year_ago + pd.Timedelta(days=7))]
@@ -494,17 +550,36 @@ with tab2:
                     st.warning("Not enough data for this exercise yet.")
 
         with at2:
-            st.subheader("Progression Velocity & Plateaus")
+            st.subheader("Progression Velocity & Relative Strength")
+            # --- NEW: RELATIVE STRENGTH TRACKER ---
+            st.write("Tracking absolute max weight is good, but tracking your **Strength-to-Weight Ratio** proves you are building pure lean tissue, not just gaining fat/water weight.")
+            
             if not lift_df.empty:
                 vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
-                v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date')['Epley_1RM'].max().reset_index()
+                
+                # Group by Date, getting max 1RM and average bodyweight for that day
+                v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date').agg(
+                    {'Epley_1RM': 'max', 'Bodyweight': 'mean'}
+                ).reset_index()
                 
                 if not v_df.empty:
                     v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3, min_periods=1).mean()
+                    # Calculate Relative Strength
+                    v_df['Relative_Strength'] = v_df['Epley_1RM'] / v_df['Bodyweight'].replace(0, 1) # Prevent division by zero
+                    
+                    # Absolute Strength Chart
                     fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM', opacity=0.5, line=dict(dash='dot', width=1)))
+                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM (kg)', opacity=0.5, line=dict(dash='dot', width=1)))
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
+                    fig.update_layout(title=f"Absolute Strength (e1RM) - {vel_ex}")
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Relative Strength Chart
+                    fig_rel = go.Figure()
+                    fig_rel.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', name='Strength-to-Weight Ratio', line=dict(color='#00CC96', width=3)))
+                    fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)", yaxis_title="x Bodyweight")
+                    st.plotly_chart(fig_rel, use_container_width=True)
+                    
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
 
@@ -544,13 +619,14 @@ with tab2:
                     st.info("No data available for INOL calculation yet.")
 
         with at4:
-            st.subheader("Muscle Volume (Hard Sets)")
-            st.write("This tracks **Total Hard Sets** per muscle over the last 30 days. It equalizes heavy compound lifts and light isolation work to reveal true training imbalances.")
+            # --- NEW: 7-DAY WINDOW & RADAR CHART ---
+            st.subheader("7-Day Microcycle (Muscle Volume)")
+            st.write("This tracks **Total Hard Sets** per muscle over a rolling 7-day window. It reveals true biological imbalances before they become joint injuries.")
             
             if not lift_df.empty:
-                recent_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                recent_7_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=7)]
                 muscle_sets = {}
-                for index, row in recent_df.iterrows():
+                for index, row in recent_7_df.iterrows():
                     ex = row['Exercise']
                     if ex in MUSCLE_MAP:
                         for muscle, multiplier in MUSCLE_MAP[ex].items():
@@ -558,15 +634,32 @@ with tab2:
                 
                 if muscle_sets:
                     heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
+                    
+                    # 1. The Bro-Split Radar Chart
+                    fig_radar = go.Figure(data=go.Scatterpolar(
+                        r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], # Close the web loop
+                        theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]],
+                        fill='toself',
+                        marker_color='#1f77b4'
+                    ))
+                    fig_radar.update_layout(
+                        title="Structural Balance Radar",
+                        polar=dict(radialaxis=dict(visible=True, range=[0, max(20, heat_df['Total Sets'].max())])),
+                        showlegend=False
+                    )
+                    st.plotly_chart(fig_radar, use_container_width=True)
+                    
+                    # 2. The Standard Bar Chart
                     fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
                                   color='Total Sets', color_continuous_scale='Inferno',
-                                  title="Set Distribution (Last 30 Days)")
+                                  title="Set Distribution (Last 7 Days)")
                     
-                    fig4.add_vline(x=40, line_dash="dash", line_color="#00CC96", annotation_text="MEV (40/mo)", annotation_position="top left")
-                    fig4.add_vline(x=80, line_dash="dash", line_color="#EF553B", annotation_text="MRV (80/mo)", annotation_position="top left")
+                    # Weekly MEV/MRV benchmarks
+                    fig4.add_vline(x=10, line_dash="dash", line_color="#00CC96", annotation_text="MEV (~10/wk)", annotation_position="top left")
+                    fig4.add_vline(x=20, line_dash="dash", line_color="#EF553B", annotation_text="MRV (~20/wk)", annotation_position="top left")
                     st.plotly_chart(fig4, use_container_width=True)
                 else:
-                    st.info("Log some data to populate the heatmap!")
+                    st.info("Log some data this week to populate the radar chart!")
 
         with at5:
             st.subheader("🫀 Cardio Engine Analytics")
