@@ -45,33 +45,39 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 14.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 15.0 - BLOCK ARCHITECTURE) ---
 PROGRAM = {
-    "Day 1: Upper A (Horizontal Push/Pull)": [
-        "T-Bar Landmine Row", "Dumbbell Bench Press", "Single-Arm Bench-Supported Dumbbell Row", 
-        "Push-Ups", "Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers", 
-        "Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"
-    ],
-    "Day 2: Lower A (Strength & Quads)": [
-        "Heavy Barbell Front Squat", "Heels-Elevated Landmine Squat", "Bulgarian Split Squats", 
-        "Hamstring-Focused Roman Chair Extension", "Anchored Reverse Crunch", "Wall Tibialis Raises", 
-        "Squat Wedge Dumbbell Calf Raises", "Half-Kneeling Pallof Press"
-    ],
-    "Day 3: Upper B (Vertical Push/Pull)": [
-        "Neutral Grip Pull-Ups", "Band-Assisted Dips", "Landmine Press", 
-        "Banded Face Pulls", "Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns", "Chest-Supported Lateral Raise"
-    ],
-    "Day 4: Lower B (Hinge, Power & Anti-Extension)": [
-        "Romanian Deadlift (RDL)", "Heavy Russian Kettlebell Swings", "Barbell Hip Thrusts", 
-        "Ab-Wheel Rollouts", "Nordic Curls", "Erector-Focused Roman Chair Extension", 
-        "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"
-    ],
-    "Day 5: The Cardio Engine": [
-        "4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"
-    ],
-    "🧬 Life Event (Sick/Travel)": [
-        "Rest / Recovery / Frozen Week"
-    ]
+    "Day 1: Upper A (Horizontal Push/Pull)": {
+        "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
+        "Block 2 (Superset): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
+        "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
+        "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
+    },
+    "Day 2: Lower A (Strength, Quads & Armor)": {
+        "Block 1: Heavy Front Squat": ["Heavy Barbell Front Squat"],
+        "Block 2 (Superset): Landmine Squat & Core": ["Heels-Elevated Landmine Squat", "Anchored Reverse Crunch"],
+        "Block 3 (Superset): Bulgarians & Hamstrings": ["Bulgarian Split Squats", "Hamstring-Focused Roman Chair Extension"],
+        "Block 4 (Tri-Set): Calves, Tibs & Core": ["Squat Wedge Dumbbell Calf Raises", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
+    },
+    "Day 3: Upper B (Vertical Push/Pull)": {
+        "Block 1 (Superset): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
+        "Block 2 (Superset): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
+        "Block 3 (Superset): Curls & Pushdowns": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"],
+        "Block 4: Lateral Raises": ["Chest-Supported Lateral Raise"]
+    },
+    "Day 4: Lower B (Hinge, Power & Posterior)": {
+        "Block 1: RDL": ["Romanian Deadlift (RDL)"],
+        "Block 2 (Superset): Swings & Rollouts": ["Heavy Russian Kettlebell Swings", "Ab-Wheel Rollouts"],
+        "Block 3 (Superset): Hip Thrusts & Nordics": ["Barbell Hip Thrusts", "Nordic Curls"],
+        "Block 4 (Tri-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+    },
+    "Day 5: The Cardio Engine": {
+        "Block 1: Rowing": ["4x4 Rowing (Zone 4/5)"],
+        "Block 2: Bike": ["Zone 2 Spin Bike Flush"]
+    },
+    "🧬 Life Event (Sick/Travel)": {
+        "Rest": ["Rest / Recovery / Frozen Week"]
+    }
 }
 
 REP_TARGETS = {
@@ -253,8 +259,10 @@ with tab1:
         date_input = st.date_input("Date", date.today())
         bw_input = st.number_input("Daily Bodyweight (kg)", value=80.0, step=0.5)
     with col2:
+        # --- NEW: BLOCK DROPDOWNS ---
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
-        selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day], default=[PROGRAM[workout_day][0]])
+        workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
+        selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=PROGRAM[workout_day][workout_block])
     
     st.write("---")
     
@@ -303,22 +311,35 @@ with tab1:
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
             
-            st.markdown("#### 📈 Target to Beat (Last Session)")
+            # --- THE FIRST-SET PROGRESSION ENGINE ---
+            st.markdown("#### 🧠 Today's Mission (First-Set Rule)")
             for exercise in selected_exercises:
                 ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)]
                 if not ex_df.empty:
                     last_date = ex_df['Date'].max()
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
-                    best_set = last_session.loc[last_session['Epley_1RM'].idxmax()]
-                    target_weight = best_set['Weight']
-                    target_reps = int(best_set['Reps_or_Mins'])
-                    target_band = best_set['Band']
+                    # Isolate Set 1 from the last session
+                    set_1 = last_session[last_session['Set_Number'] == 1]
                     
-                    band_str = f" [{target_band} Band]" if target_band != "None" else ""
-                    st.success(f"**{exercise}:** Last done {last_date.strftime('%b %d')} ➔ **{target_weight}kg × {target_reps} reps**{band_str}")
+                    if not set_1.empty:
+                        s1_data = set_1.iloc[0]
+                        last_weight = s1_data['Weight']
+                        last_reps = int(s1_data['Reps_or_Mins'])
+                        last_band = s1_data['Band']
+                        
+                        _, top_rep = get_target_reps_and_sets(exercise)
+                        band_str = f" [{last_band} Band]" if last_band != "None" else ""
+                        
+                        # Apply your custom rule: Did they hit the top of the rep range?
+                        if last_reps >= top_rep:
+                            st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** Set 1 hit {last_reps} reps @ {last_weight}kg{band_str}. You own this weight.")
+                        else:
+                            st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** Set 1 hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
+                    else:
+                        st.info(f"**{exercise}:** No Set 1 data found for last session.")
                 else:
-                    st.info(f"**{exercise}:** No history. Establish your baseline today!")
+                    st.info(f"**{exercise}:** No history. Establish your baseline Set 1 today!")
             
             st.write("---")
             
