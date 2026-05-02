@@ -514,8 +514,29 @@ with tab2:
                     st.plotly_chart(fig_zones, use_container_width=True)
 
 with tab3:
-    edited_df = st.data_editor(df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", use_container_width=True)
-    if st.button("Save Changes"):
-        overwrite_database(edited_df)
-        st.success("Database Saved!")
+    st.subheader("⚙️ Database Editor")
+    st.write("Loading thousands of rows can cause lag. Select how much recent history you need to edit.")
+    
+    # 1. Choose how far back to look
+    days_to_edit = st.slider("Days of history to load", min_value=7, max_value=365, value=30, step=7)
+    cutoff_date = pd.to_datetime(date.today()) - pd.Timedelta(days=days_to_edit)
+    
+    # 2. Split the database into "Hidden Historical" and "Visible Recent"
+    historical_df = df[df['Date'] < cutoff_date].copy()
+    recent_df = df[df['Date'] >= cutoff_date].copy()
+    
+    # 3. Only put the recent data in the interactive editor
+    edited_recent = st.data_editor(
+        recent_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), 
+        num_rows="dynamic", 
+        use_container_width=True
+    )
+    
+    if st.button("Save Changes", type="primary"):
+        # 4. Stitch the hidden history and the edited recent data back together
+        final_df = pd.concat([historical_df, edited_recent], ignore_index=True)
+        
+        # 5. Save the combined, complete database
+        overwrite_database(final_df)
+        st.success("Database Saved safely!")
         st.rerun()
