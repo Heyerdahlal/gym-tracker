@@ -436,21 +436,34 @@ with tab2:
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
 
-        with at3:
+with at3:
             st.subheader("INOL & Fatigue Curves")
             if not lift_df.empty:
                 inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
                 i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
+                
+                # --- NEW: SYSTEMIC FATIGUE MODIFIERS ---
+                SYSTEMIC_MODIFIERS = {
+                    "Romanian Deadlift (RDL)": 1.0, "Heavy Barbell Front Squat": 1.0,
+                    "Neutral Grip Pull-Ups": 0.8, "Bulgarian Split Squats": 0.8, "Heavy Russian Kettlebell Swings": 0.8, "Barbell Hip Thrusts": 0.8, "Heels-Elevated Landmine Squat": 0.8,
+                    "T-Bar Landmine Row": 0.7, "Dumbbell Bench Press": 0.7, "Band-Assisted Dips": 0.7, "Landmine Press": 0.7,
+                    "Single-Arm Bench-Supported Dumbbell Row": 0.6, "Nordic Curls": 0.6, "Front-Rack Kettlebell Marches": 0.6,
+                    "Push-Ups": 0.5, "Hamstring-Focused Roman Chair Extension": 0.5, "Erector-Focused Roman Chair Extension": 0.5, "Ab-Wheel Rollouts": 0.5, "Heavy Suitcase Holds": 0.5,
+                    "Chest-Supported Lateral Raise": 0.3, "Chest-Supported Rear Delt Flye": 0.3, "Overhead Tricep Extension": 0.3, "Dumbbell Hammer Curls": 0.3, "Banded Crossovers": 0.3, "Incline Supinated Dumbbell Curls": 0.3, "Banded Tricep Pushdowns": 0.3, "Banded Face Pulls": 0.3, "Wall Tibialis Raises": 0.3, "Squat Wedge Dumbbell Calf Raises": 0.3, "Half-Kneeling Pallof Press": 0.3, "Anchored Reverse Crunch": 0.3
+                }
                 
                 # FIX: Empty check
                 if not i_df.empty:
                     global_max = i_df['Epley_1RM'].max()
                     i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
                     i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
-                    i_df['INOL'] = i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])
+                    
+                    # --- NEW: APPLYING THE MODIFIER ---
+                    fatigue_factor = SYSTEMIC_MODIFIERS.get(inol_ex, 0.5) # Defaults to a mid-tier 0.5 if an exercise isn't in the list
+                    i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])) * fatigue_factor
                     
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
-                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
+                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r')
                     fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
                     st.plotly_chart(fig2, use_container_width=True)
                     
