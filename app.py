@@ -45,7 +45,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 15.0 - BLOCK ARCHITECTURE) ---
+# --- PROGRAM & DICTIONARIES (VERSION 16.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -258,6 +258,9 @@ with tab1:
     with col1:
         date_input = st.date_input("Date", date.today())
         bw_input = st.number_input("Daily Bodyweight (kg)", value=80.0, step=0.5)
+        # --- NEW: DELOAD TOGGLE ---
+        is_deload = st.toggle("🧘 Activate Deload Week")
+        
     with col2:
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
         workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
@@ -307,11 +310,17 @@ with tab1:
 
         else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
+            if is_deload:
+                default_sets = max(1, default_sets - 1)
+            
             num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
             st.write("---")
             
-            # --- THE HYPER-INTELLIGENT PROGRESSION ENGINE ---
             st.markdown("#### 🧠 Today's Mission Control")
+            
+            # --- NEW: AUTO-FILL DICTIONARY ---
+            default_vals = {}
+            
             for exercise in selected_exercises:
                 ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 
@@ -320,36 +329,38 @@ with tab1:
                     last_date = dates[-1]
                     last_session = ex_df[ex_df['Date'] == last_date]
                     
-                    # 1. Grab Set 1 for the Progression Engine
                     set_1 = last_session[last_session['Set_Number'] == 1]
                     
                     if not set_1.empty:
                         s1_data = set_1.iloc[0]
-                        last_weight = s1_data['Weight']
+                        last_weight = float(s1_data['Weight'])
                         last_reps = int(s1_data['Reps_or_Mins'])
                         last_band = s1_data['Band']
                         
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
                         band_str = f" [{last_band} Band]" if last_band != "None" else ""
                         
-                        # --- DELOAD OVERRIDE ---
-                        if "Sick/Travel" in workout_day or "Deload" in workout_day: 
-                            deload_weight = max(0, last_weight * 0.8) # 20% weight drop
-                            st.info(f"🧘 **DELOAD PRESCRIBED:** **{exercise}** ➔ Do {max(1, target_sets - 1)} Sets @ {deload_weight:.1f}kg for {last_reps} reps.")
-                            continue # Skip the rest of the checks for this exercise
+                        if is_deload:
+                            # Mathematical 20% drop, snapped to nearest 2.5kg plate
+                            calc_w = max(0.0, last_weight * 0.8)
+                            calc_w = round(calc_w / 2.5) * 2.5 
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
+                            
+                            st.info(f"🧘 **DELOAD PRESCRIBED:** **{exercise}** ➔ Auto-dropped weight to {calc_w}kg.")
+                            continue
+                            
+                        # If normal day, store the exact last weight for auto-fill
+                        default_vals[exercise] = {'w': last_weight, 'r': last_reps, 'b': last_band}
                         
-                        # --- PROGRESSION DIRECTIVE ---
                         if last_reps >= top_rep:
                             st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. You own this weight.")
                         else:
                             st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
                         
-                        # --- BOTTOM RANGE FATIGUE CHECK ---
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         if min_reps_last_session < 5:
                             st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but **drop the weight by 10-15% for Sets 2 & 3** to stay in the hypertrophy zone.")
                             
-                        # --- TRUE PLATEAU DETECTOR ---
                         if len(dates) >= 3:
                             last_3_dates = dates[-3:]
                             recent_history = ex_df[(ex_df['Date'].isin(last_3_dates)) & (ex_df['Set_Number'] == 1)]
@@ -363,8 +374,10 @@ with tab1:
 
                     else:
                         st.info(f"**{exercise}:** No Set 1 data found for last session.")
+                        default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
                 else:
                     st.info(f"**{exercise}:** No history. Establish your baseline Set 1 today!")
+                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
             
             st.write("---")
             
@@ -381,22 +394,28 @@ with tab1:
                         _, top_rep = get_target_reps_and_sets(exercise)
                         st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
                         
+                        # Grab auto-fill values
+                        def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
+                        def_b = default_vals.get(exercise, {}).get('b', "None")
+                        band_list = list(BAND_SUBTRACTIONS.keys())
+                        band_index = band_list.index(def_b) if def_b in band_list else 0
+                        
                         key = f"{exercise}_{i}" 
                         
                         if uses_band:
                             c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
                             if is_unilateral:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
                                 reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                             else:
                                 reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), key=f"b_{key}")
+                            bands[key] = c3.selectbox("Band", band_list, index=band_index, key=f"b_{key}")
                             rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
                             if is_unilateral:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
