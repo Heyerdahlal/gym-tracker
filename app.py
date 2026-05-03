@@ -46,7 +46,10 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 24.0) ---
+# --- STATIC USER PROFILE (FROM SECRETS) ---
+USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
+
+# --- PROGRAM & DICTIONARIES (VERSION 25.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -254,7 +257,6 @@ def overwrite_database(df):
 # --- INITIALIZE SESSION STATE ---
 if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
 if 'h_weight' not in st.session_state: st.session_state['h_weight'] = 80.0
-if 'h_height' not in st.session_state: st.session_state['h_height'] = 180.0
 if 'h_bf' not in st.session_state: st.session_state['h_bf'] = 15.0
 if 'h_muscle' not in st.session_state: st.session_state['h_muscle'] = 35.0
 if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = 80
@@ -340,7 +342,6 @@ with tab1:
                         else:
                             st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
                         
-                        # --- NEW: WARM-UP ENGINE ---
                         if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
                             with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
                                 st.write("*Science: CNS priming prevents injury and maximizes motor-unit recruitment.*")
@@ -423,9 +424,9 @@ with tab1:
                 submit_lifts = st.form_submit_button("Save To Database", type="primary")
                 
                 if submit_lifts:
-                    # FFMI calculation at submission using stored background memory
+                    # FFMI calculation at submission using stored background memory & secrets
                     lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                    height_m = st.session_state['h_height'] / 100
+                    height_m = USER_HEIGHT / 100
                     ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
 
                     new_rows = []
@@ -444,7 +445,7 @@ with tab1:
                                     'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key],
                                     'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
                                     'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0,
-                                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
+                                    'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
                                     'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
                                     'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
                                 }
@@ -556,7 +557,6 @@ with tab4:
 
         st.markdown("**Current Session Health Data:**")
         st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
-        st.session_state['h_height'] = st.number_input("Height (cm) - Fixed", value=st.session_state['h_height'], step=1.0)
         st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
         st.session_state['h_muscle'] = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
         st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
@@ -606,7 +606,7 @@ with tab4:
             
             if submit_cardio:
                 lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                height_m = st.session_state['h_height'] / 100
+                height_m = USER_HEIGHT / 100
                 ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
                 
                 cardio_data = {
@@ -615,7 +615,7 @@ with tab4:
                     'Reps_or_Mins': duration, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0.0, 'Side': 'Both',
                     'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
                     'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
-                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
+                    'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
                     'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
                     'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
                 }
