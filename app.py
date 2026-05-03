@@ -46,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 21.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 22.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -261,7 +261,6 @@ df = load_data()
 
 st.title("🔬 Sports Science Dashboard")
 
-# --- UI RE-ARCHITECTURE: Added Tab 4 ---
 tab1, tab2, tab3, tab4 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database", "📡 Garmin Hub"])
 
 with tab1:
@@ -269,10 +268,6 @@ with tab1:
     
     with col1:
         date_input = st.date_input("Date", date.today())
-        # Bodyweight syncs automatically if you pull it from Garmin in Tab 4
-        bw_input = st.number_input("Daily Bodyweight (kg)", value=st.session_state['h_weight'], step=0.1)
-        st.session_state['h_weight'] = bw_input 
-        
         is_deload = st.toggle("🧘 Activate Deload Week")
         
     with col2:
@@ -412,7 +407,7 @@ with tab1:
                 submit_lifts = st.form_submit_button("Save To Database", type="primary")
                 
                 if submit_lifts:
-                    # FFMI calculation at submission
+                    # FFMI calculation at submission using stored background memory
                     lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
                     height_m = st.session_state['h_height'] / 100
                     ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
@@ -459,7 +454,6 @@ with tab4:
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
     def get_garmin_client():
-        # 1. Check if we already have a VIP wristband in memory!
         if 'garmin_vip_client' in st.session_state:
             return st.session_state['garmin_vip_client']
             
@@ -470,15 +464,12 @@ with tab4:
             return None
             
         try:
-            # 2. If no wristband, login from scratch
             if mfa_input:
                 client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input)
             else:
                 client = Garmin(g_email, g_pass)
                 
             client.login()
-            
-            # 3. Success! Save the client to memory so we never ask for MFA again today
             st.session_state['garmin_vip_client'] = client 
             return client
             
@@ -497,10 +488,8 @@ with tab4:
             with st.spinner(f"Pulling data for {date_input}..."):
                 client = get_garmin_client()
                 if client:
-                    # Use the date selected in Tab 1, not a hardcoded "today"
                     target_date_iso = date_input.isoformat()
                     
-                    # 1. Scale Sync
                     try:
                         weigh_ins = client.get_body_composition(target_date_iso)
                         if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
@@ -516,7 +505,6 @@ with tab4:
                     except Exception as e:
                         st.error(f"Scale sync error: {e}")
                         
-                    # 2. Sleep Sync
                     try:
                         sleep_data = client.get_sleep_data(target_date_iso)
                         if sleep_data and 'dailySleepDTO' in sleep_data:
@@ -532,7 +520,6 @@ with tab4:
                         st.error(f"Sleep sync error: {e}")
                         
                     st.success("Health Check Complete! Check the fields below.")
-                    # Force the UI to refresh with the new session_state values
                     st.rerun()
 
         st.markdown("**Current Session Health Data:**")
