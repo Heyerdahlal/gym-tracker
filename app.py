@@ -49,7 +49,7 @@ except Exception as e:
 # --- STATIC USER PROFILE (FROM SECRETS) ---
 USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
 
-# --- PROGRAM & DICTIONARIES (VERSION 27.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 27.1) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -118,9 +118,9 @@ REP_TARGETS = {
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
-# --- NEW: COMPREHENSIVE EXERCISE GUIDES ---
+# --- EXERCISE GUIDES ---
 EXERCISE_GUIDES = {
-    # --- UPPER A ---
+    # UPPER A
     "T-Bar Landmine Row": {
         "Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.",
         "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.",
@@ -167,7 +167,7 @@ EXERCISE_GUIDES = {
         "Why": "Stopping before the shoulder blades retract ensures the load stays 100% on the rear deltoid, not the rhomboids or traps."
     },
     
-    # --- LOWER A ---
+    # LOWER A
     "Heavy Barbell Front Squat": {
         "Setup": "Clean grip or cross-arm grip. Bar resting deep on the meaty part of the front delts.",
         "Execution": "Deep, upright squat. Drive your elbows UP violently as you come out of the hole to prevent your chest from collapsing.",
@@ -209,7 +209,7 @@ EXERCISE_GUIDES = {
         "Why": "Elite anti-rotation core training. Protects the spine by teaching the deep core to brace against twisting forces."
     },
 
-    # --- UPPER B ---
+    # UPPER B
     "Neutral Grip Pull-Ups": {
         "Setup": "Palms facing each other.",
         "Execution": "Start from a dead hang. Pull your upper chest to the bar. Control the eccentric (lowering) phase.",
@@ -241,7 +241,7 @@ EXERCISE_GUIDES = {
         "Why": "Band resistance increases at peak contraction, matching the strength curve of the triceps perfectly."
     },
 
-    # --- LOWER B ---
+    # LOWER B
     "Romanian Deadlift (RDL)": {
         "Setup": "Feet shoulder-width. Unlock your knees slightly, but freeze them at that 15-degree angle.",
         "Execution": "Push hips straight back. Keep the bar dragging against your legs. Stop the moment your hamstrings are fully stretched.",
@@ -533,16 +533,16 @@ with tab1:
                         if min_reps_last_session < 5:
                             st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but **drop the weight by 10-15% for Sets 2 & 3** to stay in the hypertrophy zone.")
                             
-                       if len(dates) >= 4:
+                        if len(dates) >= 4:
                             last_4_dates = dates[-4:]
                             recent_history = ex_df[(ex_df['Date'].isin(last_4_dates)) & (ex_df['Set_Number'] == 1)]
-    
-                                    if len(recent_history) == 4:
-                                     weights_used = recent_history['Weight'].nunique()
-                                    reps_hit = recent_history['Reps_or_Mins'].nunique()
-        
-                                        if weights_used == 1 and reps_hit == 1:
-                                            st.error(f"🛑 **TRUE PLATEAU DETECTED:** You have been stuck at {last_weight}kg for {last_reps} reps for 4 straight sessions. Strict form takes time, but 4 weeks means it's time to swap this exercise or take a Deload.")
+                            
+                            if len(recent_history) == 4:
+                                weights_used = recent_history['Weight'].nunique()
+                                reps_hit = recent_history['Reps_or_Mins'].nunique()
+                                
+                                if weights_used == 1 and reps_hit == 1:
+                                    st.error(f"🛑 **TRUE PLATEAU DETECTED:** You have been stuck at {last_weight}kg for {last_reps} reps for 4 straight sessions. Strict form takes time, but 4 weeks means it's time to swap this exercise or take a Deload.")
 
                     else:
                         st.info(f"**{exercise}:** No Set 1 data found for last session.")
