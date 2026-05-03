@@ -46,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 22.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 23.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -173,7 +173,7 @@ BAND_SUBTRACTIONS = {
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
-HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI']
+HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI', 'RHR', 'HRV']
 
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
@@ -256,6 +256,8 @@ if 'h_height' not in st.session_state: st.session_state['h_height'] = 180.0
 if 'h_bf' not in st.session_state: st.session_state['h_bf'] = 15.0
 if 'h_muscle' not in st.session_state: st.session_state['h_muscle'] = 35.0
 if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = 80
+if 'h_rhr' not in st.session_state: st.session_state['h_rhr'] = 50
+if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = 60
 
 df = load_data()
 
@@ -429,7 +431,8 @@ with tab1:
                                     'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
                                     'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0,
                                     'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
-                                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi
+                                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
+                                    'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
                                 }
                                 if is_unilateral:
                                     if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
@@ -490,6 +493,7 @@ with tab4:
                 if client:
                     target_date_iso = date_input.isoformat()
                     
+                    # 1. Scale Sync
                     try:
                         weigh_ins = client.get_body_composition(target_date_iso)
                         if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
@@ -505,19 +509,33 @@ with tab4:
                     except Exception as e:
                         st.error(f"Scale sync error: {e}")
                         
+                    # 2. Sleep & Readiness Sync
                     try:
                         sleep_data = client.get_sleep_data(target_date_iso)
                         if sleep_data and 'dailySleepDTO' in sleep_data:
                             score = sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value')
                             if score:
                                 st.session_state['h_sleep'] = int(score)
-                                st.toast(f"✅ Sleep Score ({score}) found for {target_date_iso}")
-                            else:
-                                st.warning(f"🛌 No Sleep Score calculated for {target_date_iso} yet.")
+                                st.toast(f"✅ Sleep Score ({score}) found")
                         else:
-                            st.warning(f"🛌 No sleep data found on Garmin for {target_date_iso}. Sync your watch to your phone first.")
+                            st.warning(f"🛌 No sleep score found.")
+                            
+                        # Try to get RHR
+                        stats = client.get_stats(target_date_iso)
+                        if stats and 'restingHeartRate' in stats:
+                            st.session_state['h_rhr'] = int(stats['restingHeartRate'])
+                            st.toast(f"✅ RHR ({st.session_state['h_rhr']} bpm) found")
+                            
+                        # Try to get HRV
+                        hrv_data = client.get_hrv_data(target_date_iso)
+                        if hrv_data and 'hrvSummary' in hrv_data:
+                            hrv = hrv_data['hrvSummary'].get('lastNightAvg')
+                            if hrv:
+                                st.session_state['h_hrv'] = int(hrv)
+                                st.toast(f"✅ HRV ({st.session_state['h_hrv']} ms) found")
+                                
                     except Exception as e:
-                        st.error(f"Sleep sync error: {e}")
+                        st.error(f"Sleep/HRV sync error: {e}")
                         
                     st.success("Health Check Complete! Check the fields below.")
                     st.rerun()
@@ -528,6 +546,8 @@ with tab4:
         st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
         st.session_state['h_muscle'] = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
         st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+        st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
+        st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
         
     with c2:
         st.markdown("#### 🏃‍♂️ Cardio Session Data")
@@ -582,7 +602,8 @@ with tab4:
                     'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
                     'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
                     'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
-                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi
+                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
+                    'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
                 }
                 new_df = pd.DataFrame([cardio_data])
                 append_new_data(new_df)
@@ -595,7 +616,7 @@ with tab2:
         lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
-        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
+        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar & Asymmetry", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
             st.subheader("Historical Milestones & Gamification")
@@ -745,6 +766,39 @@ with tab2:
                     st.plotly_chart(fig4, use_container_width=True)
                 else:
                     st.info("Log some data this week to populate the radar chart!")
+
+            # --- NEW: UNILATERAL ASYMMETRY DETECTOR ---
+            st.write("---")
+            st.markdown("### ⚖️ Unilateral Asymmetry Radar")
+            st.write("Detects left vs. right limb imbalances over the last 30 days to prevent injuries.")
+            
+            uni_df = lift_df[lift_df['Side'].isin(['Left', 'Right'])]
+            if not uni_df.empty:
+                recent_30_uni = uni_df[uni_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                if not recent_30_uni.empty:
+                    # Group by Exercise and Side to get total Volume
+                    asym_data = recent_30_uni.groupby(['Exercise', 'Side'])['Volume'].sum().reset_index()
+                    asym_pivot = asym_data.pivot(index='Exercise', columns='Side', values='Volume').fillna(0)
+                    
+                    for ex in asym_pivot.index:
+                        left_vol = asym_pivot.loc[ex].get('Left', 0)
+                        right_vol = asym_pivot.loc[ex].get('Right', 0)
+                        
+                        if left_vol > 0 and right_vol > 0:
+                            max_vol = max(left_vol, right_vol)
+                            diff_pct = abs(left_vol - right_vol) / max_vol * 100
+                            
+                            if diff_pct > 10:
+                                weaker_side = "Left" if left_vol < right_vol else "Right"
+                                st.error(f"⚠️ **IMBALANCE DETECTED ({ex}):** Your {weaker_side} side is doing {diff_pct:.1f}% less volume. Focus on bringing the {weaker_side} limb up to prevent injury!")
+                            elif diff_pct > 5:
+                                st.warning(f"🟡 **SLIGHT IMBALANCE ({ex}):** {diff_pct:.1f}% difference detected. Keep an eye on it.")
+                            else:
+                                st.success(f"✅ **BALANCED ({ex}):** Only a {diff_pct:.1f}% variance. Great symmetry.")
+                else:
+                    st.info("No unilateral exercises logged in the last 30 days.")
+            else:
+                st.info("Log exercises tagged as Left/Right to track asymmetry.")
 
         with at5:
             st.subheader("🫀 Cardio Engine Analytics")
