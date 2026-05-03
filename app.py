@@ -46,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 20.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 21.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -173,7 +173,6 @@ BAND_SUBTRACTIONS = {
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
-# --- NEW: HEALTH COLUMNS ---
 HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI']
 
 def get_target_reps_and_sets(exercise_name):
@@ -250,7 +249,7 @@ def overwrite_database(df):
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
-# --- INITIALIZE SESSION STATE FOR GARMIN ---
+# --- INITIALIZE SESSION STATE ---
 if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
 if 'h_weight' not in st.session_state: st.session_state['h_weight'] = 80.0
 if 'h_height' not in st.session_state: st.session_state['h_height'] = 180.0
@@ -262,68 +261,17 @@ df = load_data()
 
 st.title("🔬 Sports Science Dashboard")
 
-tab1, tab2, tab3 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database"])
+# --- UI RE-ARCHITECTURE: Added Tab 4 ---
+tab1, tab2, tab3, tab4 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database", "📡 Garmin Hub"])
 
 with tab1:
     col1, col2 = st.columns([1, 2])
     
     with col1:
         date_input = st.date_input("Date", date.today())
-        
-        # --- NEW: HEALTH DATA EXPANDER ---
-        with st.expander("🧬 Daily Health & Readiness", expanded=True):
-            if st.button("🔄 Sync Garmin Health (Scale & Sleep)"):
-                with st.spinner("Connecting to Garmin API..."):
-                    try:
-                        g_email = st.secrets.get("garmin_email")
-                        g_pass = st.secrets.get("garmin_password")
-                        if not g_email or not g_pass:
-                            st.error("Missing Garmin credentials in Streamlit secrets!")
-                        else:
-                            client = Garmin(g_email, g_pass)
-                            client.login()
-                            today_iso = date_input.isoformat()
-                            
-                            # 1. Pull Scale Data
-                            try:
-                                weigh_ins = client.get_body_composition(today_iso)
-                                if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
-                                    latest = weigh_ins['dateWeightList'][-1]
-                                    
-                                    # Garmin sometimes returns grams, sometimes kg. Safely format:
-                                    raw_w = latest.get('weight', st.session_state['h_weight'])
-                                    st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
-                                    
-                                    st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
-                                    
-                                    raw_m = latest.get('muscleMass', st.session_state['h_muscle'])
-                                    st.session_state['h_muscle'] = float(raw_m / 1000 if raw_m > 1000 else raw_m)
-                            except Exception as e:
-                                st.warning("Scale sync skipped or empty.")
-                                
-                            # 2. Pull Sleep Data
-                            try:
-                                sleep_data = client.get_sleep_data(today_iso)
-                                if sleep_data:
-                                    st.session_state['h_sleep'] = int(sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value', st.session_state['h_sleep']))
-                            except Exception as e:
-                                st.warning("Sleep sync skipped or empty.")
-                                
-                            st.success("Health Check Complete!")
-                    except Exception as e:
-                        st.error(f"Garmin Login Failed: {e}")
-                        
-            st.session_state['h_height'] = st.number_input("Height (cm) - Fixed", value=st.session_state['h_height'], step=1.0)
-            bw_input = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
-            bf_input = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
-            muscle_input = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
-            sleep_input = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
-            
-            # --- FFMI CALCULATION (Auto) ---
-            lean_mass = bw_input * (1 - (bf_input / 100))
-            height_m = st.session_state['h_height'] / 100
-            ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
-            st.info(f"🧬 **Current FFMI:** {ffmi:.1f}")
+        # Bodyweight syncs automatically if you pull it from Garmin in Tab 4
+        bw_input = st.number_input("Daily Bodyweight (kg)", value=st.session_state['h_weight'], step=0.1)
+        st.session_state['h_weight'] = bw_input 
         
         is_deload = st.toggle("🧘 Activate Deload Week")
         
@@ -338,66 +286,7 @@ with tab1:
         is_cardio = "Cardio" in workout_day
         
         if is_cardio:
-            exercise = selected_exercises[0]
-            st.markdown(f"### {exercise} (Garmin Data Integration)")
-            
-            if st.button("🔄 Auto-Sync Latest Garmin Activity"):
-                with st.spinner("Connecting to Garmin API..."):
-                    try:
-                        g_email = st.secrets.get("garmin_email")
-                        g_pass = st.secrets.get("garmin_password")
-                        if not g_email or not g_pass:
-                            st.error("Missing Garmin credentials in Streamlit secrets!")
-                        else:
-                            garmin = Garmin(g_email, g_pass)
-                            garmin.login()
-                            activities = garmin.get_activities(0, 1) 
-                            if activities:
-                                act = activities[0]
-                                st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
-                                st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
-                                st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
-                                st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
-                                st.success(f"Synced! Grabbed activity: {act.get('activityName', 'Unknown')}. Review data below.")
-                            else:
-                                st.warning("No activities found on your Garmin account.")
-                    except Exception as e:
-                        st.error(f"Garmin Sync Failed: {e}")
-            
-            with st.form("cardio_form", clear_on_submit=False):
-                c1, c2 = st.columns(2)
-                with c1:
-                    duration = st.number_input("Duration (Minutes)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
-                    distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
-                    avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
-                with c2:
-                    avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
-                    max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
-                
-                st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
-                zc1, zc2, zc3, zc4, zc5 = st.columns(5)
-                z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
-                z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
-                z3 = zc3.number_input("Zone 3", min_value=0.0, step=1.0)
-                z4 = zc4.number_input("Zone 4", min_value=0.0, step=1.0)
-                z5 = zc5.number_input("Zone 5", min_value=0.0, step=1.0)
-                
-                submit_cardio = st.form_submit_button("Save Cardio Data", type="primary")
-                
-                if submit_cardio:
-                    cardio_data = {
-                        'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 
-                        'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
-                        'Reps_or_Mins': duration, 'Bodyweight': bw_input, 'RIR': 0.0, 'Side': 'Both',
-                        'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
-                        'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
-                        'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': bf_input, 
-                        'Muscle_Mass_kg': muscle_input, 'Sleep_Score': sleep_input, 'FFMI': ffmi
-                    }
-                    new_df = pd.DataFrame([cardio_data])
-                    append_new_data(new_df)
-                    st.success("High-Fidelity Cardio Data Saved!")
-                    st.rerun()
+            st.info("🏃‍♂️ **Cardio Day Selected.** Head over to the **📡 Garmin Hub (Tab 4)** to sync your watch or log cardio data manually!")
 
         else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
@@ -523,6 +412,11 @@ with tab1:
                 submit_lifts = st.form_submit_button("Save To Database", type="primary")
                 
                 if submit_lifts:
+                    # FFMI calculation at submission
+                    lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                    height_m = st.session_state['h_height'] / 100
+                    ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+
                     new_rows = []
                     for exercise in selected_exercises:
                         is_unilateral = exercise in UNILATERAL_EXERCISES
@@ -536,11 +430,11 @@ with tab1:
                                 base_data = {
                                     'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 
                                     'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 
-                                    'Distance_km': 0.0, 'Bodyweight': bw_input, 'RIR': rirs[key],
+                                    'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key],
                                     'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
                                     'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0,
-                                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': bf_input, 
-                                    'Muscle_Mass_kg': muscle_input, 'Sleep_Score': sleep_input, 'FFMI': ffmi
+                                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
+                                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi
                                 }
                                 if is_unilateral:
                                     if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
@@ -556,6 +450,130 @@ with tab1:
                     else:
                         st.warning("No reps logged. Database was not updated.")
 
+with tab4:
+    st.subheader("📡 Garmin Integration Hub")
+    st.write("Keep your workout logging screen clean by managing all Garmin API syncing and manual cardio entry here.")
+    
+    st.markdown("### 🔐 Garmin Authentication")
+    st.info("If you have Multi-Factor Authentication (2FA) enabled, open your Authenticator App and type the 6 digits below *right before* you click a sync button.")
+    mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
+    
+    def get_garmin_client():
+        g_email = st.secrets.get("garmin_email")
+        g_pass = st.secrets.get("garmin_password")
+        if not g_email or not g_pass:
+            st.error("Missing Garmin credentials in Streamlit secrets! Check your deployment settings.")
+            return None
+        try:
+            if mfa_input:
+                client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input)
+            else:
+                client = Garmin(g_email, g_pass)
+            client.login()
+            return client
+        except Exception as e:
+            if "prompt_mfa" in str(e):
+                st.error("🛑 **Garmin requires 2FA!** Please enter your 6-digit Authenticator app code above and try syncing again.")
+            else:
+                st.error(f"Garmin Login Failed: {e}")
+            return None
+
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("#### 🧬 Morning Health Sync")
+        if st.button("🔄 Sync Scale & Sleep"):
+            with st.spinner("Connecting to Garmin API..."):
+                client = get_garmin_client()
+                if client:
+                    today_iso = date.today().isoformat()
+                    try:
+                        weigh_ins = client.get_body_composition(today_iso)
+                        if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
+                            latest = weigh_ins['dateWeightList'][-1]
+                            raw_w = latest.get('weight', st.session_state['h_weight'])
+                            st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
+                            st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
+                            raw_m = latest.get('muscleMass', st.session_state['h_muscle'])
+                            st.session_state['h_muscle'] = float(raw_m / 1000 if raw_m > 1000 else raw_m)
+                    except Exception as e:
+                        st.warning("Scale sync skipped or empty.")
+                        
+                    try:
+                        sleep_data = client.get_sleep_data(today_iso)
+                        if sleep_data:
+                            st.session_state['h_sleep'] = int(sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value', st.session_state['h_sleep']))
+                    except Exception as e:
+                        st.warning("Sleep sync skipped or empty.")
+                        
+                    st.success("Health Check Complete! Data stored for today's logs.")
+                    st.rerun()
+
+        st.markdown("**Current Session Health Data:**")
+        st.session_state['h_height'] = st.number_input("Height (cm) - Fixed", value=st.session_state['h_height'], step=1.0)
+        st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
+        st.session_state['h_muscle'] = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
+        st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+        
+    with c2:
+        st.markdown("#### 🏃‍♂️ Cardio Session Data")
+        if st.button("🔄 Sync Latest Cardio"):
+            with st.spinner("Connecting to Garmin API..."):
+                client = get_garmin_client()
+                if client:
+                    try:
+                        activities = client.get_activities(0, 1) 
+                        if activities:
+                            act = activities[0]
+                            st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
+                            st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
+                            st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
+                            st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
+                            st.success(f"Synced! Grabbed activity: {act.get('activityName', 'Unknown')}")
+                            st.rerun()
+                        else:
+                            st.warning("No activities found on your Garmin account.")
+                    except Exception as e:
+                        st.error(f"Activity Sync Failed: {e}")
+
+        st.markdown("**Cardio Log Entry:**")
+        with st.form("cardio_form", clear_on_submit=False):
+            ex_options = ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"]
+            c_ex = st.selectbox("Select Cardio Type", ex_options)
+            duration = st.number_input("Duration (Minutes)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
+            distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
+            avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
+            avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
+            max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
+            
+            st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
+            zc1, zc2, zc3, zc4, zc5 = st.columns(5)
+            z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
+            z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
+            z3 = zc3.number_input("Zone 3", min_value=0.0, step=1.0)
+            z4 = zc4.number_input("Zone 4", min_value=0.0, step=1.0)
+            z5 = zc5.number_input("Zone 5", min_value=0.0, step=1.0)
+            
+            submit_cardio = st.form_submit_button("Save Cardio to Database", type="primary")
+            
+            if submit_cardio:
+                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                height_m = st.session_state['h_height'] / 100
+                ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+                
+                cardio_data = {
+                    'Date': date.today(), 'Workout_Day': "Day 5: The Cardio Engine", 'Exercise': c_ex, 
+                    'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
+                    'Reps_or_Mins': duration, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0.0, 'Side': 'Both',
+                    'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
+                    'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
+                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': st.session_state['h_bf'], 
+                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi
+                }
+                new_df = pd.DataFrame([cardio_data])
+                append_new_data(new_df)
+                st.success("High-Fidelity Cardio Data Saved!")
+
 with tab2:
     if df.empty:
         st.info("Awaiting Data...")
@@ -563,7 +581,6 @@ with tab2:
         lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
-        # --- NEW: RECOMP & RECOVERY TAB ADDED ---
         at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
@@ -756,10 +773,8 @@ with tab2:
                     st.plotly_chart(fig_zones, use_container_width=True)
                     
         with at6:
-            # --- NEW: RECOMP & RECOVERY TAB ---
             st.subheader("🧬 Biological Recomp & Recovery")
             
-            # Recomp Tracker
             st.markdown("### FFMI (Fat-Free Mass Index) Tracker")
             st.write("*FFMI measures how much pure lean muscle tissue you carry. A natural limit is around 25.*")
             
@@ -780,7 +795,6 @@ with tab2:
             else:
                 st.info("Sync your Garmin Scale data a few times to start building your FFMI Recomp chart.")
                 
-            # Recovery vs Strength
             st.markdown("### 🛌 Sleep Score vs. Absolute Strength")
             st.write("*Visual proof of how your Garmin sleep score dictates your performance under the bar.*")
             
