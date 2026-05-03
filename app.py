@@ -458,7 +458,7 @@ with tab4:
     st.info("If you have Multi-Factor Authentication (2FA) enabled, open your Authenticator App and type the 6 digits below *right before* you click a sync button.")
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
-   def get_garmin_client():
+    def get_garmin_client():
         # 1. Check if we already have a VIP wristband in memory!
         if 'garmin_vip_client' in st.session_state:
             return st.session_state['garmin_vip_client']
@@ -491,7 +491,7 @@ with tab4:
 
     c1, c2 = st.columns(2)
     
-  with c1:
+    with c1:
         st.markdown("#### 🧬 Morning Health Sync")
         if st.button("🔄 Sync Scale & Sleep"):
             with st.spinner(f"Pulling data for {date_input}..."):
@@ -588,7 +588,7 @@ with tab4:
                 ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
                 
                 cardio_data = {
-                    'Date': date.today(), 'Workout_Day': "Day 5: The Cardio Engine", 'Exercise': c_ex, 
+                    'Date': date_input, 'Workout_Day': "Day 5: The Cardio Engine", 'Exercise': c_ex, 
                     'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
                     'Reps_or_Mins': duration, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0.0, 'Side': 'Both',
                     'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
