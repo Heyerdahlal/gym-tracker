@@ -46,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 19.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 20.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -173,6 +173,8 @@ BAND_SUBTRACTIONS = {
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
+# --- NEW: HEALTH COLUMNS ---
+HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI']
 
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
@@ -186,14 +188,14 @@ def get_target_reps_and_sets(exercise_name):
 def load_data():
     records = worksheet.get_all_records()
     
-    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
+    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
     
     if not records:
         return pd.DataFrame(columns=baseline_cols)
     
     df = pd.DataFrame(records)
     
-    numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS
+    numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
     for col in numeric_cols:
         if col not in df.columns: df[col] = 0.0
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -248,7 +250,13 @@ def overwrite_database(df):
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
+# --- INITIALIZE SESSION STATE FOR GARMIN ---
 if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
+if 'h_weight' not in st.session_state: st.session_state['h_weight'] = 80.0
+if 'h_height' not in st.session_state: st.session_state['h_height'] = 180.0
+if 'h_bf' not in st.session_state: st.session_state['h_bf'] = 15.0
+if 'h_muscle' not in st.session_state: st.session_state['h_muscle'] = 35.0
+if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = 80
 
 df = load_data()
 
@@ -258,9 +266,65 @@ tab1, tab2, tab3 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "�
 
 with tab1:
     col1, col2 = st.columns([1, 2])
+    
     with col1:
         date_input = st.date_input("Date", date.today())
-        bw_input = st.number_input("Daily Bodyweight (kg)", value=80.0, step=0.5)
+        
+        # --- NEW: HEALTH DATA EXPANDER ---
+        with st.expander("🧬 Daily Health & Readiness", expanded=True):
+            if st.button("🔄 Sync Garmin Health (Scale & Sleep)"):
+                with st.spinner("Connecting to Garmin API..."):
+                    try:
+                        g_email = st.secrets.get("garmin_email")
+                        g_pass = st.secrets.get("garmin_password")
+                        if not g_email or not g_pass:
+                            st.error("Missing Garmin credentials in Streamlit secrets!")
+                        else:
+                            client = Garmin(g_email, g_pass)
+                            client.login()
+                            today_iso = date_input.isoformat()
+                            
+                            # 1. Pull Scale Data
+                            try:
+                                weigh_ins = client.get_body_composition(today_iso)
+                                if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
+                                    latest = weigh_ins['dateWeightList'][-1]
+                                    
+                                    # Garmin sometimes returns grams, sometimes kg. Safely format:
+                                    raw_w = latest.get('weight', st.session_state['h_weight'])
+                                    st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
+                                    
+                                    st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
+                                    
+                                    raw_m = latest.get('muscleMass', st.session_state['h_muscle'])
+                                    st.session_state['h_muscle'] = float(raw_m / 1000 if raw_m > 1000 else raw_m)
+                            except Exception as e:
+                                st.warning("Scale sync skipped or empty.")
+                                
+                            # 2. Pull Sleep Data
+                            try:
+                                sleep_data = client.get_sleep_data(today_iso)
+                                if sleep_data:
+                                    st.session_state['h_sleep'] = int(sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value', st.session_state['h_sleep']))
+                            except Exception as e:
+                                st.warning("Sleep sync skipped or empty.")
+                                
+                            st.success("Health Check Complete!")
+                    except Exception as e:
+                        st.error(f"Garmin Login Failed: {e}")
+                        
+            st.session_state['h_height'] = st.number_input("Height (cm) - Fixed", value=st.session_state['h_height'], step=1.0)
+            bw_input = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
+            bf_input = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
+            muscle_input = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
+            sleep_input = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+            
+            # --- FFMI CALCULATION (Auto) ---
+            lean_mass = bw_input * (1 - (bf_input / 100))
+            height_m = st.session_state['h_height'] / 100
+            ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+            st.info(f"🧬 **Current FFMI:** {ffmi:.1f}")
+        
         is_deload = st.toggle("🧘 Activate Deload Week")
         
     with col2:
@@ -311,7 +375,6 @@ with tab1:
                     max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
                 
                 st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
-                st.caption("Note: Zone breakdown must be entered manually from the Garmin app chart.")
                 zc1, zc2, zc3, zc4, zc5 = st.columns(5)
                 z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
                 z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
@@ -327,7 +390,9 @@ with tab1:
                         'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
                         'Reps_or_Mins': duration, 'Bodyweight': bw_input, 'RIR': 0.0, 'Side': 'Both',
                         'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
-                        'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5
+                        'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
+                        'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': bf_input, 
+                        'Muscle_Mass_kg': muscle_input, 'Sleep_Score': sleep_input, 'FFMI': ffmi
                     }
                     new_df = pd.DataFrame([cardio_data])
                     append_new_data(new_df)
@@ -473,7 +538,9 @@ with tab1:
                                     'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 
                                     'Distance_km': 0.0, 'Bodyweight': bw_input, 'RIR': rirs[key],
                                     'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
-                                    'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0
+                                    'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0,
+                                    'Height_cm': st.session_state['h_height'], 'Body_Fat_Pct': bf_input, 
+                                    'Muscle_Mass_kg': muscle_input, 'Sleep_Score': sleep_input, 'FFMI': ffmi
                                 }
                                 if is_unilateral:
                                     if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
@@ -496,19 +563,17 @@ with tab2:
         lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         
-        at1, at2, at3, at4, at5 = st.tabs(["👻 Milestones & Tonnage", "📈 Relative Strength", "🔥 INOL & Fatigue", "🦵 7-Day Muscle Radar", "🫀 Cardio Engine"])
+        # --- NEW: RECOMP & RECOVERY TAB ADDED ---
+        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
             st.subheader("Historical Milestones & Gamification")
-            
-            # --- NEW: TONNAGE GAME ---
             if not lift_df.empty:
                 recent_30_lift = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
                 monthly_tonnage = recent_30_lift['Volume'].sum()
                 
                 if monthly_tonnage > 0:
                     st.markdown("### 🎮 The Monthly Tonnage Game")
-                    
                     if monthly_tonnage < 2500:
                         emoji, item = "🦈", "A Great White Shark"
                     elif monthly_tonnage < 5000:
@@ -551,35 +616,28 @@ with tab2:
 
         with at2:
             st.subheader("Progression Velocity & Relative Strength")
-            # --- NEW: RELATIVE STRENGTH TRACKER ---
             st.write("Tracking absolute max weight is good, but tracking your **Strength-to-Weight Ratio** proves you are building pure lean tissue, not just gaining fat/water weight.")
             
             if not lift_df.empty:
                 vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
-                
-                # Group by Date, getting max 1RM and average bodyweight for that day
                 v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date').agg(
                     {'Epley_1RM': 'max', 'Bodyweight': 'mean'}
                 ).reset_index()
                 
                 if not v_df.empty:
                     v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3, min_periods=1).mean()
-                    # Calculate Relative Strength
-                    v_df['Relative_Strength'] = v_df['Epley_1RM'] / v_df['Bodyweight'].replace(0, 1) # Prevent division by zero
+                    v_df['Relative_Strength'] = v_df['Epley_1RM'] / v_df['Bodyweight'].replace(0, 1) 
                     
-                    # Absolute Strength Chart
                     fig = go.Figure()
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM (kg)', opacity=0.5, line=dict(dash='dot', width=1)))
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
                     fig.update_layout(title=f"Absolute Strength (e1RM) - {vel_ex}")
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    # Relative Strength Chart
                     fig_rel = go.Figure()
                     fig_rel.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', name='Strength-to-Weight Ratio', line=dict(color='#00CC96', width=3)))
                     fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)", yaxis_title="x Bodyweight")
                     st.plotly_chart(fig_rel, use_container_width=True)
-                    
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
 
@@ -619,7 +677,6 @@ with tab2:
                     st.info("No data available for INOL calculation yet.")
 
         with at4:
-            # --- NEW: 7-DAY WINDOW & RADAR CHART ---
             st.subheader("7-Day Microcycle (Muscle Volume)")
             st.write("This tracks **Total Hard Sets** per muscle over a rolling 7-day window. It reveals true biological imbalances before they become joint injuries.")
             
@@ -635,9 +692,8 @@ with tab2:
                 if muscle_sets:
                     heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
                     
-                    # 1. The Bro-Split Radar Chart
                     fig_radar = go.Figure(data=go.Scatterpolar(
-                        r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], # Close the web loop
+                        r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], 
                         theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]],
                         fill='toself',
                         marker_color='#1f77b4'
@@ -649,12 +705,10 @@ with tab2:
                     )
                     st.plotly_chart(fig_radar, use_container_width=True)
                     
-                    # 2. The Standard Bar Chart
                     fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
                                   color='Total Sets', color_continuous_scale='Inferno',
                                   title="Set Distribution (Last 7 Days)")
                     
-                    # Weekly MEV/MRV benchmarks
                     fig4.add_vline(x=10, line_dash="dash", line_color="#00CC96", annotation_text="MEV (~10/wk)", annotation_position="top left")
                     fig4.add_vline(x=20, line_dash="dash", line_color="#EF553B", annotation_text="MRV (~20/wk)", annotation_position="top left")
                     st.plotly_chart(fig4, use_container_width=True)
@@ -680,7 +734,6 @@ with tab2:
                         metric_title = "Avg Speed (km/h) 📈 Higher is Better"
                     
                     st.markdown("### Aerobic Efficiency")
-                    st.write("*Compare your external mechanical output (Speed/Pace) against your internal physiological cost (Heart Rate).*")
                     
                     fig_aerobic = go.Figure()
                     fig_aerobic.add_trace(go.Bar(x=cx_df['Date'], y=cx_df['Metric_Value'], name='Speed/Pace Output', marker_color='#1f77b4', yaxis='y1'))
@@ -701,6 +754,49 @@ with tab2:
                     
                     fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
                     st.plotly_chart(fig_zones, use_container_width=True)
+                    
+        with at6:
+            # --- NEW: RECOMP & RECOVERY TAB ---
+            st.subheader("🧬 Biological Recomp & Recovery")
+            
+            # Recomp Tracker
+            st.markdown("### FFMI (Fat-Free Mass Index) Tracker")
+            st.write("*FFMI measures how much pure lean muscle tissue you carry. A natural limit is around 25.*")
+            
+            health_df = df.groupby('Date').agg({'FFMI': 'max', 'Body_Fat_Pct': 'max', 'Sleep_Score': 'max'}).reset_index()
+            health_df = health_df[(health_df['FFMI'] > 0) & (health_df['Body_Fat_Pct'] > 0)]
+            
+            if not health_df.empty:
+                fig_ffmi = go.Figure()
+                fig_ffmi.add_trace(go.Scatter(x=health_df['Date'], y=health_df['FFMI'], mode='lines+markers', name='FFMI', line=dict(color='#00CC96', width=3), yaxis='y1'))
+                fig_ffmi.add_trace(go.Scatter(x=health_df['Date'], y=health_df['Body_Fat_Pct'], mode='lines', name='Body Fat %', line=dict(color='#FF4B4B', dash='dot'), yaxis='y2'))
+                
+                fig_ffmi.update_layout(
+                    yaxis=dict(title='FFMI Score', side='left'),
+                    yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False),
+                    hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_ffmi, use_container_width=True)
+            else:
+                st.info("Sync your Garmin Scale data a few times to start building your FFMI Recomp chart.")
+                
+            # Recovery vs Strength
+            st.markdown("### 🛌 Sleep Score vs. Absolute Strength")
+            st.write("*Visual proof of how your Garmin sleep score dictates your performance under the bar.*")
+            
+            if not lift_df.empty:
+                rc_ex = st.selectbox("Select Exercise to compare against Sleep", lift_df['Exercise'].unique())
+                rc_df = lift_df[lift_df['Exercise'] == rc_ex].groupby('Date').agg({'Epley_1RM': 'max', 'Sleep_Score': 'max'}).reset_index()
+                rc_df = rc_df[rc_df['Sleep_Score'] > 0]
+                
+                if not rc_df.empty:
+                    fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", 
+                                           title=f"Correlation: Sleep Score vs. {rc_ex} e1RM",
+                                           labels={'Sleep_Score': 'Garmin Sleep Score', 'Epley_1RM': 'e1RM (kg)'},
+                                           color='Sleep_Score', color_continuous_scale='RdYlGn')
+                    st.plotly_chart(fig_sleep, use_container_width=True)
+                else:
+                    st.info(f"Not enough Sleep Score data logged alongside {rc_ex} to generate a scatter plot yet.")
 
 with tab3:
     st.subheader("⚙️ Database Editor")
