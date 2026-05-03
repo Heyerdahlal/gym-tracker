@@ -46,7 +46,7 @@ except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** {e}")
     st.stop()
 
-# --- PROGRAM & DICTIONARIES (VERSION 23.0) ---
+# --- PROGRAM & DICTIONARIES (VERSION 24.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -172,6 +172,8 @@ BAND_SUBTRACTIONS = {
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press"]
+
 CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
 HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI', 'RHR', 'HRV']
 
@@ -338,6 +340,18 @@ with tab1:
                         else:
                             st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
                         
+                        # --- NEW: WARM-UP ENGINE ---
+                        if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
+                            with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
+                                st.write("*Science: CNS priming prevents injury and maximizes motor-unit recruitment.*")
+                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
+                                w2 = round((last_weight * 0.5) / 2.5) * 2.5
+                                w3 = round((last_weight * 0.8) / 2.5) * 2.5
+                                st.markdown(f"- **Set 1 (Blood Flow):** {w1}kg × 8-10 reps")
+                                st.markdown(f"- **Set 2 (Acclimatization):** {w2}kg × 5 reps")
+                                st.markdown(f"- **Set 3 (CNS Primer):** {w3}kg × 2-3 reps")
+                                st.info("Rest 2 minutes before starting your actual working sets!")
+
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         if min_reps_last_session < 5:
                             st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but **drop the weight by 10-15% for Sets 2 & 3** to stay in the hypertrophy zone.")
