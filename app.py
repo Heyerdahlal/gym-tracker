@@ -536,6 +536,7 @@ with tab4:
                     st.rerun()
 
         st.markdown("**Current Session Health Data:**")
+        st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
         st.session_state['h_height'] = st.number_input("Height (cm) - Fixed", value=st.session_state['h_height'], step=1.0)
         st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
         st.session_state['h_muscle'] = st.number_input("Skeletal Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
