@@ -458,37 +458,51 @@ with tab4:
     st.info("If you have Multi-Factor Authentication (2FA) enabled, open your Authenticator App and type the 6 digits below *right before* you click a sync button.")
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
-    def get_garmin_client():
+   def get_garmin_client():
+        # 1. Check if we already have a VIP wristband in memory!
+        if 'garmin_vip_client' in st.session_state:
+            return st.session_state['garmin_vip_client']
+            
         g_email = st.secrets.get("garmin_email")
         g_pass = st.secrets.get("garmin_password")
         if not g_email or not g_pass:
             st.error("Missing Garmin credentials in Streamlit secrets! Check your deployment settings.")
             return None
+            
         try:
+            # 2. If no wristband, login from scratch
             if mfa_input:
                 client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input)
             else:
                 client = Garmin(g_email, g_pass)
+                
             client.login()
+            
+            # 3. Success! Save the client to memory so we never ask for MFA again today
+            st.session_state['garmin_vip_client'] = client 
             return client
+            
         except Exception as e:
             if "prompt_mfa" in str(e):
-                st.error("🛑 **Garmin requires 2FA!** Please enter your 6-digit Authenticator app code above and try syncing again.")
+                st.error("🛑 **Garmin requires 2FA!** Check your email for a NEW code, type it in the box above, and click sync again.")
             else:
                 st.error(f"Garmin Login Failed: {e}")
             return None
 
     c1, c2 = st.columns(2)
     
-    with c1:
+  with c1:
         st.markdown("#### 🧬 Morning Health Sync")
         if st.button("🔄 Sync Scale & Sleep"):
-            with st.spinner("Connecting to Garmin API..."):
+            with st.spinner(f"Pulling data for {date_input}..."):
                 client = get_garmin_client()
                 if client:
-                    today_iso = date.today().isoformat()
+                    # Use the date selected in Tab 1, not a hardcoded "today"
+                    target_date_iso = date_input.isoformat()
+                    
+                    # 1. Scale Sync
                     try:
-                        weigh_ins = client.get_body_composition(today_iso)
+                        weigh_ins = client.get_body_composition(target_date_iso)
                         if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
                             latest = weigh_ins['dateWeightList'][-1]
                             raw_w = latest.get('weight', st.session_state['h_weight'])
@@ -496,17 +510,29 @@ with tab4:
                             st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
                             raw_m = latest.get('muscleMass', st.session_state['h_muscle'])
                             st.session_state['h_muscle'] = float(raw_m / 1000 if raw_m > 1000 else raw_m)
+                            st.toast(f"✅ Scale data found for {target_date_iso}")
+                        else:
+                            st.warning(f"⚖️ No scale data found on Garmin for {target_date_iso}. Did you weigh in?")
                     except Exception as e:
-                        st.warning("Scale sync skipped or empty.")
+                        st.error(f"Scale sync error: {e}")
                         
+                    # 2. Sleep Sync
                     try:
-                        sleep_data = client.get_sleep_data(today_iso)
-                        if sleep_data:
-                            st.session_state['h_sleep'] = int(sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value', st.session_state['h_sleep']))
+                        sleep_data = client.get_sleep_data(target_date_iso)
+                        if sleep_data and 'dailySleepDTO' in sleep_data:
+                            score = sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value')
+                            if score:
+                                st.session_state['h_sleep'] = int(score)
+                                st.toast(f"✅ Sleep Score ({score}) found for {target_date_iso}")
+                            else:
+                                st.warning(f"🛌 No Sleep Score calculated for {target_date_iso} yet.")
+                        else:
+                            st.warning(f"🛌 No sleep data found on Garmin for {target_date_iso}. Sync your watch to your phone first.")
                     except Exception as e:
-                        st.warning("Sleep sync skipped or empty.")
+                        st.error(f"Sleep sync error: {e}")
                         
-                    st.success("Health Check Complete! Data stored for today's logs.")
+                    st.success("Health Check Complete! Check the fields below.")
+                    # Force the UI to refresh with the new session_state values
                     st.rerun()
 
         st.markdown("**Current Session Health Data:**")
