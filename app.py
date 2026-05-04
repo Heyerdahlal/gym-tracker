@@ -127,9 +127,9 @@ EXERCISE_GUIDES = {
         "Why": "Stable pulling builds back thickness without the systemic lower back fatigue of a standard bent-over barbell row."
     },
     "Dumbbell Bench Press": {
-        "Setup": "Slight arch in the back, shoulder blades pinned down and back.",
-        "Execution": "Lower the dumbbells slowly (3 seconds) to a deep stretch. Press up but do NOT clank the bells together at the top (kills tension).",
-        "Why": "Maximizes pec stretch under load (the #1 hypertrophy trigger) without restricting shoulder mechanics like a straight barbell does."
+        "Setup": "Set bench to a slight incline (15-30 degrees). Shoulder blades pinned down and back.",
+        "Execution": "Lower slowly (3s) to a deep stretch. Press up, but STOP a few inches before the dumbbells touch. Do not lock out.",
+        "Why": "A slight incline perfectly aligns with the pec fibers. Stopping before the bells touch prevents the joints from 'stacking', keeping 100% of the tension on the chest."
     },
     "Single-Arm Bench-Supported Dumbbell Row": {
         "Setup": "Hand and same-side knee on the bench. Back perfectly flat.",
@@ -142,9 +142,9 @@ EXERCISE_GUIDES = {
         "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. A high-rep finisher with zero joint wear."
     },
     "Overhead Tricep Extension": {
-        "Setup": "Seated or standing, elbows pointing up.",
-        "Execution": "Let the dumbbell pull your arms into a deep stretch behind your head. Lock out completely at the top.",
-        "Why": "Trains the long head of the triceps in its fully stretched position, which is the most anabolic state for triceps."
+        "Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.",
+        "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.",
+        "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest, while keeping constant tension in the stretch."
     },
     "Dumbbell Hammer Curls": {
         "Setup": "Standing, neutral grip (palms facing each other).",
@@ -152,9 +152,9 @@ EXERCISE_GUIDES = {
         "Why": "Targets the brachialis and brachioradialis. This pushes the bicep up (creating a larger peak) and prevents elbow tendonitis."
     },
     "Banded Crossovers": {
-        "Setup": "Bands anchored at chest height. Step forward to create tension.",
-        "Execution": "Hug a tree. Squeeze for 2 full seconds at the peak contraction where your hands overlap.",
-        "Why": "Provides constant tension through the entire range of motion, unlike DB flyes where tension vanishes at the top."
+        "Setup": "Anchor bands HIGH (above head). Step forward to create tension.",
+        "Execution": "Pull down and across your body (high-to-low). Squeeze for 2 full seconds at the bottom contraction where your hands overlap.",
+        "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers, brilliantly complementing the upper-pec focus of your incline DB presses."
     },
     "Chest-Supported Lateral Raise": {
         "Setup": "Chest flat against a steep incline bench.",
@@ -243,9 +243,9 @@ EXERCISE_GUIDES = {
 
     # LOWER B
     "Romanian Deadlift (RDL)": {
-        "Setup": "Feet shoulder-width. Unlock your knees slightly, but freeze them at that 15-degree angle.",
-        "Execution": "Push hips straight back. Keep the bar dragging against your legs. Stop the moment your hamstrings are fully stretched.",
-        "Why": "The king of posterior chain development. Builds thick hamstrings, dense glutes, and an iron lower back."
+        "Setup": "Stand inside the Hex/Trap bar. Feet shoulder-width. Unlock knees slightly and freeze them at that angle.",
+        "Execution": "Push hips straight back toward the wall behind you. Stop and reverse the motion the moment your hamstrings are fully stretched.",
+        "Why": "The Hex Bar aligns the center of gravity with your midline, providing a brutal hamstring/glute stretch while drastically reducing shear force on the lumbar spine."
     },
     "Bulgarian Split Squats": {
         "Setup": "Rear foot elevated on a bench. Hold dumbbells at your sides.",
@@ -273,9 +273,9 @@ EXERCISE_GUIDES = {
         "Why": "Directly trains the spinal erectors through a full range of motion, building a thick, resilient lower back."
     },
     "Heavy Suitcase Holds": {
-        "Setup": "Hold a heavy kettlebell or dumbbell in one hand.",
-        "Execution": "Stand perfectly straight. Do not let the weight pull your shoulder down or twist your torso.",
-        "Why": "Isometric anti-lateral flexion. Phenomenal for bulletproofing the QL (Quadratus Lumborum) and grip strength."
+        "Setup": "Hold a heavy kettlebell or dumbbell in one hand. Stand perfectly tall.",
+        "Execution": "Perform a slow, highly controlled march in place. Do not let the weight pull your shoulder down or shift your hips.",
+        "Why": "Marching upgrades this from an anti-lateral flexion core exercise to a dynamic pelvic stabilizer, bulletproofing the glute medius and preventing hip drop."
     },
     "Front-Rack Kettlebell Marches": {
         "Setup": "Two heavy KBs held at the chest (rack position).",
