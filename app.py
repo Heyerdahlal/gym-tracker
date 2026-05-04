@@ -398,7 +398,6 @@ def append_new_data(new_rows_df):
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
     df_to_append = df_to_append.fillna('')
     
-    # BULLETPROOF CATCH: If A1 isn't 'Date', wipe the invisible grid and inject headers
     try:
         first_row = worksheet.row_values(1)
     except Exception:
@@ -419,16 +418,32 @@ def overwrite_database(df):
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
+# --- NEW: HEALTH METRIC MEMORY ---
+df = load_data()
+
+def get_latest_nonzero(col_name, default_val):
+    if not df.empty and col_name in df.columns:
+        valid_data = df[df[col_name] > 0]
+        if not valid_data.empty:
+            return float(valid_data.sort_values('Date').iloc[-1][col_name])
+    return default_val
+
+# Look at the database to see what your last actual health stats were!
+last_w = get_latest_nonzero('Bodyweight', 80.0)
+last_bf = get_latest_nonzero('Body_Fat_Pct', 15.0)
+last_mus = get_latest_nonzero('Muscle_Mass_kg', 35.0)
+last_sleep = int(get_latest_nonzero('Sleep_Score', 80))
+last_rhr = int(get_latest_nonzero('RHR', 50))
+last_hrv = int(get_latest_nonzero('HRV', 60))
+
 # --- INITIALIZE SESSION STATE ---
 if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
-if 'h_weight' not in st.session_state: st.session_state['h_weight'] = 80.0
-if 'h_bf' not in st.session_state: st.session_state['h_bf'] = 15.0
-if 'h_muscle' not in st.session_state: st.session_state['h_muscle'] = 35.0
-if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = 80
-if 'h_rhr' not in st.session_state: st.session_state['h_rhr'] = 50
-if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = 60
-
-df = load_data()
+if 'h_weight' not in st.session_state: st.session_state['h_weight'] = last_w
+if 'h_bf' not in st.session_state: st.session_state['h_bf'] = last_bf
+if 'h_muscle' not in st.session_state: st.session_state['h_muscle'] = last_mus
+if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = last_sleep
+if 'h_rhr' not in st.session_state: st.session_state['h_rhr'] = last_rhr
+if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = last_hrv
 
 st.title("🔬 Sports Science Dashboard")
 
@@ -1092,4 +1107,3 @@ with tab3:
         final_df = pd.concat([historical_df, edited_recent], ignore_index=True)
         overwrite_database(final_df)
         st.success("Database Saved safely!")
-        # Rerun removed here to prevent flash-hiding the success box!
