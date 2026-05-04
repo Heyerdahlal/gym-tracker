@@ -49,7 +49,7 @@ except Exception as e:
 # --- STATIC USER PROFILE (FROM SECRETS) ---
 USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
 
-# --- PROGRAM & DICTIONARIES (VERSION 28.0) ---
+# --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -118,9 +118,7 @@ REP_TARGETS = {
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
-# --- NEW: COMPREHENSIVE EXERCISE GUIDES ---
 EXERCISE_GUIDES = {
-    # --- UPPER A ---
     "T-Bar Landmine Row": {
         "Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.",
         "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.",
@@ -144,7 +142,7 @@ EXERCISE_GUIDES = {
     "Overhead Tricep Extension": {
         "Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.",
         "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.",
-        "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest, while keeping constant tension in the stretch."
+        "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest."
     },
     "Dumbbell Hammer Curls": {
         "Setup": "Standing, neutral grip (palms facing each other).",
@@ -166,8 +164,6 @@ EXERCISE_GUIDES = {
         "Execution": "Sweep arms out to the side. Stop when elbows align with shoulders (do NOT pinch your shoulder blades together).",
         "Why": "Stopping before the shoulder blades retract ensures the load stays 100% on the rear deltoid, not the rhomboids or traps."
     },
-    
-    # --- LOWER A ---
     "Heavy Barbell Front Squat": {
         "Setup": "Clean grip or cross-arm grip. Bar resting deep on the meaty part of the front delts.",
         "Execution": "Deep, upright squat. Drive your elbows UP violently as you come out of the hole to prevent your chest from collapsing.",
@@ -208,8 +204,6 @@ EXERCISE_GUIDES = {
         "Execution": "Press the band straight out in front of you. Hold for 2 seconds, violently resisting the urge to twist.",
         "Why": "Elite anti-rotation core training. Protects the spine by teaching the deep core to brace against twisting forces."
     },
-
-    # --- UPPER B ---
     "Neutral Grip Pull-Ups": {
         "Setup": "Palms facing each other.",
         "Execution": "Start from a dead hang. Pull your upper chest to the bar. Control the eccentric (lowering) phase.",
@@ -240,8 +234,6 @@ EXERCISE_GUIDES = {
         "Execution": "Keep elbows pinned to your sides. Push down and pull the band APART at the very bottom.",
         "Why": "Band resistance increases at peak contraction, matching the strength curve of the triceps perfectly."
     },
-
-    # --- LOWER B ---
     "Romanian Deadlift (RDL)": {
         "Setup": "Stand inside the Hex/Trap bar. Feet shoulder-width. Unlock knees slightly and freeze them at that angle.",
         "Execution": "Push hips straight back toward the wall behind you. Stop and reverse the motion the moment your hamstrings are fully stretched.",
@@ -319,18 +311,11 @@ MUSCLE_MAP = {
 }
 
 BW_MULTIPLIERS = {
-    "Neutral Grip Pull-Ups": 0.95, 
-    "Band-Assisted Dips": 0.95,
-    "Push-Ups": 0.65, 
-    "Nordic Curls": 0.60, 
-    "Anchored Reverse Crunch": 0.40, 
-    "Ab-Wheel Rollouts": 0.50,
-    "Squat Wedge Dumbbell Calf Raises": 1.0, 
-    "Bulgarian Split Squats": 0.85, 
-    "Erector-Focused Roman Chair Extension": 0.50,
-    "Glute-Focused Roman Chair Extension": 0.50,
-    "Hamstring-Focused Roman Chair Extension": 0.50,
-    "Heavy Barbell Front Squat": 0.85,
+    "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65, 
+    "Nordic Curls": 0.60, "Anchored Reverse Crunch": 0.40, "Ab-Wheel Rollouts": 0.50,
+    "Squat Wedge Dumbbell Calf Raises": 1.0, "Bulgarian Split Squats": 0.85, 
+    "Erector-Focused Roman Chair Extension": 0.50, "Glute-Focused Roman Chair Extension": 0.50,
+    "Hamstring-Focused Roman Chair Extension": 0.50, "Heavy Barbell Front Squat": 0.85,
     "Wall Tibialis Raises": 0.30
 }
 
@@ -358,7 +343,6 @@ def get_target_reps_and_sets(exercise_name):
 def load_data():
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
     
-    # NEW SAFETY CATCH: Use expected_headers to bypass the blank sheet crash
     try:
         records = worksheet.get_all_records(expected_headers=baseline_cols)
     except Exception:
@@ -414,9 +398,15 @@ def append_new_data(new_rows_df):
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
     df_to_append = df_to_append.fillna('')
     
-    # NEW SAFETY CATCH: If the Google Sheet is totally empty, inject headers first!
-    if not worksheet.get_all_values():
-        worksheet.append_row(df_to_append.columns.tolist())
+    # BULLETPROOF CATCH: If A1 isn't 'Date', wipe the invisible grid and inject headers
+    try:
+        first_row = worksheet.row_values(1)
+    except Exception:
+        first_row = []
+        
+    if not first_row or first_row[0] != 'Date':
+        worksheet.clear() 
+        worksheet.update(values=[df_to_append.columns.tolist()], range_name="A1")
         
     worksheet.append_rows(df_to_append.values.tolist())
     st.cache_data.clear()
@@ -534,9 +524,6 @@ with tab1:
                                 st.markdown(f"**Setup:** {guide.get('Setup', '')}")
                                 st.markdown(f"**Execution:** {guide.get('Execution', '')}")
                                 st.markdown(f"**Why it's good:** {guide.get('Why', '')}")
-                        else:
-                            with st.expander(f"📖 Form & Setup Guide: {exercise}", expanded=False):
-                                st.markdown("*Guide pending. Add instructions for this lift in the EXERCISE_GUIDES dictionary in your code!*")
 
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         if min_reps_last_session < 5:
@@ -563,9 +550,6 @@ with tab1:
                                 st.markdown(f"**Setup:** {guide.get('Setup', '')}")
                                 st.markdown(f"**Execution:** {guide.get('Execution', '')}")
                                 st.markdown(f"**Why it's good:** {guide.get('Why', '')}")
-                        else:
-                            with st.expander(f"📖 Form & Setup Guide: {exercise}", expanded=False):
-                                st.markdown("*Guide pending. Add instructions for this lift in the EXERCISE_GUIDES dictionary in your code!*")
                 else:
                     st.info(f"**{exercise}:** No history. Establish your baseline Set 1 today!")
                     default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
@@ -576,9 +560,6 @@ with tab1:
                             st.markdown(f"**Setup:** {guide.get('Setup', '')}")
                             st.markdown(f"**Execution:** {guide.get('Execution', '')}")
                             st.markdown(f"**Why it's good:** {guide.get('Why', '')}")
-                    else:
-                        with st.expander(f"📖 Form & Setup Guide: {exercise}", expanded=False):
-                            st.markdown("*Guide pending. Add instructions for this lift in the EXERCISE_GUIDES dictionary in your code!*")
             
             st.write("---")
             
@@ -662,8 +643,7 @@ with tab1:
                     if new_rows:
                         new_df = pd.DataFrame(new_rows)
                         append_new_data(new_df)
-                        st.success(f"Logged {len(new_rows)} rows!")
-                        st.rerun()
+                        st.success(f"✅ Logged {len(new_rows)} rows successfully! Check the Database tab.")
                     else:
                         st.warning("No reps logged. Database was not updated.")
 
@@ -1112,4 +1092,4 @@ with tab3:
         final_df = pd.concat([historical_df, edited_recent], ignore_index=True)
         overwrite_database(final_df)
         st.success("Database Saved safely!")
-        st.rerun()
+        # Rerun removed here to prevent flash-hiding the success box!
