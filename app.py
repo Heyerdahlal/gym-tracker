@@ -49,7 +49,7 @@ except Exception as e:
 # --- STATIC USER PROFILE (FROM SECRETS) ---
 USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
 
-# --- PROGRAM & DICTIONARIES (VERSION 27.1) ---
+# --- PROGRAM & DICTIONARIES (VERSION 28.0) ---
 PROGRAM = {
     "Day 1: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
@@ -118,9 +118,9 @@ REP_TARGETS = {
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
-# --- EXERCISE GUIDES ---
+# --- NEW: COMPREHENSIVE EXERCISE GUIDES ---
 EXERCISE_GUIDES = {
-    # UPPER A
+    # --- UPPER A ---
     "T-Bar Landmine Row": {
         "Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.",
         "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.",
@@ -167,7 +167,7 @@ EXERCISE_GUIDES = {
         "Why": "Stopping before the shoulder blades retract ensures the load stays 100% on the rear deltoid, not the rhomboids or traps."
     },
     
-    # LOWER A
+    # --- LOWER A ---
     "Heavy Barbell Front Squat": {
         "Setup": "Clean grip or cross-arm grip. Bar resting deep on the meaty part of the front delts.",
         "Execution": "Deep, upright squat. Drive your elbows UP violently as you come out of the hole to prevent your chest from collapsing.",
@@ -209,7 +209,7 @@ EXERCISE_GUIDES = {
         "Why": "Elite anti-rotation core training. Protects the spine by teaching the deep core to brace against twisting forces."
     },
 
-    # UPPER B
+    # --- UPPER B ---
     "Neutral Grip Pull-Ups": {
         "Setup": "Palms facing each other.",
         "Execution": "Start from a dead hang. Pull your upper chest to the bar. Control the eccentric (lowering) phase.",
@@ -241,7 +241,7 @@ EXERCISE_GUIDES = {
         "Why": "Band resistance increases at peak contraction, matching the strength curve of the triceps perfectly."
     },
 
-    # LOWER B
+    # --- LOWER B ---
     "Romanian Deadlift (RDL)": {
         "Setup": "Stand inside the Hex/Trap bar. Feet shoulder-width. Unlock knees slightly and freeze them at that angle.",
         "Execution": "Push hips straight back toward the wall behind you. Stop and reverse the motion the moment your hamstrings are fully stretched.",
@@ -356,9 +356,13 @@ def get_target_reps_and_sets(exercise_name):
 
 @st.cache_data(ttl=600)
 def load_data():
-    records = worksheet.get_all_records()
-    
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
+    
+    # NEW SAFETY CATCH: Use expected_headers to bypass the blank sheet crash
+    try:
+        records = worksheet.get_all_records(expected_headers=baseline_cols)
+    except Exception:
+        return pd.DataFrame(columns=baseline_cols)
     
     if not records:
         return pd.DataFrame(columns=baseline_cols)
@@ -409,6 +413,11 @@ def append_new_data(new_rows_df):
     df_to_append = new_rows_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
     df_to_append = df_to_append.fillna('')
+    
+    # NEW SAFETY CATCH: If the Google Sheet is totally empty, inject headers first!
+    if not worksheet.get_all_values():
+        worksheet.append_row(df_to_append.columns.tolist())
+        
     worksheet.append_rows(df_to_append.values.tolist())
     st.cache_data.clear()
 
@@ -1096,7 +1105,7 @@ with tab3:
     edited_recent = st.data_editor(
         recent_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), 
         num_rows="dynamic", 
-        use_container_width=True
+        width="stretch"
     )
     
     if st.button("Save Changes", type="primary"):
