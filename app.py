@@ -663,16 +663,41 @@ with tab4:
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
     def get_garmin_client():
-        if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
+        # 1. If we already have a VIP pass, use it immediately
+        if 'garmin_vip_client' in st.session_state: 
+            return st.session_state['garmin_vip_client']
+            
+        # 2. ANTI-SPAM SHIELD: Check if we are in timeout
+        if 'garmin_lockout' in st.session_state:
+            time_left = st.session_state['garmin_lockout'] - datetime.now()
+            if time_left.total_seconds() > 0:
+                mins_left = int(time_left.total_seconds() / 60)
+                st.error(f"🛑 **RATE LIMIT ACTIVE:** Garmin put you in timeout for spamming. Please wait {mins_left} more minutes before clicking sync.")
+                return None
+            else:
+                del st.session_state['garmin_lockout'] # Timeout over, remove the lock
+                
         g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
-        if not g_email or not g_pass: return None
+        if not g_email or not g_pass: 
+            st.error("Missing Garmin credentials!")
+            return None
+            
         try:
             client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input) if mfa_input else Garmin(g_email, g_pass)
             client.login()
             st.session_state['garmin_vip_client'] = client 
             return client
+            
         except Exception as e:
-            st.error(f"Garmin Login Failed: {e}")
+            error_msg = str(e)
+            if "429" in error_msg:
+                # We got caught. Lock down the app for 15 minutes.
+                st.session_state['garmin_lockout'] = datetime.now() + timedelta(minutes=15)
+                st.error("🛑 **HTTP 429: Too Many Requests.** Garmin's security blocked you. The app is entering a mandatory 15-minute cooldown to protect your account.")
+            elif "prompt_mfa" in error_msg:
+                st.error("🛑 **Garmin requires 2FA!** Check your email/app for a code, type it in the box, and click sync.")
+            else:
+                st.error(f"Garmin Login Failed: {e}")
             return None
 
     c1, c2 = st.columns(2)
