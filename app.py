@@ -418,7 +418,6 @@ def overwrite_database(df):
     worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
-# --- NEW: HEALTH METRIC MEMORY ---
 df = load_data()
 
 def get_latest_nonzero(col_name, default_val):
@@ -428,7 +427,6 @@ def get_latest_nonzero(col_name, default_val):
             return float(valid_data.sort_values('Date').iloc[-1][col_name])
     return default_val
 
-# Look at the database to see what your last actual health stats were!
 last_w = get_latest_nonzero('Bodyweight', 80.0)
 last_bf = get_latest_nonzero('Body_Fat_Pct', 15.0)
 last_mus = get_latest_nonzero('Muscle_Mass_kg', 35.0)
@@ -436,7 +434,6 @@ last_sleep = int(get_latest_nonzero('Sleep_Score', 80))
 last_rhr = int(get_latest_nonzero('RHR', 50))
 last_hrv = int(get_latest_nonzero('HRV', 60))
 
-# --- INITIALIZE SESSION STATE ---
 if 'g_dur' not in st.session_state: st.session_state.update({'g_dur': 60.0, 'g_dist': 10.0, 'g_avg_hr': 130.0, 'g_max_hr': 165.0})
 if 'h_weight' not in st.session_state: st.session_state['h_weight'] = last_w
 if 'h_bf' not in st.session_state: st.session_state['h_bf'] = last_bf
@@ -701,6 +698,10 @@ with tab4:
     
     with c1:
         st.markdown("#### 🧬 Morning Health Sync")
+        
+        # NEW: The Efficiency Checkbox
+        is_rest_day_sync = st.checkbox("🧘 Today is a Rest Day (Auto-save to database)", value=False)
+        
         if st.button("🔄 Sync Scale & Sleep"):
             with st.spinner(f"Pulling data for {date_input}..."):
                 client = get_garmin_client()
@@ -747,8 +748,26 @@ with tab4:
                     except Exception as e:
                         st.error(f"Sleep/HRV sync error: {e}")
                         
-                    st.success("Health Check Complete! Check the fields below.")
-                    st.rerun()
+                    st.success("Health Check Complete!")
+                    
+                    # NEW: The Auto-Log Logic
+                    if is_rest_day_sync:
+                        lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                        height_m = USER_HEIGHT / 100
+                        ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+                        
+                        rest_data = {
+                            'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 
+                            'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': 0.0, 
+                            'Reps_or_Mins': 1, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0, 'Side': 'Both',
+                            'Avg_HR': 0, 'Max_HR': 0, 'Avg_Resp': 0,
+                            'Z1_Mins': 0, 'Z2_Mins': 0, 'Z3_Mins': 0, 'Z4_Mins': 0, 'Z5_Mins': 0,
+                            'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
+                            'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
+                            'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
+                        }
+                        append_new_data(pd.DataFrame([rest_data]))
+                        st.success(f"✅ Auto-logged Rest Day for {date_input}. Your FFMI chart is updated!")
 
         st.markdown("**Current Session Health Data:**")
         st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
@@ -757,6 +776,27 @@ with tab4:
         st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
         st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
         st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
+
+        # NEW: REST DAY LOGGING BUTTON
+        st.write("---")
+        st.markdown("#### 🧘 Rest Day Logging")
+        if st.button("💾 Save Rest Day Health to Database"):
+            lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+            height_m = USER_HEIGHT / 100
+            ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+            
+            rest_data = {
+                'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 
+                'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': 0.0, 
+                'Reps_or_Mins': 1, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0, 'Side': 'Both',
+                'Avg_HR': 0, 'Max_HR': 0, 'Avg_Resp': 0,
+                'Z1_Mins': 0, 'Z2_Mins': 0, 'Z3_Mins': 0, 'Z4_Mins': 0, 'Z5_Mins': 0,
+                'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
+                'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
+                'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
+            }
+            append_new_data(pd.DataFrame([rest_data]))
+            st.success(f"✅ Health data saved for {date_input}. Your FFMI chart will now update!")
         
     with c2:
         st.markdown("#### 🏃‍♂️ Cardio Session Data")
@@ -893,11 +933,13 @@ with tab2:
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM (kg)', opacity=0.5, line=dict(dash='dot', width=1)))
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
                     fig.update_layout(title=f"Absolute Strength (e1RM) - {vel_ex}")
+                    fig.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig, use_container_width=True)
                     
                     fig_rel = go.Figure()
                     fig_rel.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', name='Strength-to-Weight Ratio', line=dict(color='#00CC96', width=3)))
                     fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)", yaxis_title="x Bodyweight")
+                    fig_rel.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig_rel, use_container_width=True)
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
@@ -928,6 +970,7 @@ with tab2:
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
                     fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r', range_color=[0, 2.0])
                     fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
+                    fig2.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig2, use_container_width=True)
                     
                     st.markdown("### Fatigue Degradation (Intra-Workout)")
@@ -1036,6 +1079,7 @@ with tab2:
                         yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False),
                         hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                     )
+                    fig_aerobic.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig_aerobic, use_container_width=True)
                     
                     st.markdown("### Heart Rate Zone Distribution")
@@ -1045,6 +1089,7 @@ with tab2:
                     zone_colors = {'Z1': '#4287f5', 'Z2': '#42f56f', 'Z3': '#f5d742', 'Z4': '#f58442', 'Z5': '#f54242'}
                     
                     fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
+                    fig_zones.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig_zones, use_container_width=True)
                     
         with at6:
@@ -1066,6 +1111,7 @@ with tab2:
                     yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False),
                     hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
+                fig_ffmi.update_xaxes(tickformat="%Y-%m-%d")
                 st.plotly_chart(fig_ffmi, use_container_width=True)
             else:
                 st.info("Sync your Garmin Scale data a few times to start building your FFMI Recomp chart.")
