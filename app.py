@@ -98,228 +98,74 @@ PROGRAM = {
 }
 
 REP_TARGETS = {
-    "T-Bar Landmine Row": "4 Sets × 8–10 Reps",
-    "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
-    "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm",
-    "Push-Ups": "3 Sets × 10–15 Reps",
-    "Overhead Tricep Extension": "3 Sets × 12–15 Reps",
-    "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
-    "Banded Crossovers": "3 Sets × 15–20 Reps",
-    "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
-    "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps",
-    "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
-    "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps",
-    "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
-    "Hamstring-Focused Roman Chair Extension": "3 Sets × 12–15 Reps",
-    "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
-    "Wall Tibialis Raises": "3 Sets × 15–20 Reps",
-    "Squat Wedge Dumbbell Calf Raises": "4 Sets × 10–12 Reps",
-    "Half-Kneeling Pallof Press": "3 Sets × 10–12 Reps/side",
-    "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
-    "Band-Assisted Dips": "4 Sets × 10–12 Reps",
-    "Landmine Press": "3 Sets × 8–10 Reps",
-    "Banded Face Pulls": "3 Sets × 15–20 Reps",
-    "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
-    "Banded Tricep Pushdowns": "3 Sets × 15–20 Reps",
-    "Romanian Deadlift (RDL)": "4 Sets × 6–8 Reps",
-    "Heavy Russian Kettlebell Swings": "3 Sets × 12–15 Reps",
-    "Barbell Hip Thrusts": "3 Sets × 10–12 Reps",
-    "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps",
-    "Nordic Curls": "3 Sets × 5–8 Reps",
-    "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps",
-    "Heavy Suitcase Holds": "3 Sets × 45 Seconds/side",
+    "T-Bar Landmine Row": "4 Sets × 8–10 Reps", "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
+    "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm", "Push-Ups": "3 Sets × 10–15 Reps",
+    "Overhead Tricep Extension": "3 Sets × 12–15 Reps", "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
+    "Banded Crossovers": "3 Sets × 15–20 Reps", "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
+    "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps", "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
+    "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps", "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
+    "Hamstring-Focused Roman Chair Extension": "3 Sets × 12–15 Reps", "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
+    "Wall Tibialis Raises": "3 Sets × 15–20 Reps", "Squat Wedge Dumbbell Calf Raises": "4 Sets × 10–12 Reps",
+    "Half-Kneeling Pallof Press": "3 Sets × 10–12 Reps/side", "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
+    "Band-Assisted Dips": "4 Sets × 10–12 Reps", "Landmine Press": "3 Sets × 8–10 Reps",
+    "Banded Face Pulls": "3 Sets × 15–20 Reps", "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
+    "Banded Tricep Pushdowns": "3 Sets × 15–20 Reps", "Romanian Deadlift (RDL)": "4 Sets × 6–8 Reps",
+    "Heavy Russian Kettlebell Swings": "3 Sets × 12–15 Reps", "Barbell Hip Thrusts": "3 Sets × 10–12 Reps",
+    "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps", "Nordic Curls": "3 Sets × 5–8 Reps",
+    "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps", "Heavy Suitcase Holds": "3 Sets × 45 Seconds/side",
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
 EXERCISE_GUIDES = {
-    "T-Bar Landmine Row": {
-        "Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.",
-        "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.",
-        "Why": "Stable pulling builds back thickness without the systemic lower back fatigue of a standard bent-over barbell row."
-    },
-    "Dumbbell Bench Press": {
-        "Setup": "Set bench to a slight incline (15-30 degrees). Shoulder blades pinned down and back.",
-        "Execution": "Lower slowly (3s) to a deep stretch. Press up, but STOP a few inches before the dumbbells touch. Do not lock out.",
-        "Why": "A slight incline perfectly aligns with the pec fibers. Stopping before the bells touch prevents the joints from 'stacking', keeping 100% of the tension on the chest."
-    },
-    "Single-Arm Bench-Supported Dumbbell Row": {
-        "Setup": "Hand and same-side knee on the bench. Back perfectly flat.",
-        "Execution": "Pull the dumbbell towards your HIP, not your armpit. Pause for 1 full second at the top contraction.",
-        "Why": "Bench support removes lower back strain. Pulling to the hip isolates the lats instead of shrugging with your upper traps."
-    },
-    "Push-Ups": {
-        "Setup": "Hands shoulder-width, core braced tightly (hollow body).",
-        "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the floor, then explode up.",
-        "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. A high-rep finisher with zero joint wear."
-    },
-    "Overhead Tricep Extension": {
-        "Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.",
-        "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.",
-        "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest."
-    },
-    "Dumbbell Hammer Curls": {
-        "Setup": "Standing, neutral grip (palms facing each other).",
-        "Execution": "Squeeze up cleanly, then a strict 2-second negative. Zero swinging or momentum.",
-        "Why": "Targets the brachialis and brachioradialis. This pushes the bicep up (creating a larger peak) and prevents elbow tendonitis."
-    },
-    "Banded Crossovers": {
-        "Setup": "Anchor bands HIGH (above head). Step forward to create tension.",
-        "Execution": "Pull down and across your body (high-to-low). Squeeze for 2 full seconds at the bottom contraction where your hands overlap.",
-        "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers, brilliantly complementing the upper-pec focus of your incline DB presses."
-    },
-    "Chest-Supported Lateral Raise": {
-        "Setup": "Chest flat against a steep incline bench.",
-        "Execution": "Lead with the elbows, sweeping the dumbbells OUT, not just up. Stop at shoulder height.",
-        "Why": "Strict isolation of the lateral delt. The bench prevents you from using lumbar extension (leaning back) to cheat the weight."
-    },
-    "Chest-Supported Rear Delt Flye": {
-        "Setup": "Chest on incline bench, palms facing down or neutral.",
-        "Execution": "Sweep arms out to the side. Stop when elbows align with shoulders (do NOT pinch your shoulder blades together).",
-        "Why": "Stopping before the shoulder blades retract ensures the load stays 100% on the rear deltoid, not the rhomboids or traps."
-    },
-    "Heavy Barbell Front Squat": {
-        "Setup": "Clean grip or cross-arm grip. Bar resting deep on the meaty part of the front delts.",
-        "Execution": "Deep, upright squat. Drive your elbows UP violently as you come out of the hole to prevent your chest from collapsing.",
-        "Why": "Forces an upright torso, shifting the load intensely onto the quads and off the lumbar spine."
-    },
-    "Heels-Elevated Landmine Squat": {
-        "Setup": "Place a squat wedge under your heels. Hold the thick part of the barbell sleeve at upper-chest level.",
-        "Execution": "Perform 1.5 reps: Drop into a deep squat, rise halfway up, drop back into the deep squat, then stand up. That is ONE rep.",
-        "Why": "Maximizes quad stretch while the 1.5 rep method creates immense time under tension without needing heavy, spine-crushing weights."
-    },
-    "Anchored Reverse Crunch": {
-        "Setup": "Lying on your back, gripping a heavy kettlebell or pole behind your head.",
-        "Execution": "Roll your pelvis UP towards your sternum. Control the descent (3 seconds) until your tailbone gently touches the floor.",
-        "Why": "Flexes the spine against resistance (true abdominal function) rather than just working the hip flexors like standard leg raises."
-    },
-    "Heavy Russian Kettlebell Swings": {
-        "Setup": "Hinge position, KB slightly in front of you.",
-        "Execution": "Hike it back between your legs, then snap your hips forward violently. Your arms are just ropes. Stop at chest height.",
-        "Why": "Builds explosive posterior chain power, hamstring resilience, and glute lockout strength."
-    },
-    "Nordic Curls": {
-        "Setup": "Kneeling, ankles secured under a bar or by a partner.",
-        "Execution": "Squeeze glutes to lock hips. Fall forward as slowly as humanly possible (eccentric focus). Catch yourself, push back up.",
-        "Why": "The ultimate hamstring bulletproofing exercise. Lengthens the muscle fascicles, drastically reducing the risk of a hamstring tear."
-    },
-    "Squat Wedge Dumbbell Calf Raises": {
-        "Setup": "Toes elevated on a wedge, holding heavy dumbbells.",
-        "Execution": "PAUSE for 2 full seconds at the absolute bottom stretch. Explode up, pause 1 second at the top.",
-        "Why": "The Achilles tendon is a massive spring. The bottom pause kills the spring energy, forcing the actual calf muscle to do 100% of the lifting."
-    },
-    "Wall Tibialis Raises": {
-        "Setup": "Lean back against a wall, feet placed out in front of you.",
-        "Execution": "Pull toes up towards your shins as hard as possible. Hold for 1 second.",
-        "Why": "Bulletproofs the knees. The tibialis anterior decelerates the foot; strengthening it prevents shin splints and patellar pain."
-    },
-    "Half-Kneeling Pallof Press": {
-        "Setup": "Half-kneeling, band anchored to your side at chest height.",
-        "Execution": "Press the band straight out in front of you. Hold for 2 seconds, violently resisting the urge to twist.",
-        "Why": "Elite anti-rotation core training. Protects the spine by teaching the deep core to brace against twisting forces."
-    },
-    "Neutral Grip Pull-Ups": {
-        "Setup": "Palms facing each other.",
-        "Execution": "Start from a dead hang. Pull your upper chest to the bar. Control the eccentric (lowering) phase.",
-        "Why": "The neutral grip is highly shoulder-friendly and gives the lats a massive mechanical advantage for growth."
-    },
-    "Band-Assisted Dips": {
-        "Setup": "Band looped over the bars and under your knees.",
-        "Execution": "Slight forward lean to bias the chest. Descend until you feel a deep stretch in the pecs.",
-        "Why": "The band provides help at the bottom (the most vulnerable shoulder position) forcing a strict, deep, hypertrophy-focused rep."
-    },
-    "Landmine Press": {
-        "Setup": "Half-kneeling or standing. Hold the barbell sleeve at shoulder height.",
-        "Execution": "Press up and slightly forward, following the natural arc of the barbell.",
-        "Why": "The arcing path is incredibly healthy and natural for the shoulder capsule compared to a strict vertical barbell press."
-    },
-    "Banded Face Pulls": {
-        "Setup": "Band anchored at eye level.",
-        "Execution": "Pull the band towards your nose, pulling your hands APART and rotating your knuckles UP (external rotation) at the end.",
-        "Why": "The ultimate posture corrector. Hits the rear delts, rhomboids, and bulletproofs the rotator cuff."
-    },
-    "Incline Supinated Dumbbell Curls": {
-        "Setup": "Bench at 45-60 degrees. Let arms hang straight down behind your torso. Palms facing forward.",
-        "Execution": "Keep elbows pinned back. Curl up, squeezing the biceps.",
-        "Why": "Puts the bicep in an extreme stretched position (long head focus), triggering massive hypertrophy with lighter weights."
-    },
-    "Banded Tricep Pushdowns": {
-        "Setup": "Band anchored high above you.",
-        "Execution": "Keep elbows pinned to your sides. Push down and pull the band APART at the very bottom.",
-        "Why": "Band resistance increases at peak contraction, matching the strength curve of the triceps perfectly."
-    },
-    "Romanian Deadlift (RDL)": {
-        "Setup": "Stand inside the Hex/Trap bar. Feet shoulder-width. Unlock knees slightly and freeze them at that angle.",
-        "Execution": "Push hips straight back toward the wall behind you. Stop and reverse the motion the moment your hamstrings are fully stretched.",
-        "Why": "The Hex Bar aligns the center of gravity with your midline, providing a brutal hamstring/glute stretch while drastically reducing shear force on the lumbar spine."
-    },
-    "Bulgarian Split Squats": {
-        "Setup": "Rear foot elevated on a bench. Hold dumbbells at your sides.",
-        "Execution": "Drop your back knee straight down. Lean torso slightly forward to bias glutes, or stay upright to bias quads.",
-        "Why": "Eliminates left/right strength imbalances and provides an extreme muscle stretch under load with zero spinal compression."
-    },
-    "Ab-Wheel Rollouts": {
-        "Setup": "Kneeling. Squeeze glutes to lock your pelvis into a posterior tilt.",
-        "Execution": "Roll out until your torso is parallel to the floor. Pull back using your ABS, not by pushing your hips back.",
-        "Why": "Extreme anti-extension core strength. Forces the rectus abdominis to stabilize the spine under intense load."
-    },
-    "Barbell Hip Thrusts": {
-        "Setup": "Upper back resting on a bench, heavy barbell padded across your hips.",
-        "Execution": "Drive through the heels. Give a brutal 2-second squeeze at the top. Keep your chin tucked to your chest.",
-        "Why": "The highest glute activation of any exercise in existence, completely bypassing the lower back."
-    },
-    "Hamstring-Focused Roman Chair Extension": {
-        "Setup": "Lock into a 45-degree hyperextension bench. Pad sits BELOW the hips (upper thigh).",
-        "Execution": "Keep your back perfectly flat and rigid. Hinge down, then pull up using only the hamstrings and glutes.",
-        "Why": "Provides a fantastic, loaded stretch for the hamstrings without axial loading on the spine."
-    },
-    "Erector-Focused Roman Chair Extension": {
-        "Setup": "Lock into a 45-degree bench. Pad sits AT the hips.",
-        "Execution": "Allow your upper back to round over the pad (spinal flexion), then pull up by extending the spine (unrolling vertebra by vertebra).",
-        "Why": "Directly trains the spinal erectors through a full range of motion, building a thick, resilient lower back."
-    },
-    "Heavy Suitcase Holds": {
-        "Setup": "Hold a heavy kettlebell or dumbbell in one hand. Stand perfectly tall.",
-        "Execution": "Perform a slow, highly controlled march in place. Do not let the weight pull your shoulder down or shift your hips.",
-        "Why": "Marching upgrades this from an anti-lateral flexion core exercise to a dynamic pelvic stabilizer, bulletproofing the glute medius and preventing hip drop."
-    },
-    "Front-Rack Kettlebell Marches": {
-        "Setup": "Two heavy KBs held at the chest (rack position).",
-        "Execution": "Slowly march in place, lifting your knees above hip level with immense control.",
-        "Why": "Heavy core stabilization under load. The rack position forces the upper back and core to work isometrically to keep you upright."
-    }
+    "T-Bar Landmine Row": {"Setup": "Straddle the barbell...", "Execution": "Hinge at hips so torso is almost parallel...", "Why": "Stable pulling builds back thickness..."},
+    "Dumbbell Bench Press": {"Setup": "Set bench to a slight incline...", "Execution": "Lower slowly (3s) to a deep stretch...", "Why": "A slight incline perfectly aligns..."},
+    "Single-Arm Bench-Supported Dumbbell Row": {"Setup": "Hand and same-side knee on the bench...", "Execution": "Pull the dumbbell towards your HIP...", "Why": "Bench support removes lower back strain..."},
+    "Push-Ups": {"Setup": "Hands shoulder-width...", "Execution": "Descend slowly. PAUSE for 1 second...", "Why": "The dead-stop pause kills the stretch reflex..."},
+    "Overhead Tricep Extension": {"Setup": "Anchor band at waist height...", "Execution": "Press the band straight up...", "Why": "Bands provide an 'ascending resistance curve'..."},
+    "Dumbbell Hammer Curls": {"Setup": "Standing, neutral grip...", "Execution": "Squeeze up cleanly, strict 2-second negative...", "Why": "Targets the brachialis..."},
+    "Banded Crossovers": {"Setup": "Anchor bands HIGH...", "Execution": "Pull down and across your body...", "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers..."},
+    "Chest-Supported Lateral Raise": {"Setup": "Chest flat against incline bench...", "Execution": "Lead with the elbows...", "Why": "Strict isolation of the lateral delt..."},
+    "Chest-Supported Rear Delt Flye": {"Setup": "Chest on incline bench...", "Execution": "Sweep arms out to the side...", "Why": "Ensures the load stays 100% on the rear deltoid..."},
+    "Heavy Barbell Front Squat": {"Setup": "Clean grip or cross-arm grip...", "Execution": "Deep, upright squat...", "Why": "Forces an upright torso..."},
+    "Heels-Elevated Landmine Squat": {"Setup": "Squat wedge under heels...", "Execution": "Perform 1.5 reps...", "Why": "Maximizes quad stretch..."},
+    "Anchored Reverse Crunch": {"Setup": "Lying on back, gripping kettlebell...", "Execution": "Roll pelvis UP...", "Why": "Flexes the spine against resistance..."},
+    "Heavy Russian Kettlebell Swings": {"Setup": "Hinge position...", "Execution": "Snap hips forward violently...", "Why": "Builds explosive posterior chain power..."},
+    "Nordic Curls": {"Setup": "Kneeling, ankles secured...", "Execution": "Fall forward slowly...", "Why": "Ultimate hamstring bulletproofing..."},
+    "Squat Wedge Dumbbell Calf Raises": {"Setup": "Toes elevated on wedge...", "Execution": "PAUSE for 2 full seconds...", "Why": "Kills the spring energy..."},
+    "Wall Tibialis Raises": {"Setup": "Lean back against wall...", "Execution": "Pull toes up...", "Why": "Bulletproofs the knees..."},
+    "Half-Kneeling Pallof Press": {"Setup": "Half-kneeling, band anchored...", "Execution": "Press band straight out...", "Why": "Elite anti-rotation core training..."},
+    "Neutral Grip Pull-Ups": {"Setup": "Palms facing each other...", "Execution": "Dead hang to start...", "Why": "Shoulder-friendly and massive mechanical advantage..."},
+    "Band-Assisted Dips": {"Setup": "Band looped over bars...", "Execution": "Slight forward lean...", "Why": "Band provides help at bottom..."},
+    "Landmine Press": {"Setup": "Half-kneeling or standing...", "Execution": "Press up and slightly forward...", "Why": "Arcing path is incredibly healthy..."},
+    "Banded Face Pulls": {"Setup": "Band anchored at eye level...", "Execution": "Pull towards nose...", "Why": "Ultimate posture corrector..."},
+    "Incline Supinated Dumbbell Curls": {"Setup": "Bench at 45-60 degrees...", "Execution": "Keep elbows pinned back...", "Why": "Extreme stretched position..."},
+    "Banded Tricep Pushdowns": {"Setup": "Band anchored high...", "Execution": "Elbows pinned to sides...", "Why": "Resistance increases at peak contraction..."},
+    "Romanian Deadlift (RDL)": {"Setup": "Stand inside Hex bar...", "Execution": "Push hips back...", "Why": "Brutal stretch, drastically reduces shear force..."},
+    "Bulgarian Split Squats": {"Setup": "Rear foot elevated...", "Execution": "Drop back knee straight down...", "Why": "Eliminates imbalances..."},
+    "Ab-Wheel Rollouts": {"Setup": "Kneeling, posterior tilt...", "Execution": "Roll out, pull back using ABS...", "Why": "Extreme anti-extension..."},
+    "Barbell Hip Thrusts": {"Setup": "Upper back resting on bench...", "Execution": "Drive through heels...", "Why": "Highest glute activation..."},
+    "Hamstring-Focused Roman Chair Extension": {"Setup": "Pad BELOW hips...", "Execution": "Back flat, pull up using hamstrings...", "Why": "Fantastic loaded stretch..."},
+    "Erector-Focused Roman Chair Extension": {"Setup": "Pad AT hips...", "Execution": "Round upper back, unroll vertebra by vertebra...", "Why": "Trains spinal erectors..."},
+    "Heavy Suitcase Holds": {"Setup": "Hold heavy weight in one hand...", "Execution": "Slow controlled march...", "Why": "Bulletproofing glute medius..."},
+    "Front-Rack Kettlebell Marches": {"Setup": "Two heavy KBs at chest...", "Execution": "Slowly march in place...", "Why": "Heavy core stabilization..."}
 }
 
 MUSCLE_MAP = {
-    "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5},
-    "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
-    "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5},
-    "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
-    "Overhead Tricep Extension": {"Triceps": 1.0},
-    "Dumbbell Hammer Curls": {"Biceps": 1.0},
-    "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5},
-    "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
-    "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5},
-    "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
-    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5},
-    "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
-    "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5},
-    "Anchored Reverse Crunch": {"Abs": 1.0},
-    "Wall Tibialis Raises": {"Calves": 1.0},
-    "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
-    "Half-Kneeling Pallof Press": {"Abs": 1.0},
-    "Neutral Grip Pull-Ups": {"Back": 1.0, "Biceps": 0.5},
-    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Shoulders": 0.5},
-    "Landmine Press": {"Shoulders": 1.0, "Chest": 0.5, "Triceps": 0.5},
-    "Banded Face Pulls": {"Shoulders": 1.0, "Back": 0.5},
-    "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
-    "Banded Tricep Pushdowns": {"Triceps": 1.0},
-    "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0},
-    "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5},
-    "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
-    "Ab-Wheel Rollouts": {"Abs": 1.0},
-    "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
-    "Erector-Focused Roman Chair Extension": {"Back": 1.0, "Glutes": 0.5},
-    "Heavy Suitcase Holds": {"Abs": 1.0},
+    "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5}, "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
+    "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
+    "Overhead Tricep Extension": {"Triceps": 1.0}, "Dumbbell Hammer Curls": {"Biceps": 1.0},
+    "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5}, "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
+    "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5}, "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
+    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5}, "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
+    "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5}, "Anchored Reverse Crunch": {"Abs": 1.0},
+    "Wall Tibialis Raises": {"Calves": 1.0}, "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
+    "Half-Kneeling Pallof Press": {"Abs": 1.0}, "Neutral Grip Pull-Ups": {"Back": 1.0, "Biceps": 0.5},
+    "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Shoulders": 0.5}, "Landmine Press": {"Shoulders": 1.0, "Chest": 0.5, "Triceps": 0.5},
+    "Banded Face Pulls": {"Shoulders": 1.0, "Back": 0.5}, "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
+    "Banded Tricep Pushdowns": {"Triceps": 1.0}, "Romanian Deadlift (RDL)": {"Hamstrings": 1.0, "Glutes": 1.0},
+    "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5}, "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
+    "Ab-Wheel Rollouts": {"Abs": 1.0}, "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
+    "Erector-Focused Roman Chair Extension": {"Back": 1.0, "Glutes": 0.5}, "Heavy Suitcase Holds": {"Abs": 1.0},
     "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5}
 }
 
@@ -356,8 +202,9 @@ def get_target_reps_and_sets(exercise_name):
 def load_data():
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
     
+    # NEW: Removed expected_headers so the app can pull your scrambled data and repair it.
     try:
-        records = worksheet.get_all_records(expected_headers=baseline_cols)
+        records = worksheet.get_all_records()
     except Exception:
         return pd.DataFrame(columns=baseline_cols)
     
@@ -365,6 +212,12 @@ def load_data():
         return pd.DataFrame(columns=baseline_cols)
     
     df = pd.DataFrame(records)
+    
+    # THE REPAIR ENGINE: Forces every column to snap back into perfect order in memory.
+    for col in baseline_cols:
+        if col not in df.columns:
+            df[col] = 0.0
+    df = df[baseline_cols]
     
     numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
     for col in numeric_cols:
@@ -408,15 +261,12 @@ def load_data():
 
 def append_new_data(new_rows_df):
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    
     df_to_append = new_rows_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
     
-    # PERMANENT FIX: Force columns into the exact correct order
+    # SAFETY LOCK: Ensure order is perfect before writing
     for col in baseline_cols:
-        if col not in df_to_append.columns:
-            df_to_append[col] = 0.0
-            
-    df_to_append = df_to_append[baseline_cols] # Reorder to match headers exactly!
+        if col not in df_to_append.columns: df_to_append[col] = 0.0
+    df_to_append = df_to_append[baseline_cols]
     
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
     df_to_append = df_to_append.fillna('')
@@ -435,15 +285,12 @@ def append_new_data(new_rows_df):
 
 def overwrite_database(df):
     baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    
     df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
     
-    # PERMANENT FIX: Force columns into the exact correct order
+    # SAFETY LOCK: Ensure order is perfect before writing
     for col in baseline_cols:
-        if col not in df_to_save.columns:
-            df_to_save[col] = 0.0
-            
-    df_to_save = df_to_save[baseline_cols] # Reorder to match headers exactly!
+        if col not in df_to_save.columns: df_to_save[col] = 0.0
+    df_to_save = df_to_save[baseline_cols]
     
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
@@ -490,7 +337,6 @@ with tab1:
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
         workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
         
-        # NEW LOGIC: Leave the multiselect empty if it's a Freestyle day!
         if "Freestyle" in workout_day:
             selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=[])
         else:
@@ -546,7 +392,6 @@ with tab1:
                             calc_w = max(0.0, last_weight * 0.8)
                             calc_w = round(calc_w / 2.5) * 2.5 
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
-                            
                             st.info(f"🧘 **DELOAD PRESCRIBED:** **{exercise}** ➔ Auto-dropped weight to {calc_w}kg.")
                             continue
                             
@@ -736,8 +581,6 @@ with tab4:
     
     with c1:
         st.markdown("#### 🧬 Morning Health Sync")
-        
-        # NEW: The Efficiency Checkbox
         is_rest_day_sync = st.checkbox("🧘 Today is a Rest Day (Auto-save to database)", value=False)
         
         if st.button("🔄 Sync Scale & Sleep"):
@@ -788,7 +631,6 @@ with tab4:
                         
                     st.success("Health Check Complete!")
                     
-                    # NEW: The Auto-Log Logic
                     if is_rest_day_sync:
                         lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
                         height_m = USER_HEIGHT / 100
@@ -814,27 +656,6 @@ with tab4:
         st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
         st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
         st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
-
-        # NEW: REST DAY LOGGING BUTTON
-        st.write("---")
-        st.markdown("#### 🧘 Rest Day Logging")
-        if st.button("💾 Save Rest Day Health to Database"):
-            lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-            height_m = USER_HEIGHT / 100
-            ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
-            
-            rest_data = {
-                'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 
-                'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': 0.0, 
-                'Reps_or_Mins': 1, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0, 'Side': 'Both',
-                'Avg_HR': 0, 'Max_HR': 0, 'Avg_Resp': 0,
-                'Z1_Mins': 0, 'Z2_Mins': 0, 'Z3_Mins': 0, 'Z4_Mins': 0, 'Z5_Mins': 0,
-                'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
-                'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
-                'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
-            }
-            append_new_data(pd.DataFrame([rest_data]))
-            st.success(f"✅ Health data saved for {date_input}. Your FFMI chart will now update!")
         
     with c2:
         st.markdown("#### 🏃‍♂️ Cardio Session Data")
@@ -971,13 +792,13 @@ with tab2:
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM (kg)', opacity=0.5, line=dict(dash='dot', width=1)))
                     fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
                     fig.update_layout(title=f"Absolute Strength (e1RM) - {vel_ex}")
-                    fig.update_xaxes(tickformat="%Y-%m-%d")
+                    fig.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig, use_container_width=True)
                     
                     fig_rel = go.Figure()
                     fig_rel.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', name='Strength-to-Weight Ratio', line=dict(color='#00CC96', width=3)))
                     fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)", yaxis_title="x Bodyweight")
-                    fig_rel.update_xaxes(tickformat="%Y-%m-%d")
+                    fig_rel.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_rel, use_container_width=True)
                 else:
                     st.info("Log some sessions for this exercise to see the velocity trend.")
@@ -1008,7 +829,7 @@ with tab2:
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
                     fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r', range_color=[0, 2.0])
                     fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
-                    fig2.update_xaxes(tickformat="%Y-%m-%d")
+                    fig2.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig2, use_container_width=True)
                     
                     st.markdown("### Fatigue Degradation (Intra-Workout)")
@@ -1117,7 +938,7 @@ with tab2:
                         yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False),
                         hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                     )
-                    fig_aerobic.update_xaxes(tickformat="%Y-%m-%d")
+                    fig_aerobic.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_aerobic, use_container_width=True)
                     
                     st.markdown("### Heart Rate Zone Distribution")
@@ -1127,7 +948,7 @@ with tab2:
                     zone_colors = {'Z1': '#4287f5', 'Z2': '#42f56f', 'Z3': '#f5d742', 'Z4': '#f58442', 'Z5': '#f54242'}
                     
                     fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
-                    fig_zones.update_xaxes(tickformat="%Y-%m-%d")
+                    fig_zones.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_zones, use_container_width=True)
                     
         with at6:
@@ -1149,7 +970,7 @@ with tab2:
                     yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False),
                     hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
-                fig_ffmi.update_xaxes(tickformat="%Y-%m-%d")
+                fig_ffmi.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                 st.plotly_chart(fig_ffmi, use_container_width=True)
             else:
                 st.info("Sync your Garmin Scale data a few times to start building your FFMI Recomp chart.")
