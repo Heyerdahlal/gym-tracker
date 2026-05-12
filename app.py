@@ -407,7 +407,17 @@ def load_data():
     return df
 
 def append_new_data(new_rows_df):
+    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
+    
     df_to_append = new_rows_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
+    
+    # PERMANENT FIX: Force columns into the exact correct order
+    for col in baseline_cols:
+        if col not in df_to_append.columns:
+            df_to_append[col] = 0.0
+            
+    df_to_append = df_to_append[baseline_cols] # Reorder to match headers exactly!
+    
     df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
     df_to_append = df_to_append.fillna('')
     
@@ -424,7 +434,17 @@ def append_new_data(new_rows_df):
     st.cache_data.clear()
 
 def overwrite_database(df):
+    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
+    
     df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
+    
+    # PERMANENT FIX: Force columns into the exact correct order
+    for col in baseline_cols:
+        if col not in df_to_save.columns:
+            df_to_save[col] = 0.0
+            
+    df_to_save = df_to_save[baseline_cols] # Reorder to match headers exactly!
+    
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
     worksheet.clear()
