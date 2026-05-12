@@ -41,13 +41,18 @@ gc = init_connection()
 
 try:
     sh = gc.open("Gym_Tracker_DB")
-    worksheet = sh.sheet1
+    ws_lifts = sh.worksheet("Lifts")
+    ws_health = sh.worksheet("Health")
 except Exception as e:
-    st.error(f"⚠️ **Google Connection Error:** {e}")
+    st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs at the bottom of your Google Sheet! Error: {e}")
     st.stop()
 
-# --- STATIC USER PROFILE (FROM SECRETS) ---
+# --- STATIC USER PROFILE ---
 USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
+
+# --- COLUMNS ---
+LIFTS_COLS = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR']
+HEALTH_COLS = ['Date', 'Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins', 'Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI', 'RHR', 'HRV']
 
 # --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
@@ -116,38 +121,163 @@ REP_TARGETS = {
     "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
 }
 
+# --- RESTORED FULL FORM GUIDES ---
 EXERCISE_GUIDES = {
-    "T-Bar Landmine Row": {"Setup": "Straddle the barbell...", "Execution": "Hinge at hips so torso is almost parallel...", "Why": "Stable pulling builds back thickness..."},
-    "Dumbbell Bench Press": {"Setup": "Set bench to a slight incline...", "Execution": "Lower slowly (3s) to a deep stretch...", "Why": "A slight incline perfectly aligns..."},
-    "Single-Arm Bench-Supported Dumbbell Row": {"Setup": "Hand and same-side knee on the bench...", "Execution": "Pull the dumbbell towards your HIP...", "Why": "Bench support removes lower back strain..."},
-    "Push-Ups": {"Setup": "Hands shoulder-width...", "Execution": "Descend slowly. PAUSE for 1 second...", "Why": "The dead-stop pause kills the stretch reflex..."},
-    "Overhead Tricep Extension": {"Setup": "Anchor band at waist height...", "Execution": "Press the band straight up...", "Why": "Bands provide an 'ascending resistance curve'..."},
-    "Dumbbell Hammer Curls": {"Setup": "Standing, neutral grip...", "Execution": "Squeeze up cleanly, strict 2-second negative...", "Why": "Targets the brachialis..."},
-    "Banded Crossovers": {"Setup": "Anchor bands HIGH...", "Execution": "Pull down and across your body...", "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers..."},
-    "Chest-Supported Lateral Raise": {"Setup": "Chest flat against incline bench...", "Execution": "Lead with the elbows...", "Why": "Strict isolation of the lateral delt..."},
-    "Chest-Supported Rear Delt Flye": {"Setup": "Chest on incline bench...", "Execution": "Sweep arms out to the side...", "Why": "Ensures the load stays 100% on the rear deltoid..."},
-    "Heavy Barbell Front Squat": {"Setup": "Clean grip or cross-arm grip...", "Execution": "Deep, upright squat...", "Why": "Forces an upright torso..."},
-    "Heels-Elevated Landmine Squat": {"Setup": "Squat wedge under heels...", "Execution": "Perform 1.5 reps...", "Why": "Maximizes quad stretch..."},
-    "Anchored Reverse Crunch": {"Setup": "Lying on back, gripping kettlebell...", "Execution": "Roll pelvis UP...", "Why": "Flexes the spine against resistance..."},
-    "Heavy Russian Kettlebell Swings": {"Setup": "Hinge position...", "Execution": "Snap hips forward violently...", "Why": "Builds explosive posterior chain power..."},
-    "Nordic Curls": {"Setup": "Kneeling, ankles secured...", "Execution": "Fall forward slowly...", "Why": "Ultimate hamstring bulletproofing..."},
-    "Squat Wedge Dumbbell Calf Raises": {"Setup": "Toes elevated on wedge...", "Execution": "PAUSE for 2 full seconds...", "Why": "Kills the spring energy..."},
-    "Wall Tibialis Raises": {"Setup": "Lean back against wall...", "Execution": "Pull toes up...", "Why": "Bulletproofs the knees..."},
-    "Half-Kneeling Pallof Press": {"Setup": "Half-kneeling, band anchored...", "Execution": "Press band straight out...", "Why": "Elite anti-rotation core training..."},
-    "Neutral Grip Pull-Ups": {"Setup": "Palms facing each other...", "Execution": "Dead hang to start...", "Why": "Shoulder-friendly and massive mechanical advantage..."},
-    "Band-Assisted Dips": {"Setup": "Band looped over bars...", "Execution": "Slight forward lean...", "Why": "Band provides help at bottom..."},
-    "Landmine Press": {"Setup": "Half-kneeling or standing...", "Execution": "Press up and slightly forward...", "Why": "Arcing path is incredibly healthy..."},
-    "Banded Face Pulls": {"Setup": "Band anchored at eye level...", "Execution": "Pull towards nose...", "Why": "Ultimate posture corrector..."},
-    "Incline Supinated Dumbbell Curls": {"Setup": "Bench at 45-60 degrees...", "Execution": "Keep elbows pinned back...", "Why": "Extreme stretched position..."},
-    "Banded Tricep Pushdowns": {"Setup": "Band anchored high...", "Execution": "Elbows pinned to sides...", "Why": "Resistance increases at peak contraction..."},
-    "Romanian Deadlift (RDL)": {"Setup": "Stand inside Hex bar...", "Execution": "Push hips back...", "Why": "Brutal stretch, drastically reduces shear force..."},
-    "Bulgarian Split Squats": {"Setup": "Rear foot elevated...", "Execution": "Drop back knee straight down...", "Why": "Eliminates imbalances..."},
-    "Ab-Wheel Rollouts": {"Setup": "Kneeling, posterior tilt...", "Execution": "Roll out, pull back using ABS...", "Why": "Extreme anti-extension..."},
-    "Barbell Hip Thrusts": {"Setup": "Upper back resting on bench...", "Execution": "Drive through heels...", "Why": "Highest glute activation..."},
-    "Hamstring-Focused Roman Chair Extension": {"Setup": "Pad BELOW hips...", "Execution": "Back flat, pull up using hamstrings...", "Why": "Fantastic loaded stretch..."},
-    "Erector-Focused Roman Chair Extension": {"Setup": "Pad AT hips...", "Execution": "Round upper back, unroll vertebra by vertebra...", "Why": "Trains spinal erectors..."},
-    "Heavy Suitcase Holds": {"Setup": "Hold heavy weight in one hand...", "Execution": "Slow controlled march...", "Why": "Bulletproofing glute medius..."},
-    "Front-Rack Kettlebell Marches": {"Setup": "Two heavy KBs at chest...", "Execution": "Slowly march in place...", "Why": "Heavy core stabilization..."}
+    "T-Bar Landmine Row": {
+        "Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.",
+        "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.",
+        "Why": "Stable pulling builds back thickness without the systemic lower back fatigue of a standard bent-over barbell row."
+    },
+    "Dumbbell Bench Press": {
+        "Setup": "Set bench to a slight incline (15-30 degrees). Shoulder blades pinned down and back.",
+        "Execution": "Lower slowly (3s) to a deep stretch. Press up, but STOP a few inches before the dumbbells touch. Do not lock out.",
+        "Why": "A slight incline perfectly aligns with the pec fibers. Stopping before the bells touch prevents the joints from 'stacking', keeping 100% of the tension on the chest."
+    },
+    "Single-Arm Bench-Supported Dumbbell Row": {
+        "Setup": "Hand and same-side knee on the bench. Back perfectly flat.",
+        "Execution": "Pull the dumbbell towards your HIP, not your armpit. Pause for 1 full second at the top contraction.",
+        "Why": "Bench support removes lower back strain. Pulling to the hip isolates the lats instead of shrugging with your upper traps."
+    },
+    "Push-Ups": {
+        "Setup": "Hands shoulder-width, core braced tightly (hollow body).",
+        "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the floor, then explode up.",
+        "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. A high-rep finisher with zero joint wear."
+    },
+    "Overhead Tricep Extension": {
+        "Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.",
+        "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.",
+        "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest, while keeping constant tension in the stretch."
+    },
+    "Dumbbell Hammer Curls": {
+        "Setup": "Standing, neutral grip (palms facing each other).",
+        "Execution": "Squeeze up cleanly, then a strict 2-second negative. Zero swinging or momentum.",
+        "Why": "Targets the brachialis and brachioradialis. This pushes the bicep up (creating a larger peak) and prevents elbow tendonitis."
+    },
+    "Banded Crossovers": {
+        "Setup": "Anchor bands HIGH (above head). Step forward to create tension.",
+        "Execution": "Pull down and across your body (high-to-low). Squeeze for 2 full seconds at the bottom contraction where your hands overlap.",
+        "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers, brilliantly complementing the upper-pec focus of your incline DB presses."
+    },
+    "Chest-Supported Lateral Raise": {
+        "Setup": "Chest flat against a steep incline bench.",
+        "Execution": "Lead with the elbows, sweeping the dumbbells OUT, not just up. Stop at shoulder height.",
+        "Why": "Strict isolation of the lateral delt. The bench prevents you from using lumbar extension (leaning back) to cheat the weight."
+    },
+    "Chest-Supported Rear Delt Flye": {
+        "Setup": "Chest on incline bench, palms facing down or neutral.",
+        "Execution": "Sweep arms out to the side. Stop when elbows align with shoulders (do NOT pinch your shoulder blades together).",
+        "Why": "Stopping before the shoulder blades retract ensures the load stays 100% on the rear deltoid, not the rhomboids or traps."
+    },
+    "Heavy Barbell Front Squat": {
+        "Setup": "Clean grip or cross-arm grip. Bar resting deep on the meaty part of the front delts.",
+        "Execution": "Deep, upright squat. Drive your elbows UP violently as you come out of the hole to prevent your chest from collapsing.",
+        "Why": "Forces an upright torso, shifting the load intensely onto the quads and off the lumbar spine."
+    },
+    "Heels-Elevated Landmine Squat": {
+        "Setup": "Place a squat wedge under your heels. Hold the thick part of the barbell sleeve at upper-chest level.",
+        "Execution": "Perform 1.5 reps: Drop into a deep squat, rise halfway up, drop back into the deep squat, then stand up. That is ONE rep.",
+        "Why": "Maximizes quad stretch while the 1.5 rep method creates immense time under tension without needing heavy, spine-crushing weights."
+    },
+    "Anchored Reverse Crunch": {
+        "Setup": "Lying on your back, gripping a heavy kettlebell or pole behind your head.",
+        "Execution": "Roll your pelvis UP towards your sternum. Control the descent (3 seconds) until your tailbone gently touches the floor.",
+        "Why": "Flexes the spine against resistance (true abdominal function) rather than just working the hip flexors like standard leg raises."
+    },
+    "Heavy Russian Kettlebell Swings": {
+        "Setup": "Hinge position, KB slightly in front of you.",
+        "Execution": "Hike it back between your legs, then snap your hips forward violently. Your arms are just ropes. Stop at chest height.",
+        "Why": "Builds explosive posterior chain power, hamstring resilience, and glute lockout strength."
+    },
+    "Nordic Curls": {
+        "Setup": "Kneeling, ankles secured under a bar or by a partner.",
+        "Execution": "Squeeze glutes to lock hips. Fall forward as slowly as humanly possible (eccentric focus). Catch yourself, push back up.",
+        "Why": "The ultimate hamstring bulletproofing exercise. Lengthens the muscle fascicles, drastically reducing the risk of a hamstring tear."
+    },
+    "Squat Wedge Dumbbell Calf Raises": {
+        "Setup": "Toes elevated on a wedge, holding heavy dumbbells.",
+        "Execution": "PAUSE for 2 full seconds at the absolute bottom stretch. Explode up, pause 1 second at the top.",
+        "Why": "The Achilles tendon is a massive spring. The bottom pause kills the spring energy, forcing the actual calf muscle to do 100% of the lifting."
+    },
+    "Wall Tibialis Raises": {
+        "Setup": "Lean back against a wall, feet placed out in front of you.",
+        "Execution": "Pull toes up towards your shins as hard as possible. Hold for 1 second.",
+        "Why": "Bulletproofs the knees. The tibialis anterior decelerates the foot; strengthening it prevents shin splints and patellar pain."
+    },
+    "Half-Kneeling Pallof Press": {
+        "Setup": "Half-kneeling, band anchored to your side at chest height.",
+        "Execution": "Press the band straight out in front of you. Hold for 2 seconds, violently resisting the urge to twist.",
+        "Why": "Elite anti-rotation core training. Protects the spine by teaching the deep core to brace against twisting forces."
+    },
+    "Neutral Grip Pull-Ups": {
+        "Setup": "Palms facing each other.",
+        "Execution": "Start from a dead hang. Pull your upper chest to the bar. Control the eccentric (lowering) phase.",
+        "Why": "The neutral grip is highly shoulder-friendly and gives the lats a massive mechanical advantage for growth."
+    },
+    "Band-Assisted Dips": {
+        "Setup": "Band looped over the bars and under your knees.",
+        "Execution": "Slight forward lean to bias the chest. Descend until you feel a deep stretch in the pecs.",
+        "Why": "The band provides help at the bottom (the most vulnerable shoulder position) forcing a strict, deep, hypertrophy-focused rep."
+    },
+    "Landmine Press": {
+        "Setup": "Half-kneeling or standing. Hold the barbell sleeve at shoulder height.",
+        "Execution": "Press up and slightly forward, following the natural arc of the barbell.",
+        "Why": "The arcing path is incredibly healthy and natural for the shoulder capsule compared to a strict vertical barbell press."
+    },
+    "Banded Face Pulls": {
+        "Setup": "Band anchored at eye level.",
+        "Execution": "Pull the band towards your nose, pulling your hands APART and rotating your knuckles UP (external rotation) at the end.",
+        "Why": "The ultimate posture corrector. Hits the rear delts, rhomboids, and bulletproofs the rotator cuff."
+    },
+    "Incline Supinated Dumbbell Curls": {
+        "Setup": "Bench at 45-60 degrees. Let arms hang straight down behind your torso. Palms facing forward.",
+        "Execution": "Keep elbows pinned back. Curl up, squeezing the biceps.",
+        "Why": "Puts the bicep in an extreme stretched position (long head focus), triggering massive hypertrophy with lighter weights."
+    },
+    "Banded Tricep Pushdowns": {
+        "Setup": "Band anchored high above you.",
+        "Execution": "Keep elbows pinned to your sides. Push down and pull the band APART at the very bottom.",
+        "Why": "Band resistance increases at peak contraction, matching the strength curve of the triceps perfectly."
+    },
+    "Romanian Deadlift (RDL)": {
+        "Setup": "Stand inside the Hex/Trap bar. Feet shoulder-width. Unlock knees slightly and freeze them at that angle.",
+        "Execution": "Push hips straight back toward the wall behind you. Stop and reverse the motion the moment your hamstrings are fully stretched.",
+        "Why": "The Hex Bar aligns the center of gravity with your midline, providing a brutal hamstring/glute stretch while drastically reducing shear force on the lumbar spine."
+    },
+    "Bulgarian Split Squats": {
+        "Setup": "Rear foot elevated on a bench. Hold dumbbells at your sides.",
+        "Execution": "Drop your back knee straight down. Lean torso slightly forward to bias glutes, or stay upright to bias quads.",
+        "Why": "Eliminates left/right strength imbalances and provides an extreme muscle stretch under load with zero spinal compression."
+    },
+    "Ab-Wheel Rollouts": {
+        "Setup": "Kneeling. Squeeze glutes to lock your pelvis into a posterior tilt.",
+        "Execution": "Roll out until your torso is parallel to the floor. Pull back using your ABS, not by pushing your hips back.",
+        "Why": "Extreme anti-extension core strength. Forces the rectus abdominis to stabilize the spine under intense load."
+    },
+    "Barbell Hip Thrusts": {
+        "Setup": "Upper back resting on a bench, heavy barbell padded across your hips.",
+        "Execution": "Drive through the heels. Give a brutal 2-second squeeze at the top. Keep your chin tucked to your chest.",
+        "Why": "The highest glute activation of any exercise in existence, completely bypassing the lower back."
+    },
+    "Hamstring-Focused Roman Chair Extension": {
+        "Setup": "Lock into a 45-degree hyperextension bench. Pad sits BELOW the hips (upper thigh).",
+        "Execution": "Keep your back perfectly flat and rigid. Hinge down, then pull up using only the hamstrings and glutes.",
+        "Why": "Provides a fantastic, loaded stretch for the hamstrings without axial loading on the spine."
+    },
+    "Erector-Focused Roman Chair Extension": {
+        "Setup": "Lock into a 45-degree bench. Pad sits AT the hips.",
+        "Execution": "Allow your upper back to round over the pad (spinal flexion), then pull up by extending the spine (unrolling vertebra by vertebra).",
+        "Why": "Directly trains the spinal erectors through a full range of motion, building a thick, resilient lower back."
+    },
+    "Heavy Suitcase Holds": {
+        "Setup": "Hold a heavy kettlebell or dumbbell in one hand. Stand perfectly tall.",
+        "Execution": "Perform a slow, highly controlled march in place. Do not let the weight pull your shoulder down or shift your hips.",
+        "Why": "Marching upgrades this from an anti-lateral flexion core exercise to a dynamic pelvic stabilizer, bulletproofing the glute medius and preventing hip drop."
+    },
+    "Front-Rack Kettlebell Marches": {
+        "Setup": "Two heavy KBs held at the chest (rack position).",
+        "Execution": "Slowly march in place, lifting your knees above hip level with immense control.",
+        "Why": "Heavy core stabilization under load. The rack position forces the upper back and core to work isometrically to keep you upright."
+    }
 }
 
 MUSCLE_MAP = {
@@ -187,9 +317,6 @@ BAND_SUBTRACTIONS = {
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press"]
 
-CARDIO_COLUMNS = ['Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
-HEALTH_COLUMNS = ['Height_cm', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'FFMI', 'RHR', 'HRV']
-
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
     sets_match = re.search(r'(\d+)\s*Sets', target_str, re.IGNORECASE)
@@ -200,33 +327,35 @@ def get_target_reps_and_sets(exercise_name):
 
 @st.cache_data(ttl=600)
 def load_data():
-    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    
-    # NEW: Removed expected_headers so the app can pull your scrambled data and repair it.
+    # Load Lifts
     try:
-        records = worksheet.get_all_records()
+        l_recs = ws_lifts.get_all_records()
     except Exception:
-        return pd.DataFrame(columns=baseline_cols)
-    
-    if not records:
-        return pd.DataFrame(columns=baseline_cols)
-    
-    df = pd.DataFrame(records)
-    
-    # THE REPAIR ENGINE: Forces every column to snap back into perfect order in memory.
-    for col in baseline_cols:
-        if col not in df.columns:
-            df[col] = 0.0
-    df = df[baseline_cols]
-    
-    numeric_cols = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    for col in numeric_cols:
-        if col not in df.columns: df[col] = 0.0
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        l_recs = []
         
-    if 'Side' not in df.columns: df['Side'] = 'Both'
-    df['Side'] = df['Side'].replace('', 'Both').fillna('Both')
-    df['Date'] = pd.to_datetime(df['Date'])
+    df_lifts = pd.DataFrame(l_recs) if l_recs else pd.DataFrame(columns=LIFTS_COLS)
+    for col in LIFTS_COLS:
+        if col not in df_lifts.columns:
+            df_lifts[col] = 0.0 if col not in ['Date', 'Workout_Day', 'Exercise', 'Band', 'Side'] else ""
+    
+    # Load Health
+    try:
+        h_recs = ws_health.get_all_records()
+    except Exception:
+        h_recs = []
+        
+    df_health = pd.DataFrame(h_recs) if h_recs else pd.DataFrame(columns=HEALTH_COLS)
+    for col in HEALTH_COLS:
+        if col not in df_health.columns:
+            df_health[col] = 0.0 if col != 'Date' else ""
+
+    # Formatting and Math for Lifts
+    num_cols_lifts = ['Distance_km', 'Weight', 'Set_Number', 'Reps_or_Mins', 'Bodyweight', 'RIR']
+    for col in num_cols_lifts:
+        df_lifts[col] = pd.to_numeric(df_lifts[col], errors='coerce').fillna(0)
+        
+    df_lifts['Side'] = df_lifts['Side'].replace('', 'Both').fillna('Both')
+    df_lifts['Date'] = pd.to_datetime(df_lifts['Date'], errors='coerce')
     
     ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
     RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
@@ -235,79 +364,82 @@ def load_data():
         ex = row['Exercise']
         bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
         base_body_load = row['Bodyweight'] * bw_mod
-        
         peak_band_force = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
         avg_band_force = peak_band_force * 0.5
         
-        if ex in ASSISTED_EXERCISES:
-            eff_wt = row['Weight'] + base_body_load - avg_band_force
-        elif ex in RESISTED_EXERCISES:
-            eff_wt = row['Weight'] + base_body_load + avg_band_force
-        else:
-            eff_wt = row['Weight'] + base_body_load
+        if ex in ASSISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load - avg_band_force
+        elif ex in RESISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load + avg_band_force
+        else: eff_wt = row['Weight'] + base_body_load
             
         return max(eff_wt, 0.0) 
         
-    df['Effective_Weight'] = df.apply(calc_effective_weight, axis=1)
+    df_lifts['Effective_Weight'] = df_lifts.apply(calc_effective_weight, axis=1) if not df_lifts.empty else 0.0
     
-    is_lift = ~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
-    df['Volume'] = 0.0
-    df['Epley_1RM'] = 0.0
+    is_lift = ~df_lifts['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
+    df_lifts['Volume'] = 0.0
+    df_lifts['Epley_1RM'] = 0.0
     
-    df.loc[is_lift, 'Volume'] = df.loc[is_lift, 'Effective_Weight'] * df.loc[is_lift, 'Reps_or_Mins']
-    df.loc[is_lift, 'Epley_1RM'] = df.loc[is_lift, 'Effective_Weight'] * (1 + df.loc[is_lift, 'Reps_or_Mins'] / 30)
+    if not df_lifts.empty:
+        df_lifts.loc[is_lift, 'Volume'] = df_lifts.loc[is_lift, 'Effective_Weight'] * df_lifts.loc[is_lift, 'Reps_or_Mins']
+        df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + df_lifts.loc[is_lift, 'Reps_or_Mins'] / 30)
     
-    return df
+    # Formatting for Health
+    df_health['Date'] = pd.to_datetime(df_health['Date'], errors='coerce')
+    num_cols_health = [c for c in HEALTH_COLS if c != 'Date']
+    for col in num_cols_health:
+        df_health[col] = pd.to_numeric(df_health[col], errors='coerce').fillna(0)
+        
+    return df_lifts, df_health
 
-def append_new_data(new_rows_df):
-    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    df_to_append = new_rows_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
-    
-    # SAFETY LOCK: Ensure order is perfect before writing
-    for col in baseline_cols:
-        if col not in df_to_append.columns: df_to_append[col] = 0.0
-    df_to_append = df_to_append[baseline_cols]
-    
-    df_to_append['Date'] = pd.to_datetime(df_to_append['Date']).dt.strftime('%Y-%m-%d')
-    df_to_append = df_to_append.fillna('')
+def save_to_sheet(ws, df_new, required_cols):
+    df_to_save = df_new.copy()
+    for col in required_cols:
+        if col not in df_to_save.columns:
+            df_to_save[col] = ""
+    df_to_save = df_to_save[required_cols]
+    df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
+    df_to_save = df_to_save.fillna('')
     
     try:
-        first_row = worksheet.row_values(1)
+        first_row = ws.row_values(1)
     except Exception:
         first_row = []
         
     if not first_row or first_row[0] != 'Date':
-        worksheet.clear() 
-        worksheet.update(values=[df_to_append.columns.tolist()], range_name="A1")
+        ws.clear()
+        ws.update(values=[df_to_save.columns.tolist()], range_name="A1")
         
-    worksheet.append_rows(df_to_append.values.tolist())
+    ws.append_rows(df_to_save.values.tolist())
     st.cache_data.clear()
 
-def overwrite_database(df):
-    baseline_cols = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR'] + CARDIO_COLUMNS + HEALTH_COLUMNS
-    df_to_save = df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore').copy()
-    
-    # SAFETY LOCK: Ensure order is perfect before writing
-    for col in baseline_cols:
-        if col not in df_to_save.columns: df_to_save[col] = 0.0
-    df_to_save = df_to_save[baseline_cols]
-    
+def overwrite_sheet(ws, df_new, required_cols):
+    df_to_save = df_new.copy()
+    for col in required_cols:
+        if col not in df_to_save.columns:
+            df_to_save[col] = ""
+    df_to_save = df_to_save[required_cols]
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
-    worksheet.clear()
-    worksheet.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
+    
+    ws.clear()
+    ws.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
-df = load_data()
+df_lifts, df_health = load_data()
 
 def get_latest_nonzero(col_name, default_val):
-    if not df.empty and col_name in df.columns:
-        valid_data = df[df[col_name] > 0]
+    if not df_health.empty and col_name in df_health.columns:
+        valid_data = df_health[df_health[col_name] > 0]
         if not valid_data.empty:
             return float(valid_data.sort_values('Date').iloc[-1][col_name])
     return default_val
 
-last_w = get_latest_nonzero('Bodyweight', 80.0)
+last_w = get_latest_nonzero('Bodyweight', 80.0) # Pulled from Lifts below if needed, but we track Bodyweight in both
+if df_lifts is not None and not df_lifts.empty and 'Bodyweight' in df_lifts.columns:
+    valid_bw = df_lifts[df_lifts['Bodyweight'] > 0]
+    if not valid_bw.empty:
+        last_w = float(valid_bw.sort_values('Date').iloc[-1]['Bodyweight'])
+
 last_bf = get_latest_nonzero('Body_Fat_Pct', 15.0)
 last_mus = get_latest_nonzero('Muscle_Mass_kg', 35.0)
 last_sleep = int(get_latest_nonzero('Sleep_Score', 80))
@@ -363,7 +495,7 @@ with tab1:
             default_vals = {}
             
             for exercise in selected_exercises:
-                ex_df = df[(df['Exercise'] == exercise) & (df['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
+                ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 
                 if not ex_df.empty:
                     max_all_time_weight = ex_df['Weight'].max()
@@ -404,14 +536,12 @@ with tab1:
                         
                         if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
                             with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
-                                st.write("*Science: CNS priming prevents injury and maximizes motor-unit recruitment.*")
                                 w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
                                 w2 = round((last_weight * 0.5) / 2.5) * 2.5
                                 w3 = round((last_weight * 0.8) / 2.5) * 2.5
-                                st.markdown(f"- **Set 1 (Blood Flow):** {w1}kg × 8-10 reps")
-                                st.markdown(f"- **Set 2 (Acclimatization):** {w2}kg × 5 reps")
-                                st.markdown(f"- **Set 3 (CNS Primer):** {w3}kg × 2-3 reps")
-                                st.info("Rest 2 minutes before starting your actual working sets!")
+                                st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps")
+                                st.markdown(f"- **Set 2:** {w2}kg × 5 reps")
+                                st.markdown(f"- **Set 3:** {w3}kg × 2-3 reps")
 
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
@@ -422,21 +552,16 @@ with tab1:
 
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         if min_reps_last_session < 5:
-                            st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but **drop the weight by 10-15% for Sets 2 & 3** to stay in the hypertrophy zone.")
+                            st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps on a later set last week. Keep Set 1 heavy, but drop weight by 10% for Sets 2 & 3.")
                             
                         if len(dates) >= 4:
                             last_4_dates = dates[-4:]
                             recent_history = ex_df[(ex_df['Date'].isin(last_4_dates)) & (ex_df['Set_Number'] == 1)]
-                            
-                            if len(recent_history) == 4:
-                                weights_used = recent_history['Weight'].nunique()
-                                reps_hit = recent_history['Reps_or_Mins'].nunique()
-                                
-                                if weights_used == 1 and reps_hit == 1:
-                                    st.error(f"🛑 **TRUE PLATEAU DETECTED:** You have been stuck at {last_weight}kg for {last_reps} reps for 4 straight sessions. Strict form takes time, but 4 weeks means it's time to swap this exercise or take a Deload.")
+                            if len(recent_history) == 4 and recent_history['Weight'].nunique() == 1 and recent_history['Reps_or_Mins'].nunique() == 1:
+                                st.error(f"🛑 **PLATEAU DETECTED:** You have been stuck at {last_weight}kg for {last_reps} reps for 4 sessions. Consider swapping the exercise.")
 
                     else:
-                        st.info(f"**{exercise}:** No Set 1 data found for last session.")
+                        st.info(f"**{exercise}:** No Set 1 data found. Establish your baseline!")
                         default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
                         
                         guide = EXERCISE_GUIDES.get(exercise)
@@ -463,7 +588,6 @@ with tab1:
                 
                 for i in range(1, num_sets + 1):
                     st.markdown(f"#### 🔁 Round {i}")
-                    
                     for exercise in selected_exercises:
                         is_unilateral = exercise in UNILATERAL_EXERCISES
                         uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
@@ -488,7 +612,7 @@ with tab1:
                             else:
                                 reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
                             bands[key] = c3.selectbox("Band", band_list, index=band_index, key=f"b_{key}")
-                            rirs[key] = c4.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
+                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
                             weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
@@ -498,17 +622,12 @@ with tab1:
                                 reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                             else:
                                 reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            rirs[key] = c3.slider("RIR (Reps in Reserve)", 0, 5, 2, 1, key=f"rir_{key}")
-                            
+                            rirs[key] = c3.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
                     st.write("---") 
                 
-                submit_lifts = st.form_submit_button("Save To Database", type="primary")
+                submit_lifts = st.form_submit_button("Save Workouts To Database", type="primary")
                 
                 if submit_lifts:
-                    lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                    height_m = USER_HEIGHT / 100
-                    ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
-
                     new_rows = []
                     for exercise in selected_exercises:
                         is_unilateral = exercise in UNILATERAL_EXERCISES
@@ -522,12 +641,7 @@ with tab1:
                                 base_data = {
                                     'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 
                                     'Set_Number': i, 'Weight': weights[key], 'Band': band_val, 
-                                    'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key],
-                                    'Avg_HR': 0.0, 'Max_HR': 0.0, 'Avg_Resp': 0.0,
-                                    'Z1_Mins': 0.0, 'Z2_Mins': 0.0, 'Z3_Mins': 0.0, 'Z4_Mins': 0.0, 'Z5_Mins': 0.0,
-                                    'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
-                                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
-                                    'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
+                                    'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]
                                 }
                                 if is_unilateral:
                                     if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
@@ -536,61 +650,44 @@ with tab1:
                                     new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
                     
                     if new_rows:
-                        new_df = pd.DataFrame(new_rows)
-                        append_new_data(new_df)
-                        st.success(f"✅ Logged {len(new_rows)} rows successfully! Check the Database tab.")
+                        save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
+                        st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
                     else:
                         st.warning("No reps logged. Database was not updated.")
 
 with tab4:
     st.subheader("📡 Garmin Integration Hub")
-    st.write("Keep your workout logging screen clean by managing all Garmin API syncing and manual cardio entry here.")
+    st.write("Manage all biological and cardio data here. This saves directly to your new **Health** database tab.")
     
     st.markdown("### 🔐 Garmin Authentication")
-    st.info("If you have Multi-Factor Authentication (2FA) enabled, open your Authenticator App and type the 6 digits below *right before* you click a sync button.")
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
     def get_garmin_client():
-        if 'garmin_vip_client' in st.session_state:
-            return st.session_state['garmin_vip_client']
-            
-        g_email = st.secrets.get("garmin_email")
-        g_pass = st.secrets.get("garmin_password")
-        if not g_email or not g_pass:
-            st.error("Missing Garmin credentials in Streamlit secrets! Check your deployment settings.")
-            return None
-            
+        if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
+        g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
+        if not g_email or not g_pass: return None
         try:
-            if mfa_input:
-                client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input)
-            else:
-                client = Garmin(g_email, g_pass)
-                
+            client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input) if mfa_input else Garmin(g_email, g_pass)
             client.login()
             st.session_state['garmin_vip_client'] = client 
             return client
-            
         except Exception as e:
-            if "prompt_mfa" in str(e):
-                st.error("🛑 **Garmin requires 2FA!** Check your email for a NEW code, type it in the box above, and click sync again.")
-            else:
-                st.error(f"Garmin Login Failed: {e}")
+            st.error(f"Garmin Login Failed: {e}")
             return None
 
     c1, c2 = st.columns(2)
     
     with c1:
         st.markdown("#### 🧬 Morning Health Sync")
-        is_rest_day_sync = st.checkbox("🧘 Today is a Rest Day (Auto-save to database)", value=False)
+        is_rest_day_sync = st.checkbox("🧘 Log this as an official Rest Day", value=False)
         
         if st.button("🔄 Sync Scale & Sleep"):
             with st.spinner(f"Pulling data for {date_input}..."):
                 client = get_garmin_client()
                 if client:
-                    target_date_iso = date_input.isoformat()
-                    
+                    target_iso = date_input.isoformat()
                     try:
-                        weigh_ins = client.get_body_composition(target_date_iso)
+                        weigh_ins = client.get_body_composition(target_iso)
                         if weigh_ins and 'dateWeightList' in weigh_ins and weigh_ins['dateWeightList']:
                             latest = weigh_ins['dateWeightList'][-1]
                             raw_w = latest.get('weight', st.session_state['h_weight'])
@@ -598,56 +695,43 @@ with tab4:
                             st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
                             raw_m = latest.get('muscleMass', st.session_state['h_muscle'])
                             st.session_state['h_muscle'] = float(raw_m / 1000 if raw_m > 1000 else raw_m)
-                            st.toast(f"✅ Scale data found for {target_date_iso}")
-                        else:
-                            st.warning(f"⚖️ No scale data found on Garmin for {target_date_iso}. Did you weigh in?")
-                    except Exception as e:
-                        st.error(f"Scale sync error: {e}")
+                            st.toast("✅ Scale data found")
+                    except Exception: pass
                         
                     try:
-                        sleep_data = client.get_sleep_data(target_date_iso)
+                        sleep_data = client.get_sleep_data(target_iso)
                         if sleep_data and 'dailySleepDTO' in sleep_data:
                             score = sleep_data.get('dailySleepDTO', {}).get('sleepScores', {}).get('overall', {}).get('value')
-                            if score:
-                                st.session_state['h_sleep'] = int(score)
-                                st.toast(f"✅ Sleep Score ({score}) found")
-                        else:
-                            st.warning(f"🛌 No sleep score found.")
+                            if score: st.session_state['h_sleep'] = int(score)
                             
-                        stats = client.get_stats(target_date_iso)
-                        if stats and 'restingHeartRate' in stats:
-                            st.session_state['h_rhr'] = int(stats['restingHeartRate'])
-                            st.toast(f"✅ RHR ({st.session_state['h_rhr']} bpm) found")
+                        stats = client.get_stats(target_iso)
+                        if stats and 'restingHeartRate' in stats: st.session_state['h_rhr'] = int(stats['restingHeartRate'])
                             
-                        hrv_data = client.get_hrv_data(target_date_iso)
+                        hrv_data = client.get_hrv_data(target_iso)
                         if hrv_data and 'hrvSummary' in hrv_data:
                             hrv = hrv_data['hrvSummary'].get('lastNightAvg')
-                            if hrv:
-                                st.session_state['h_hrv'] = int(hrv)
-                                st.toast(f"✅ HRV ({st.session_state['h_hrv']} ms) found")
-                                
-                    except Exception as e:
-                        st.error(f"Sleep/HRV sync error: {e}")
+                            if hrv: st.session_state['h_hrv'] = int(hrv)
+                    except Exception: pass
                         
                     st.success("Health Check Complete!")
                     
                     if is_rest_day_sync:
-                        lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                        height_m = USER_HEIGHT / 100
-                        ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+                        # Also write a blank lift log so your volume charts register the day
+                        rest_lift = {'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Reps_or_Mins': 0, 'Distance_km': 0.0, 'Side': 'Both', 'Bodyweight': st.session_state['h_weight'], 'RIR': 0}
+                        save_to_sheet(ws_lifts, pd.DataFrame([rest_lift]), LIFTS_COLS)
                         
-                        rest_data = {
-                            'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 
-                            'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': 0.0, 
-                            'Reps_or_Mins': 1, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0, 'Side': 'Both',
-                            'Avg_HR': 0, 'Max_HR': 0, 'Avg_Resp': 0,
-                            'Z1_Mins': 0, 'Z2_Mins': 0, 'Z3_Mins': 0, 'Z4_Mins': 0, 'Z5_Mins': 0,
-                            'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
-                            'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
-                            'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
-                        }
-                        append_new_data(pd.DataFrame([rest_data]))
-                        st.success(f"✅ Auto-logged Rest Day for {date_input}. Your FFMI chart is updated!")
+                    # Save health data
+                    lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                    height_m = USER_HEIGHT / 100
+                    ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+                    
+                    health_data = {
+                        'Date': date_input, 'Avg_HR': 0, 'Max_HR': 0, 'Avg_Resp': 0, 'Z1_Mins': 0, 'Z2_Mins': 0, 'Z3_Mins': 0, 'Z4_Mins': 0, 'Z5_Mins': 0,
+                        'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 
+                        'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
+                    }
+                    save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
+                    st.success(f"✅ Health data saved to Health DB for {date_input}!")
 
         st.markdown("**Current Session Health Data:**")
         st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
@@ -673,342 +757,159 @@ with tab4:
                             st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
                             st.success(f"Synced! Grabbed activity: {act.get('activityName', 'Unknown')}")
                             st.rerun()
-                        else:
-                            st.warning("No activities found on your Garmin account.")
-                    except Exception as e:
-                        st.error(f"Activity Sync Failed: {e}")
+                    except Exception as e: st.error(f"Activity Sync Failed: {e}")
 
-        st.markdown("**Cardio Log Entry:**")
-        with st.form("cardio_form", clear_on_submit=False):
-            ex_options = ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"]
-            c_ex = st.selectbox("Select Cardio Type", ex_options)
+        with st.form("cardio_form", clear_on_submit=True):
+            c_ex = st.selectbox("Select Cardio Type", ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])
             duration = st.number_input("Duration (Minutes)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
             distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
             avg_resp = st.number_input("Avg Respiration (brpm)", min_value=0.0, value=20.0, step=1.0)
             avg_hr = st.number_input("Avg Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
             max_hr = st.number_input("Max Heart Rate (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
             
-            st.markdown("#### ⏱️ Time in HR Zones (Minutes)")
             zc1, zc2, zc3, zc4, zc5 = st.columns(5)
-            z1 = zc1.number_input("Zone 1", min_value=0.0, step=1.0)
-            z2 = zc2.number_input("Zone 2", min_value=0.0, step=1.0)
-            z3 = zc3.number_input("Zone 3", min_value=0.0, step=1.0)
-            z4 = zc4.number_input("Zone 4", min_value=0.0, step=1.0)
-            z5 = zc5.number_input("Zone 5", min_value=0.0, step=1.0)
+            z1 = zc1.number_input("Z1", min_value=0.0, step=1.0)
+            z2 = zc2.number_input("Z2", min_value=0.0, step=1.0)
+            z3 = zc3.number_input("Z3", min_value=0.0, step=1.0)
+            z4 = zc4.number_input("Z4", min_value=0.0, step=1.0)
+            z5 = zc5.number_input("Z5", min_value=0.0, step=1.0)
             
-            submit_cardio = st.form_submit_button("Save Cardio to Database", type="primary")
-            
-            if submit_cardio:
-                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                height_m = USER_HEIGHT / 100
-                ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
+            if st.form_submit_button("Save Cardio to Database", type="primary"):
+                # Save physical output to Lifts
+                cardio_lift = {'Date': date_input, 'Workout_Day': "Day 5: The Cardio Engine", 'Exercise': c_ex, 'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 'Reps_or_Mins': duration, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0.0, 'Side': 'Both'}
+                save_to_sheet(ws_lifts, pd.DataFrame([cardio_lift]), LIFTS_COLS)
                 
-                cardio_data = {
-                    'Date': date_input, 'Workout_Day': "Day 5: The Cardio Engine", 'Exercise': c_ex, 
-                    'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Distance_km': distance, 
-                    'Reps_or_Mins': duration, 'Bodyweight': st.session_state['h_weight'], 'RIR': 0.0, 'Side': 'Both',
-                    'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp,
-                    'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5,
-                    'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 
-                    'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi,
-                    'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
-                }
-                new_df = pd.DataFrame([cardio_data])
-                append_new_data(new_df)
-                st.success("High-Fidelity Cardio Data Saved!")
+                # Save biological output to Health
+                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
+                cardio_health = {'Date': date_input, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5, 'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']}
+                save_to_sheet(ws_health, pd.DataFrame([cardio_health]), HEALTH_COLS)
+                
+                st.success("✅ Cardio Data split and saved to BOTH databases perfectly!")
 
 with tab2:
-    if df.empty:
+    if df_lifts.empty and df_health.empty:
         st.info("Awaiting Data...")
     else:
-        lift_df = df[(df['Reps_or_Mins'] > 0) & (~df['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
-        cardio_df = df[df['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
+        # Merge health metrics into lifts for easy analytics
+        health_latest = df_health.groupby('Date').last().reset_index() if not df_health.empty else pd.DataFrame(columns=HEALTH_COLS)
+        lift_df = df_lifts[(df_lifts['Reps_or_Mins'] > 0) & (~df_lifts['Exercise'].str.contains("Rowing|Bike|Rest", na=False))].copy()
         
-        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar & Asymmetry", "🫀 Cardio", "🧬 Recomp & Recovery"])
+        if not lift_df.empty and not health_latest.empty:
+            lift_df = pd.merge(lift_df, health_latest[['Date', 'Sleep_Score']], on='Date', how='left')
+        elif not lift_df.empty:
+            lift_df['Sleep_Score'] = 0
+            
+        cardio_df = df_lifts[df_lifts['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
+        if not cardio_df.empty and not health_latest.empty:
+            cardio_df = pd.merge(cardio_df, health_latest, on='Date', how='left')
+
+        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
-            st.subheader("Historical Milestones & Gamification")
+            st.subheader("Historical Milestones")
             if not lift_df.empty:
-                recent_30_lift = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
-                monthly_tonnage = recent_30_lift['Volume'].sum()
-                
+                recent_30 = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
+                monthly_tonnage = recent_30['Volume'].sum()
                 if monthly_tonnage > 0:
-                    st.markdown("### 🎮 The Monthly Tonnage Game")
-                    if monthly_tonnage < 2500:
-                        emoji, item = "🦈", "A Great White Shark"
-                    elif monthly_tonnage < 5000:
-                        emoji, item = "🐘", "An African Elephant"
-                    elif monthly_tonnage < 10000:
-                        emoji, item = "🛻", "A Monster Truck"
-                    elif monthly_tonnage < 40000:
-                        emoji, item = "🚌", "A School Bus"
-                    elif monthly_tonnage < 100000:
-                        emoji, item = "✈️", "A Boeing 737"
-                    else:
-                        emoji, item = "🚀", "A Space Shuttle"
-                        
                     st.info(f"**Total Volume (Last 30 Days):** {monthly_tonnage:,.1f} kg")
-                    st.success(f"**{emoji} Achievement Unlocked:** You have officially lifted the equivalent weight of **{item}** this month.")
                 
-            st.write("---")
-            
-            if not lift_df.empty:
-                one_year_ago = pd.to_datetime(date.today()) - pd.DateOffset(years=1)
-                past_workouts = lift_df[(lift_df['Date'] >= one_year_ago - pd.Timedelta(days=7)) & (lift_df['Date'] <= one_year_ago + pd.Timedelta(days=7))]
-                if not past_workouts.empty:
-                    st.success(f"**Exactly one year ago:** You were grinding. Look at how far you've come.")
-                    st.dataframe(past_workouts[['Date', 'Exercise', 'Effective_Weight', 'Reps_or_Mins', 'Epley_1RM']].sort_values(by='Date').head(10))
-                else:
-                    st.info("No data from exactly one year ago found yet.")
-                    
-                st.markdown("### All-Time PRs by Rep Range")
                 pr_ex = st.selectbox("Select Exercise for PRs", lift_df['Exercise'].unique())
                 pr_df = lift_df[lift_df['Exercise'] == pr_ex]
-                
                 if not pr_df.empty:
-                    c1, c2, c3, c4 = st.columns(4)
+                    c1, c2, c3 = st.columns(3)
                     c1.metric("1RM (Epley)", f"{pr_df['Epley_1RM'].max():.1f} kg")
-                    c2.metric("3RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 3]['Effective_Weight'].max():.1f} kg" if not pr_df[pr_df['Reps_or_Mins'] >= 3].empty else "N/A")
-                    c3.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Effective_Weight'].max():.1f} kg" if not pr_df[pr_df['Reps_or_Mins'] >= 5].empty else "N/A")
-                    c4.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Effective_Weight'].max():.1f} kg" if not pr_df[pr_df['Reps_or_Mins'] >= 10].empty else "N/A")
-                else:
-                    st.warning("Not enough data for this exercise yet.")
+                    c2.metric("5RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 5]['Effective_Weight'].max():.1f} kg" if not pr_df[pr_df['Reps_or_Mins'] >= 5].empty else "N/A")
+                    c3.metric("10RM Record", f"{pr_df[pr_df['Reps_or_Mins'] >= 10]['Effective_Weight'].max():.1f} kg" if not pr_df[pr_df['Reps_or_Mins'] >= 10].empty else "N/A")
 
         with at2:
-            st.subheader("Progression Velocity & Relative Strength")
-            st.write("Tracking absolute max weight is good, but tracking your **Strength-to-Weight Ratio** proves you are building pure lean tissue, not just gaining fat/water weight.")
-            
+            st.subheader("Relative Strength")
             if not lift_df.empty:
                 vel_ex = st.selectbox("Select Exercise", lift_df['Exercise'].unique(), key='vel_ex')
-                v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date').agg(
-                    {'Epley_1RM': 'max', 'Bodyweight': 'mean'}
-                ).reset_index()
-                
+                v_df = lift_df[lift_df['Exercise'] == vel_ex].groupby('Date').agg({'Epley_1RM': 'max', 'Bodyweight': 'mean'}).reset_index()
                 if not v_df.empty:
-                    v_df['3_Session_Avg'] = v_df['Epley_1RM'].rolling(window=3, min_periods=1).mean()
                     v_df['Relative_Strength'] = v_df['Epley_1RM'] / v_df['Bodyweight'].replace(0, 1) 
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Epley_1RM'], mode='lines+markers', name='Daily e1RM (kg)', opacity=0.5, line=dict(dash='dot', width=1)))
-                    fig.add_trace(go.Scatter(x=v_df['Date'], y=v_df['3_Session_Avg'], mode='lines', name='Trend (Rolling Avg)', line=dict(color='#FF4B4B', width=3)))
-                    fig.update_layout(title=f"Absolute Strength (e1RM) - {vel_ex}")
-                    fig.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    fig_rel = go.Figure()
-                    fig_rel.add_trace(go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', name='Strength-to-Weight Ratio', line=dict(color='#00CC96', width=3)))
-                    fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)", yaxis_title="x Bodyweight")
+                    fig_rel = go.Figure(data=go.Scatter(x=v_df['Date'], y=v_df['Relative_Strength'], mode='lines+markers', line=dict(color='#00CC96', width=3)))
+                    fig_rel.update_layout(title=f"Relative Strength Multiplier (e1RM ÷ Bodyweight)")
                     fig_rel.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_rel, use_container_width=True)
-                else:
-                    st.info("Log some sessions for this exercise to see the velocity trend.")
 
         with at3:
             st.subheader("INOL & Fatigue Curves")
             if not lift_df.empty:
                 inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
                 i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
-                
-                SYSTEMIC_MODIFIERS = {
-                    "Romanian Deadlift (RDL)": 1.0, "Heavy Barbell Front Squat": 1.0,
-                    "Neutral Grip Pull-Ups": 0.8, "Bulgarian Split Squats": 0.8, "Heavy Russian Kettlebell Swings": 0.8, "Barbell Hip Thrusts": 0.8, "Heels-Elevated Landmine Squat": 0.8,
-                    "T-Bar Landmine Row": 0.7, "Dumbbell Bench Press": 0.7, "Band-Assisted Dips": 0.7, "Landmine Press": 0.7,
-                    "Single-Arm Bench-Supported Dumbbell Row": 0.6, "Nordic Curls": 0.6, "Front-Rack Kettlebell Marches": 0.6,
-                    "Push-Ups": 0.5, "Hamstring-Focused Roman Chair Extension": 0.5, "Erector-Focused Roman Chair Extension": 0.5, "Ab-Wheel Rollouts": 0.5, "Heavy Suitcase Holds": 0.5,
-                    "Chest-Supported Lateral Raise": 0.3, "Chest-Supported Rear Delt Flye": 0.3, "Overhead Tricep Extension": 0.3, "Dumbbell Hammer Curls": 0.3, "Banded Crossovers": 0.3, "Incline Supinated Dumbbell Curls": 0.3, "Banded Tricep Pushdowns": 0.3, "Banded Face Pulls": 0.3, "Wall Tibialis Raises": 0.3, "Squat Wedge Dumbbell Calf Raises": 0.3, "Half-Kneeling Pallof Press": 0.3, "Anchored Reverse Crunch": 0.3
-                }
-                
                 if not i_df.empty:
                     global_max = i_df['Epley_1RM'].max()
                     i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
-                    i_df['Intensity_%'] = i_df['Intensity_%'].clip(upper=99)
-                    
-                    fatigue_factor = SYSTEMIC_MODIFIERS.get(inol_ex, 0.5)
-                    i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'])) * fatigue_factor
+                    i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'].clip(upper=99))) * 0.5
                     
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
-                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score (Adjusted for Systemic Load)", color='INOL', color_continuous_scale='RdYlGn_r', range_color=[0, 2.0])
-                    fig2.add_hline(y=2.0, line_dash="dot", annotation_text="Overreaching (>2.0)")
+                    fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
                     fig2.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig2, use_container_width=True)
-                    
-                    st.markdown("### Fatigue Degradation (Intra-Workout)")
-                    fatigue_df = i_df.groupby(['Date', 'Set_Number'])['Reps_or_Mins'].max().reset_index()
-                    fig3 = px.line(fatigue_df, x='Set_Number', y='Reps_or_Mins', color='Date', markers=True, title="Rep Drop-off Across Sets")
-                    st.plotly_chart(fig3, use_container_width=True)
-                else:
-                    st.info("No data available for INOL calculation yet.")
 
         with at4:
-            st.subheader("7-Day Microcycle (Muscle Volume)")
-            st.write("This tracks **Total Hard Sets** per muscle over a rolling 7-day window. It reveals true biological imbalances before they become joint injuries.")
-            
+            st.subheader("7-Day Microcycle Radar")
             if not lift_df.empty:
                 recent_7_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=7)]
                 muscle_sets = {}
-                for index, row in recent_7_df.iterrows():
+                for _, row in recent_7_df.iterrows():
                     ex = row['Exercise']
                     if ex in MUSCLE_MAP:
-                        for muscle, multiplier in MUSCLE_MAP[ex].items():
-                            muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
+                        for muscle, multiplier in MUSCLE_MAP[ex].items(): muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
                 
                 if muscle_sets:
-                    heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets']).sort_values(by='Total Sets')
-                    
-                    fig_radar = go.Figure(data=go.Scatterpolar(
-                        r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], 
-                        theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]],
-                        fill='toself',
-                        marker_color='#1f77b4'
-                    ))
-                    fig_radar.update_layout(
-                        title="Structural Balance Radar",
-                        polar=dict(radialaxis=dict(visible=True, range=[0, max(20, heat_df['Total Sets'].max())])),
-                        showlegend=False
-                    )
+                    heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets'])
+                    fig_radar = go.Figure(data=go.Scatterpolar(r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]], fill='toself'))
                     st.plotly_chart(fig_radar, use_container_width=True)
-                    
-                    fig4 = px.bar(heat_df, x='Total Sets', y='Muscle', orientation='h', 
-                                  color='Total Sets', color_continuous_scale='Inferno',
-                                  title="Set Distribution (Last 7 Days)")
-                    
-                    fig4.add_vline(x=10, line_dash="dash", line_color="#00CC96", annotation_text="MEV (~10/wk)", annotation_position="top left")
-                    fig4.add_vline(x=20, line_dash="dash", line_color="#EF553B", annotation_text="MRV (~20/wk)", annotation_position="top left")
-                    st.plotly_chart(fig4, use_container_width=True)
-                else:
-                    st.info("Log some data this week to populate the radar chart!")
-
-            st.write("---")
-            st.markdown("### ⚖️ Unilateral Asymmetry Radar")
-            st.write("Detects left vs. right limb imbalances over the last 30 days to prevent injuries.")
-            
-            uni_df = lift_df[lift_df['Side'].isin(['Left', 'Right'])]
-            if not uni_df.empty:
-                recent_30_uni = uni_df[uni_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=30)]
-                if not recent_30_uni.empty:
-                    asym_data = recent_30_uni.groupby(['Exercise', 'Side'])['Volume'].sum().reset_index()
-                    asym_pivot = asym_data.pivot(index='Exercise', columns='Side', values='Volume').fillna(0)
-                    
-                    for ex in asym_pivot.index:
-                        left_vol = asym_pivot.loc[ex].get('Left', 0)
-                        right_vol = asym_pivot.loc[ex].get('Right', 0)
-                        
-                        if left_vol > 0 and right_vol > 0:
-                            max_vol = max(left_vol, right_vol)
-                            diff_pct = abs(left_vol - right_vol) / max_vol * 100
-                            
-                            if diff_pct > 10:
-                                weaker_side = "Left" if left_vol < right_vol else "Right"
-                                st.error(f"⚠️ **IMBALANCE DETECTED ({ex}):** Your {weaker_side} side is doing {diff_pct:.1f}% less volume. Focus on bringing the {weaker_side} limb up to prevent injury!")
-                            elif diff_pct > 5:
-                                st.warning(f"🟡 **SLIGHT IMBALANCE ({ex}):** {diff_pct:.1f}% difference detected. Keep an eye on it.")
-                            else:
-                                st.success(f"✅ **BALANCED ({ex}):** Only a {diff_pct:.1f}% variance. Great symmetry.")
-                else:
-                    st.info("No unilateral exercises logged in the last 30 days.")
-            else:
-                st.info("Log exercises tagged as Left/Right to track asymmetry.")
 
         with at5:
             st.subheader("🫀 Cardio Engine Analytics")
-            if cardio_df.empty:
-                st.info("Log a cardio session with your Garmin data to see analytics.")
-            else:
+            if not cardio_df.empty:
                 c_ex = st.selectbox("Select Cardio Type", cardio_df['Exercise'].unique())
                 cx_df = cardio_df[cardio_df['Exercise'] == c_ex].copy()
-                
-                if not cx_df.empty:
-                    if "Rowing" in c_ex:
-                        cx_df['Pace_Sec'] = (cx_df['Reps_or_Mins'] * 60) / (cx_df['Distance_km'] * 1000 / 500)
-                        cx_df['Metric_Value'] = cx_df['Pace_Sec']
-                        metric_title = "Avg Split Pace (Seconds per 500m) 📉 Lower is Better"
-                    else:
-                        cx_df['Speed_kmh'] = cx_df['Distance_km'] / (cx_df['Reps_or_Mins'] / 60)
-                        cx_df['Metric_Value'] = cx_df['Speed_kmh']
-                        metric_title = "Avg Speed (km/h) 📈 Higher is Better"
-                    
-                    st.markdown("### Aerobic Efficiency")
+                if not cx_df.empty and 'Avg_HR' in cx_df.columns:
+                    cx_df['Metric_Value'] = (cx_df['Reps_or_Mins'] * 60) / (cx_df['Distance_km'] * 1000 / 500) if "Rowing" in c_ex else cx_df['Distance_km'] / (cx_df['Reps_or_Mins'] / 60)
                     
                     fig_aerobic = go.Figure()
                     fig_aerobic.add_trace(go.Bar(x=cx_df['Date'], y=cx_df['Metric_Value'], name='Speed/Pace Output', marker_color='#1f77b4', yaxis='y1'))
-                    fig_aerobic.add_trace(go.Scatter(x=cx_df['Date'], y=cx_df['Avg_HR'], name='Avg Heart Rate', mode='lines+markers', line=dict(color='#FF4B4B', width=3), yaxis='y2'))
-                    
-                    fig_aerobic.update_layout(
-                        yaxis=dict(title=metric_title, side='left'),
-                        yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False),
-                        hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                    )
+                    fig_aerobic.add_trace(go.Scatter(x=cx_df['Date'], y=cx_df['Avg_HR'], name='Avg HR', mode='lines+markers', line=dict(color='#FF4B4B', width=3), yaxis='y2'))
+                    fig_aerobic.update_layout(yaxis=dict(title="Pace/Speed", side='left'), yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False))
                     fig_aerobic.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_aerobic, use_container_width=True)
-                    
-                    st.markdown("### Heart Rate Zone Distribution")
-                    zone_df = cx_df[['Date', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']].melt(id_vars='Date', var_name='Zone', value_name='Minutes')
-                    zone_df['Zone'] = zone_df['Zone'].str.replace('_Mins', '')
-                    
-                    zone_colors = {'Z1': '#4287f5', 'Z2': '#42f56f', 'Z3': '#f5d742', 'Z4': '#f58442', 'Z5': '#f54242'}
-                    
-                    fig_zones = px.bar(zone_df, x='Date', y='Minutes', color='Zone', title="Time in Zones per Session", color_discrete_map=zone_colors)
-                    fig_zones.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
-                    st.plotly_chart(fig_zones, use_container_width=True)
-                    
+
         with at6:
             st.subheader("🧬 Biological Recomp & Recovery")
+            if not health_latest.empty:
+                hdf = health_latest[(health_latest['FFMI'] > 0) & (health_latest['Body_Fat_Pct'] > 0)].copy()
+                if not hdf.empty:
+                    fig_ffmi = go.Figure()
+                    fig_ffmi.add_trace(go.Scatter(x=hdf['Date'], y=hdf['FFMI'], mode='lines+markers', name='FFMI', line=dict(color='#00CC96', width=3), yaxis='y1'))
+                    fig_ffmi.add_trace(go.Scatter(x=hdf['Date'], y=hdf['Body_Fat_Pct'], mode='lines', name='Body Fat %', line=dict(color='#FF4B4B', dash='dot'), yaxis='y2'))
+                    fig_ffmi.update_layout(yaxis=dict(title='FFMI Score', side='left'), yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False))
+                    fig_ffmi.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
+                    st.plotly_chart(fig_ffmi, use_container_width=True)
             
-            st.markdown("### FFMI (Fat-Free Mass Index) Tracker")
-            st.write("*FFMI measures how much pure lean muscle tissue you carry. A natural limit is around 25.*")
-            
-            health_df = df.groupby('Date').agg({'FFMI': 'max', 'Body_Fat_Pct': 'max', 'Sleep_Score': 'max'}).reset_index()
-            health_df = health_df[(health_df['FFMI'] > 0) & (health_df['Body_Fat_Pct'] > 0)]
-            
-            if not health_df.empty:
-                fig_ffmi = go.Figure()
-                fig_ffmi.add_trace(go.Scatter(x=health_df['Date'], y=health_df['FFMI'], mode='lines+markers', name='FFMI', line=dict(color='#00CC96', width=3), yaxis='y1'))
-                fig_ffmi.add_trace(go.Scatter(x=health_df['Date'], y=health_df['Body_Fat_Pct'], mode='lines', name='Body Fat %', line=dict(color='#FF4B4B', dash='dot'), yaxis='y2'))
-                
-                fig_ffmi.update_layout(
-                    yaxis=dict(title='FFMI Score', side='left'),
-                    yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False),
-                    hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                fig_ffmi.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
-                st.plotly_chart(fig_ffmi, use_container_width=True)
-            else:
-                st.info("Sync your Garmin Scale data a few times to start building your FFMI Recomp chart.")
-                
-            st.markdown("### 🛌 Sleep Score vs. Absolute Strength")
-            st.write("*Visual proof of how your Garmin sleep score dictates your performance under the bar.*")
-            
-            if not lift_df.empty:
-                rc_ex = st.selectbox("Select Exercise to compare against Sleep", lift_df['Exercise'].unique())
-                rc_df = lift_df[lift_df['Exercise'] == rc_ex].groupby('Date').agg({'Epley_1RM': 'max', 'Sleep_Score': 'max'}).reset_index()
-                rc_df = rc_df[rc_df['Sleep_Score'] > 0]
-                
+            if not lift_df.empty and 'Sleep_Score' in lift_df.columns:
+                rc_ex = st.selectbox("Compare Sleep vs Strength", lift_df['Exercise'].unique())
+                rc_df = lift_df[(lift_df['Exercise'] == rc_ex) & (lift_df['Sleep_Score'] > 0)].groupby('Date').agg({'Epley_1RM': 'max', 'Sleep_Score': 'max'}).reset_index()
                 if not rc_df.empty:
-                    fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", 
-                                           title=f"Correlation: Sleep Score vs. {rc_ex} e1RM",
-                                           labels={'Sleep_Score': 'Garmin Sleep Score', 'Epley_1RM': 'e1RM (kg)'},
-                                           color='Sleep_Score', color_continuous_scale='RdYlGn')
+                    fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", title=f"Sleep Score vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_sleep, use_container_width=True)
-                else:
-                    st.info(f"Not enough Sleep Score data logged alongside {rc_ex} to generate a scatter plot yet.")
 
 with tab3:
     st.subheader("⚙️ Database Editor")
-    st.write("Loading thousands of rows can cause lag. Select how much recent history you need to edit.")
     
-    days_to_edit = st.slider("Days of history to load", min_value=7, max_value=365, value=30, step=7)
-    cutoff_date = pd.to_datetime(date.today()) - pd.Timedelta(days=days_to_edit)
-    
-    historical_df = df[df['Date'] < cutoff_date].copy()
-    recent_df = df[df['Date'] >= cutoff_date].copy()
-    
-    edited_recent = st.data_editor(
-        recent_df.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), 
-        num_rows="dynamic", 
-        width="stretch"
-    )
-    
-    if st.button("Save Changes", type="primary"):
-        final_df = pd.concat([historical_df, edited_recent], ignore_index=True)
-        overwrite_database(final_df)
-        st.success("Database Saved safely!")
+    st.markdown("### 🏋️‍♂️ Lifts Database")
+    edited_lifts = st.data_editor(df_lifts.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", width="stretch")
+    if st.button("Save Changes to Lifts DB", type="primary"):
+        overwrite_sheet(ws_lifts, edited_lifts, LIFTS_COLS)
+        st.success("Lifts Database Saved safely!")
+        
+    st.write("---")
+    st.markdown("### 🧬 Health Database")
+    edited_health = st.data_editor(df_health, num_rows="dynamic", width="stretch")
+    if st.button("Save Changes to Health DB", type="primary"):
+        overwrite_sheet(ws_health, edited_health, HEALTH_COLS)
+        st.success("Health Database Saved safely!")
