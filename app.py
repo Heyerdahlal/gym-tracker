@@ -79,6 +79,19 @@ PROGRAM = {
         "Block 1: Rowing": ["4x4 Rowing (Zone 4/5)"],
         "Block 2: Bike": ["Zone 2 Spin Bike Flush"]
     },
+    "Freestyle / Custom Day": {
+        "Select Any Exercise(s)": [
+            "Ab-Wheel Rollouts", "Anchored Reverse Crunch", "Band-Assisted Dips", "Banded Crossovers", 
+            "Banded Face Pulls", "Banded Tricep Pushdowns", "Barbell Hip Thrusts", "Bulgarian Split Squats", 
+            "Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye", "Dumbbell Bench Press", 
+            "Dumbbell Hammer Curls", "Erector-Focused Roman Chair Extension", "Front-Rack Kettlebell Marches", 
+            "Half-Kneeling Pallof Press", "Hamstring-Focused Roman Chair Extension", "Heavy Barbell Front Squat", 
+            "Heavy Russian Kettlebell Swings", "Heavy Suitcase Holds", "Heels-Elevated Landmine Squat", 
+            "Incline Supinated Dumbbell Curls", "Landmine Press", "Neutral Grip Pull-Ups", "Nordic Curls", 
+            "Overhead Tricep Extension", "Push-Ups", "Romanian Deadlift (RDL)", "Single-Arm Bench-Supported Dumbbell Row", 
+            "Squat Wedge Dumbbell Calf Raises", "T-Bar Landmine Row", "Wall Tibialis Raises"
+        ]
+    },
     "🧬 Life Event (Sick/Travel)": {
         "Rest": ["Rest / Recovery / Frozen Week"]
     }
@@ -453,11 +466,16 @@ with tab1:
         date_input = st.date_input("Date", date.today())
         is_deload = st.toggle("🧘 Activate Deload Week")
         
-    with col2:
+     with col2:
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
         workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
-        selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=PROGRAM[workout_day][workout_block])
-    
+        
+        # NEW LOGIC: Leave the multiselect empty if it's a Freestyle day!
+        if "Freestyle" in workout_day:
+            selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=[])
+        else:
+            selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=PROGRAM[workout_day][workout_block])
+            
     st.write("---")
     
     if selected_exercises:
