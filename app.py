@@ -466,13 +466,6 @@ with tab1:
         date_input = st.date_input("Date", date.today())
         is_deload = st.toggle("🧘 Activate Deload Week")
         
-     with tab1:
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        date_input = st.date_input("Date", date.today())
-        is_deload = st.toggle("🧘 Activate Deload Week")
-        
     with col2:
         workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
         workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
