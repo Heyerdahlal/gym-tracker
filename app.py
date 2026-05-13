@@ -704,9 +704,9 @@ with tab4:
     
     with c1:
         st.markdown("#### 🧬 Morning Health Sync")
-        is_rest_day_sync = st.checkbox("🧘 Log this as an official Rest Day", value=False)
+        st.write("Clicking this will instantly pull your Garmin data and lock it into your Health database for the day.")
         
-        if st.button("🔄 Sync Scale & Sleep"):
+        if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
             with st.spinner(f"Pulling data for {date_input}..."):
                 client = get_garmin_client()
                 if client:
@@ -737,15 +737,8 @@ with tab4:
                             hrv = hrv_data['hrvSummary'].get('lastNightAvg')
                             if hrv: st.session_state['h_hrv'] = int(hrv)
                     except Exception: pass
-                        
-                    st.success("Health Check Complete!")
                     
-                    if is_rest_day_sync:
-                        # Also write a blank lift log so your volume charts register the day
-                        rest_lift = {'Date': date_input, 'Workout_Day': "Rest", 'Exercise': "Rest", 'Set_Number': 1, 'Weight': 0.0, 'Band': 'None', 'Reps_or_Mins': 0, 'Distance_km': 0.0, 'Side': 'Both', 'Bodyweight': st.session_state['h_weight'], 'RIR': 0}
-                        save_to_sheet(ws_lifts, pd.DataFrame([rest_lift]), LIFTS_COLS)
-                        
-                    # Save health data
+                    # INSTANTLY LOCK TO DATABASE
                     lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
                     height_m = USER_HEIGHT / 100
                     ffmi = lean_mass / (height_m ** 2) if height_m > 0 else 0
@@ -755,8 +748,9 @@ with tab4:
                         'Height_cm': USER_HEIGHT, 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 
                         'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv']
                     }
+                    
                     save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
-                    st.success(f"✅ Health data saved to Health DB for {date_input}!")
+                    st.success(f"✅ Health data locked into Google Sheets for {date_input}! You can safely close the app.")
 
         st.markdown("**Current Session Health Data:**")
         st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
