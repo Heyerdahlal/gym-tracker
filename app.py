@@ -43,6 +43,11 @@ try:
     sh = gc.open("Gym_Tracker_DB")
     ws_lifts = sh.worksheet("Lifts")
     ws_health = sh.worksheet("Health")
+    # NEW: The app will look for a System tab, and if it doesn't exist, it will auto-create it!
+    try:
+        ws_system = sh.worksheet("System")
+    except gspread.exceptions.WorksheetNotFound:
+        ws_system = sh.add_worksheet(title="System", rows="10", cols="5")
 except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs at the bottom of your Google Sheet! Error: {e}")
     st.stop()
@@ -663,39 +668,48 @@ with tab4:
     mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
     
     def get_garmin_client():
-        # 1. If we already have a VIP pass, use it immediately
         if 'garmin_vip_client' in st.session_state: 
             return st.session_state['garmin_vip_client']
             
-        # 2. ANTI-SPAM SHIELD: Check if we are in timeout
-        if 'garmin_lockout' in st.session_state:
-            time_left = st.session_state['garmin_lockout'] - datetime.now()
-            if time_left.total_seconds() > 0:
-                mins_left = int(time_left.total_seconds() / 60)
-                st.error(f"🛑 **RATE LIMIT ACTIVE:** Garmin put you in timeout for spamming. Please wait {mins_left} more minutes before clicking sync.")
-                return None
-            else:
-                del st.session_state['garmin_lockout'] # Timeout over, remove the lock
-                
         g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
-        if not g_email or not g_pass: 
-            st.error("Missing Garmin credentials!")
-            return None
-            
+        if not g_email or not g_pass: return None
+        
+        client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input) if mfa_input else Garmin(g_email, g_pass)
+        
+        # 1. THE VIP BYPASS: Try to load the saved session token from Google Sheets
         try:
-            client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input) if mfa_input else Garmin(g_email, g_pass)
+            saved_token = ws_system.acell('A1').value
+            if saved_token:
+                import garth
+                token_dict = json.loads(saved_token)
+                garth.client.loads(token_dict) # Inject the VIP pass
+                client.garth = garth.client
+                st.session_state['garmin_vip_client'] = client
+                return client
+        except Exception:
+            pass # VIP pass expired or doesn't exist yet, proceed to normal login
+            
+        # 2. NORMAL LOGIN: (Requires MFA if you don't have a valid VIP pass)
+        try:
             client.login()
+            
+            # 3. THE HEIST: We successfully logged in. Steal the VIP pass and save it to Sheets!
+            try:
+                import garth
+                new_token_dict = garth.client.dump()
+                ws_system.update_acell('A1', json.dumps(new_token_dict))
+            except Exception as e: 
+                pass # Fail silently if token extraction fails
+                
             st.session_state['garmin_vip_client'] = client 
             return client
             
         except Exception as e:
             error_msg = str(e)
             if "429" in error_msg:
-                # We got caught. Lock down the app for 15 minutes.
-                st.session_state['garmin_lockout'] = datetime.now() + timedelta(minutes=15)
-                st.error("🛑 **HTTP 429: Too Many Requests.** Garmin's security blocked you. The app is entering a mandatory 15-minute cooldown to protect your account.")
+                st.error("🛑 **Garmin Timeout (429):** You are temporarily rate-limited. Please wait 15 minutes before clicking Sync again.")
             elif "prompt_mfa" in error_msg:
-                st.error("🛑 **Garmin requires 2FA!** Check your email/app for a code, type it in the box, and click sync.")
+                st.error("🛑 **Garmin requires 2FA!** Check your email/app for a code, type it in the box, and click sync. (You should only have to do this once!)")
             else:
                 st.error(f"Garmin Login Failed: {e}")
             return None
