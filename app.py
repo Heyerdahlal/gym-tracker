@@ -558,10 +558,13 @@ with tab4:
                     save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
                     st.success(f"✅ Health data locked into Google Sheets for {date_input}! Safe to close app.")
 
-        st.markdown("**Manual Health Override:**")
+        st.markdown("**Current Session Health Data:**")
         st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
         st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
         st.session_state['h_muscle'] = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
+        st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+        st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
+        st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
         
     with c2:
         st.markdown("#### 🏃‍♂️ Cardio Session Data")
