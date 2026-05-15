@@ -114,6 +114,14 @@ WARM_UPS = {
     "Day 5: Lower B (Hinge, Power & Posterior)": "2x15 BW Glute Bridges, 1x15 KB Goblet Squats (stay at bottom to open hips), 2x10 BW Good Mornings, 90-sec Couch Stretch."
 }
 
+COOL_DOWNS = {
+    "Day 1: The Cardio Engine": "3 mins completely loose pedaling/walking to clear lactic acid. 60-sec standing calf stretch per leg.",
+    "Day 2: Upper A (Horizontal Push/Pull)": "90-sec doorway pec stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
+    "Day 3: Lower A (Strength, Quads & Armor)": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
+    "Day 4: Upper B (Vertical Push/Pull)": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec lat stretch holding an upright pole.",
+    "Day 5: Lower B (Hinge, Power & Posterior)": "90-sec banded hamstring stretch per leg (lying on back). 2 mins seated pigeon/glute stretch."
+}
+
 DAY_PHILOSOPHY = {
     "Day 1: The Cardio Engine": "This day kicks off the week by building the aerobic base and VO2 Max. Establishing cardiovascular efficiency first improves recovery and work capacity for the heavy lifting days that follow.",
     "Day 2: Upper A (Horizontal Push/Pull)": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
@@ -348,6 +356,8 @@ with tab1:
             
         if workout_day in WARM_UPS:
             st.info(f"🔥 **Prep & Activation:** {WARM_UPS[workout_day]}")
+        if workout_day in COOL_DOWNS:
+            st.info(f"🧊 **Down-Regulation (Post-Workout):** {COOL_DOWNS[workout_day]}")
     
     st.write("---")
     
@@ -760,4 +770,9 @@ with tab5:
                     st.markdown(f"  - *Setup:* {guide.get('Setup', '')}")
                     st.markdown(f"  - *Execution:* {guide.get('Execution', '')}")
                     st.markdown(f"  - *Why:* {guide.get('Why', '')}")
+                    
+        cool_down = COOL_DOWNS.get(day, "")
+        if cool_down:
+            st.markdown(f"**🧊 Down-Regulation (Post-Workout):** {cool_down}")
+            
         st.write("---")
