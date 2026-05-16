@@ -48,7 +48,7 @@ try:
     except gspread.exceptions.WorksheetNotFound:
         ws_system = sh.add_worksheet(title="System", rows="10", cols="5")
 except Exception as e:
-    st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs at the bottom of your Google Sheet! Error: {e}")
+    st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs! Error: {e}")
     st.stop()
 
 # --- STATIC USER PROFILE ---
@@ -116,10 +116,28 @@ WARM_UPS = {
 
 COOL_DOWNS = {
     "Day 1: The Cardio Engine": "3 mins completely loose pedaling/walking to clear lactic acid. 60-sec standing calf stretch per leg.",
-    "Day 2: Upper A (Horizontal Push/Pull)": "90-sec doorway pec stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
+    "Day 2: Upper A (Horizontal Push/Pull)": "90-sec Floor Scorpion Pec Stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
     "Day 3: Lower A (Strength, Quads & Armor)": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
-    "Day 4: Upper B (Vertical Push/Pull)": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec lat stretch holding an upright pole.",
-    "Day 5: Lower B (Hinge, Power & Posterior)": "90-sec banded hamstring stretch per leg (lying on back). 2 mins seated pigeon/glute stretch."
+    "Day 4: Upper B (Vertical Push/Pull)": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole.",
+    "Day 5: Lower B (Hinge, Power & Posterior)": "90-sec Banded hamstring stretch per leg (lying on back). 2 mins Seated pigeon/glute stretch."
+}
+
+MOBILITY_GUIDES = {
+    "Band Pull-aparts": "Hold a light band at chest height, arms straight. Squeeze shoulder blades together to pull the band apart until it touches your chest. Keeps shoulders healthy.",
+    "Push-up to Downward Dog": "Perform a push-up, then immediately push your hips high into the air (Downward Dog), pressing your chest toward your toes to open the shoulders.",
+    "Deep Bodyweight Squats": "Sit into a deep squat. Use your elbows to actively press your knees outward. Gently shift your weight side to side to loosen the hip capsules.",
+    "Cossack Squats": "Take a very wide stance. Squat deep onto one leg while keeping the other leg completely straight, toes pointing to the ceiling. Stretches the adductors/groin.",
+    "Couch Stretch": "Place one knee in the corner where the floor meets a wall (or couch). Keep your shin vertical against the wall. Step the other foot forward. Squeeze your glute to brutally stretch the hip flexor.",
+    "Scapular Pull-ups": "Hang from a bar. Without bending your elbows, pull your shoulder blades DOWN and TOGETHER to lift your body an inch or two. Pause, then lower. Activates lats.",
+    "BW Glute Bridges": "Lie on your back, knees bent, feet flat. Drive through your heels to bridge your hips to the ceiling. Pause and squeeze the glutes to wake them up.",
+    "KB Goblet Squats": "Hold a kettlebell at your chest. Drop into a deep squat. Keep your chest tall and let the weight anchor you into the bottom stretch to pry open the hips.",
+    "BW Good Mornings": "Hands gently behind your head. Unlock knees slightly, then push your hips straight back until your torso is almost parallel to the floor to dynamically stretch hamstrings.",
+    "Floor Scorpion Pec Stretch": "Lie flat on your stomach with arms out in a 'T'. Lift your left leg, bend the knee, and roll your body to the right, trying to touch your left foot to the floor behind your right leg. Massive, safe chest stretch.",
+    "90/90 hip breathing": "Sit on the floor with both legs bent at 90 degrees (one in front, one to the side). Lean forward over the front shin with a flat back. Take deep, slow breaths.",
+    "thoracic spine": "Place a foam roller horizontal across your upper back. Support your neck with your hands. Slowly extend your upper back over the roller to reverse poor posture.",
+    "Lat stretch holding an upright pole": "Grab a vertical rack or pole with one hand at hip height. Sit your hips back and let your arm act as a rope, feeling a massive stretch from your armpit down your side.",
+    "Banded hamstring stretch": "Lie on your back. Loop a band around one foot. Keep the leg perfectly straight and pull it toward your face until you feel a deep hamstring stretch.",
+    "Seated pigeon/glute stretch": "Sit on a bench. Cross your right ankle over your left knee. Keeping your back perfectly flat, hinge forward from the hips to stretch the right glute."
 }
 
 DAY_PHILOSOPHY = {
@@ -181,6 +199,17 @@ EXERCISE_GUIDES = {
     "Erector-Focused Roman Chair Extension": {"Setup": "Lock into a 45-degree bench. Pad sits AT the hips.", "Execution": "Allow your upper back to round over the pad (spinal flexion), then pull up by extending the spine (unrolling vertebra by vertebra).", "Why": "Directly trains the spinal erectors through a full range of motion, building a thick, resilient lower back."},
     "Heavy Suitcase Holds": {"Setup": "Hold a heavy kettlebell or dumbbell in one hand. Stand perfectly tall.", "Execution": "Perform a slow, highly controlled march in place. Do not let the weight pull your shoulder down or shift your hips.", "Why": "Marching upgrades this from an anti-lateral flexion core exercise to a dynamic pelvic stabilizer, bulletproofing the glute medius and preventing hip drop."},
     "Front-Rack Kettlebell Marches": {"Setup": "Two heavy KBs held at the chest (rack position).", "Execution": "Slowly march in place, lifting your knees above hip level with immense control.", "Why": "Heavy core stabilization under load. The rack position forces the upper back and core to work isometrically to keep you upright."}
+}
+
+DAILY_SYSTEM_RESET = {
+    "1. The Shin Breaker": {"Target": "1-2min: Stretches the anterior tibialis to prevent shin splints and keep knees healthy.", "Execution": "Kneel with toes pointed back (laces flat), sit butt onto heels. Lean back slightly and lift knees 1 inch off the floor.", "Progression": "Increase the height you lift your knees off the floor."},
+    "2. The Combat Stretch (Ankle Mobility)": {"Target": "1-2min per side: Unlocks true ankle dorsiflexion for deep squatting.", "Execution": "Half-kneeling lunge. Place a heavy kettlebell on your front knee. Drive the knee as far over your toes as humanly possible while keeping the heel glued to the floor.", "Progression": "Increase the weight of the kettlebell to force a deeper fascial stretch."},
+    "3. The Couch Stretch": {"Target": "2min per side: Deep stretch of the quadriceps and hip flexors.", "Execution": "Place knee into a wall/couch corner, shin vertical. Squeeze the glute of the stretching leg HARD and lift torso upright.", "Progression": "Move from resting hands on a box/chair to a fully upright, unsupported torso."},
+    "4. The 90/90 Hip Switch": {"Target": "2min: Restores internal and external rotation of the hip capsule.", "Execution": "Sit on the floor, both legs bent at 90 degrees (one in front, one behind). Pivot on your heels to windshield-wiper your knees to the other side.", "Progression": "Perform the movement without using your hands on the floor for support."},
+    "5. The 'Paleo Chair'": {"Target": "2min: Recalibrates hips and ankles for deep squatting.", "Execution": "Drop into the deepest squat you can hold with heels flat. Drive knees out with elbows, keep chest tall.", "Progression": "Shift from holding a doorframe for support to a completely free-standing hold."},
+    "6. The Lateral Child’s Pose": {"Target": "1min each side: Stretches the latissimus dorsi and quadratus lumborum (lower back).", "Execution": "Sit in Child's pose, walk both hands far to one side, and push the opposite hip down into your heel.", "Progression": "Walk the hands further laterally to increase the fascial pull."},
+    "7. Wall 'Snow Angels'": {"Target": "15 reps: Restores thoracic spine (upper back) mobility and shoulder health.", "Execution": "Back flat against wall, touch lower back, head, elbows, and wrists to the wall. Slide arms up to a 'Y' and down to a 'W'.", "Progression": "Move feet closer to the wall while maintaining full lower back contact."},
+    "8. The 'Neck Anchor'": {"Target": "1min per side: Releases tension in the upper traps and neck.", "Execution": "Place right hand behind back, tilt left ear to left shoulder, rotate chin toward armpit.", "Progression": "Gently use the non-anchored hand to apply microscopic overpressure to the stretch."}
 }
 
 MUSCLE_MAP = {
@@ -358,6 +387,13 @@ with tab1:
             st.info(f"🔥 **Prep & Activation:** {WARM_UPS[workout_day]}")
         if workout_day in COOL_DOWNS:
             st.info(f"🧊 **Down-Regulation (Post-Workout):** {COOL_DOWNS[workout_day]}")
+            
+        combined_text = WARM_UPS.get(workout_day, "") + COOL_DOWNS.get(workout_day, "")
+        relevant_mobility = {k: v for k, v in MOBILITY_GUIDES.items() if k.lower() in combined_text.lower()}
+        if relevant_mobility:
+            with st.expander("📖 View Mobility & Stretching Guides", expanded=False):
+                for m_name, m_guide in relevant_mobility.items():
+                    st.markdown(f"**{m_name}:** {m_guide}")
     
     st.write("---")
     
@@ -492,6 +528,17 @@ with tab1:
                         save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
                         st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
                     else: st.warning("No reps logged.")
+
+    # --- THE DOPAMINE CHECKLIST ---
+    st.write("---")
+    st.markdown("### 🌙 Evening Protocol: The Daily System Reset")
+    st.write("Your 10-minute joint restoration before bed. Check these off as you go for that dopamine hit! *(Resets daily, not logged to database)*")
+    
+    reset_c1, reset_c2 = st.columns(2)
+    half = len(DAILY_SYSTEM_RESET) // 2
+    for i, (ex_name, details) in enumerate(DAILY_SYSTEM_RESET.items()):
+        col = reset_c1 if i < half else reset_c2
+        col.checkbox(ex_name, key=f"reset_chk_{i}")
 
 with tab4:
     st.subheader("📡 Garmin Integration Hub")
@@ -757,8 +804,19 @@ with tab5:
             st.info(f"**🧠 Programming Philosophy:** {philosophy}")
             
         warm_up = WARM_UPS.get(day, "")
-        if warm_up:
-            st.markdown(f"**🔥 Warm-Up Protocol:** {warm_up}")
+        cool_down = COOL_DOWNS.get(day, "")
+        
+        if warm_up: st.markdown(f"**🔥 Warm-Up Protocol:** {warm_up}")
+        if cool_down: st.markdown(f"**🧊 Down-Regulation (Post-Workout):** {cool_down}")
+        
+        combined_text_t5 = warm_up + cool_down
+        rel_mob_t5 = {k: v for k, v in MOBILITY_GUIDES.items() if k.lower() in combined_text_t5.lower()}
+        if rel_mob_t5:
+            st.markdown("**📖 Mobility Execution Cues:**")
+            for m_name, m_guide in rel_mob_t5.items():
+                st.markdown(f"- *{m_name}:* {m_guide}")
+                
+        st.write("") 
             
         for block_name, exercises in blocks.items():
             st.markdown(f"#### {block_name}")
@@ -770,9 +828,13 @@ with tab5:
                     st.markdown(f"  - *Setup:* {guide.get('Setup', '')}")
                     st.markdown(f"  - *Execution:* {guide.get('Execution', '')}")
                     st.markdown(f"  - *Why:* {guide.get('Why', '')}")
-                    
-        cool_down = COOL_DOWNS.get(day, "")
-        if cool_down:
-            st.markdown(f"**🧊 Down-Regulation (Post-Workout):** {cool_down}")
-            
         st.write("---")
+
+    st.markdown("## 🌙 The Daily System Reset")
+    st.info("**Frequency:** Daily Evening Protocol  \n**Goal:** Restore joint range of motion, down-regulate the nervous system, and achieve pain-free living.")
+    for ex_name, details in DAILY_SYSTEM_RESET.items():
+        st.markdown(f"#### {ex_name}")
+        st.markdown(f"- **Target:** {details['Target']}")
+        st.markdown(f"- **Execution:** {details['Execution']}")
+        st.markdown(f"- **Progression:** {details['Progression']}")
+    st.write("---")
