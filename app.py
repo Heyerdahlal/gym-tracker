@@ -365,7 +365,7 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database", "📡 Garmin Hub", "📋 Program Overview"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database", "📡 Garmin Hub", "📋 Program Overview", "🧘 System Reset"])
 
 with tab1:
     col1, col2 = st.columns([1, 2])
@@ -528,17 +528,6 @@ with tab1:
                         save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
                         st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
                     else: st.warning("No reps logged.")
-
-    # --- THE DOPAMINE CHECKLIST ---
-    st.write("---")
-    st.markdown("### 🌙 Evening Protocol: The Daily System Reset")
-    st.write("Your 10-minute joint restoration before bed. Check these off as you go for that dopamine hit! *(Resets daily, not logged to database)*")
-    
-    reset_c1, reset_c2 = st.columns(2)
-    half = len(DAILY_SYSTEM_RESET) // 2
-    for i, (ex_name, details) in enumerate(DAILY_SYSTEM_RESET.items()):
-        col = reset_c1 if i < half else reset_c2
-        col.checkbox(ex_name, key=f"reset_chk_{i}")
 
 with tab4:
     st.subheader("📡 Garmin Integration Hub")
@@ -830,11 +819,22 @@ with tab5:
                     st.markdown(f"  - *Why:* {guide.get('Why', '')}")
         st.write("---")
 
-    st.markdown("## 🌙 The Daily System Reset")
+with tab6:
+    st.subheader("🌙 The Daily System Reset")
     st.info("**Frequency:** Daily Evening Protocol  \n**Goal:** Restore joint range of motion, down-regulate the nervous system, and achieve pain-free living.")
-    for ex_name, details in DAILY_SYSTEM_RESET.items():
-        st.markdown(f"#### {ex_name}")
-        st.markdown(f"- **Target:** {details['Target']}")
-        st.markdown(f"- **Execution:** {details['Execution']}")
-        st.markdown(f"- **Progression:** {details['Progression']}")
+    
+    st.write("Check these off as you go for that dopamine hit! *(Resets daily, not logged to database)*")
+    
+    reset_c1, reset_c2 = st.columns(2)
+    half = len(DAILY_SYSTEM_RESET) // 2
+    for i, (ex_name, details) in enumerate(DAILY_SYSTEM_RESET.items()):
+        col = reset_c1 if i < half else reset_c2
+        col.checkbox(ex_name, key=f"reset_chk_t6_{i}")
+        
     st.write("---")
+    st.markdown("### 📖 Execution Guides")
+    for ex_name, details in DAILY_SYSTEM_RESET.items():
+        with st.expander(ex_name, expanded=False):
+            st.markdown(f"**Target:** {details['Target']}")
+            st.markdown(f"**Execution:** {details['Execution']}")
+            st.markdown(f"**Progression:** {details['Progression']}")
