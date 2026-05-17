@@ -394,6 +394,7 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
+# MAIN 5-TAB NAVIGATION (REORDERED)
 tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
 
 with tab_sessions:
@@ -423,14 +424,28 @@ with tab_sessions:
         st.write("---")
         
         if selected_exercises:
-            default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
-            if is_deload: default_sets = max(1, default_sets - 1)
+            # GORILLA MODE: DYNAMIC SET CALCULATION
+            primary_ex = selected_exercises[0]
+            base_sets, _ = get_target_reps_and_sets(primary_ex)
+            suggested_sets = base_sets
             
-            num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
+            if is_deload:
+                suggested_sets = max(1, base_sets - 1)
+            else:
+                ex_df_primary = df_lifts[(df_lifts['Exercise'] == primary_ex) & (df_lifts['Reps_or_Mins'] > 0)]
+                if not ex_df_primary.empty:
+                    last_date = ex_df_primary['Date'].max()
+                    last_session = ex_df_primary[ex_df_primary['Date'] == last_date]
+                    last_sets_done = last_session['Set_Number'].max()
+                    
+                    if last_sets_done < base_sets: suggested_sets = base_sets
+                    else: suggested_sets = min(6, last_sets_done + 1)
+            
+            num_sets = st.number_input("🎯 Target Rounds (Auto-Calculated by Mesocycle):", min_value=1, max_value=10, value=int(suggested_sets), step=1)
             st.write("---")
-            st.markdown("#### 🧠 Today's Mission Control")
-            default_vals = {}
+            st.markdown("#### 🦍 Gorilla Protocol: Just Lift.")
             
+            default_vals = {}
             for exercise in selected_exercises:
                 ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 if not ex_df.empty:
@@ -450,41 +465,38 @@ with tab_sessions:
                         band_str = f" [{last_band} Band]" if last_band != "None" else ""
                         
                         if is_deload:
-                            calc_w = max(0.0, last_weight * 0.8)
-                            calc_w = round(calc_w / 2.5) * 2.5 
+                            calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
-                            st.info(f"🧘 **DELOAD:** **{exercise}** ➔ Drop weight to {calc_w}kg.")
-                            continue
+                            st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
+                        else:
+                            if last_reps >= top_rep: 
+                                calc_w = last_weight + 2.5
+                                st.success(f"📈 **{exercise}:** Hit {last_reps} reps last week. Load increased to **{calc_w}kg**.")
+                            else: 
+                                calc_w = last_weight
+                                st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Hold at **{calc_w}kg** and fight.")
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
                             
-                        default_vals[exercise] = {'w': last_weight, 'r': last_reps, 'b': last_band}
-                        if last_reps >= top_rep: st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}.")
-                        else: st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
-                        
                         if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
-                            with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
+                            with st.expander(f"🔥 Warm-Up Load: {exercise}", expanded=False):
                                 w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
                                 w2 = round((last_weight * 0.5) / 2.5) * 2.5
                                 w3 = round((last_weight * 0.8) / 2.5) * 2.5
                                 st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps\n- **Set 2:** {w2}kg × 5 reps\n- **Set 3:** {w3}kg × 2-3 reps")
-
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
 
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
-                        if min_reps_last_session < 5: st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps last week. Drop weight by 10% for Sets 2 & 3.")
-                        if len(dates) >= 4:
-                            recent_history = ex_df[(ex_df['Date'].isin(dates[-4:])) & (ex_df['Set_Number'] == 1)]
-                            if len(recent_history) == 4 and recent_history['Weight'].nunique() == 1 and recent_history['Reps_or_Mins'].nunique() == 1:
-                                st.error(f"🛑 **PLATEAU:** Stuck at {last_weight}kg for {last_reps} reps for 4 sessions. Time to progress or swap.")
+                        if min_reps_last_session < 5: st.error(f"⚠️ **Fatigue Alert:** Dropped to {int(min_reps_last_session)} reps last week. Drop weight by 10% for Sets 2 & 3.")
                     else:
-                        st.info(f"**{exercise}:** No Set 1 data found. Establish baseline!")
+                        st.info(f"**{exercise}:** Establish baseline weight today.")
                         default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
                 else:
-                    st.info(f"**{exercise}:** Establish your baseline today!")
+                    st.info(f"**{exercise}:** Establish baseline weight today.")
                     default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
                     guide = EXERCISE_GUIDES.get(exercise)
                     if guide:
