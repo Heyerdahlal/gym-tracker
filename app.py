@@ -394,7 +394,6 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
-# MAIN 5-TAB NAVIGATION (REORDERED)
 tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
 
 with tab_sessions:
@@ -549,7 +548,6 @@ with tab_sessions:
 
     with sub_cardio:
         st.subheader("🏃‍♂️ Aerobic Cardio Engine")
-        
         with st.expander("📖 Cardio Protocols & Execution Guides", expanded=False):
             st.markdown("### 🔥 4x4 Norwegian VO2 Max Protocol")
             st.markdown("- **Warm-up:** 5 mins light dynamic stretching + 3 mins easy pacing to build heart rate.")
@@ -566,7 +564,6 @@ with tab_sessions:
         st.write("---")
         st.write("Sync your specific session from Garmin, filtering out the noise. Data isolates perfectly into your Cardio database.")
         mfa_input_c = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_cardio")
-        
         sync_target = st.selectbox("Select Activity to Sync:", ["Row Indoor", "Bike Indoor"])
         if st.button("🔄 Sync Target Garmin Activity"):
             with st.spinner(f"Hunting down your latest {sync_target} session..."):
@@ -603,14 +600,12 @@ with tab_sessions:
             avg_resp = st.number_input("Avg Resp (brpm)", min_value=0.0, value=20.0, step=1.0)
             avg_hr = st.number_input("Avg HR (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
             max_hr = st.number_input("Max HR (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
-            
             zc1, zc2, zc3, zc4, zc5 = st.columns(5)
             z1 = zc1.number_input("Z1", min_value=0.0, step=1.0)
             z2 = zc2.number_input("Z2", min_value=0.0, step=1.0)
             z3 = zc3.number_input("Z3", min_value=0.0, step=1.0)
             z4 = zc4.number_input("Z4", min_value=0.0, step=1.0)
             z5 = zc5.number_input("Z5", min_value=0.0, step=1.0)
-            
             if st.form_submit_button("Save Cardio to Database", type="primary"):
                 cardio_data = {'Date': c_date, 'Exercise': c_ex, 'Duration_Mins': duration, 'Distance_km': distance, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5}
                 save_to_sheet(ws_cardio, pd.DataFrame([cardio_data]), CARDIO_COLS)
@@ -638,7 +633,6 @@ with tab_health:
     st.write("Manage your morning stats here. Data is safely isolated into your pure Health database.")
     mfa_input_h = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_health")
     h_date = st.date_input("Date", date.today(), key="health_date")
-    
     if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
         with st.spinner(f"Pulling biological data for {h_date}..."):
             client = get_garmin_client(mfa_input_h)
@@ -669,7 +663,6 @@ with tab_health:
                 
                 lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
                 ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-                
                 health_data = {'Date': h_date, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
                 save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
                 st.success(f"✅ Biological data safely isolated in Health DB for {h_date}!")
@@ -700,7 +693,7 @@ with tab_analytics:
         if not lift_df.empty and not health_latest.empty: lift_df = pd.merge(lift_df, health_latest[['Date', 'Sleep_Score']], on='Date', how='left')
         elif not lift_df.empty: lift_df['Sleep_Score'] = 0
 
-        at1, at2, at3, at4, at5, at6, at7 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "⚖️ Volume Eng (MEV/MRV)", "🦵 Radar", "🫀 Cardio Engine", "🧬 Recomp & Recovery"])
+        at1, at2, at3, at4, at5, at6, at7 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL & RIR", "⚖️ Volume & ACWR", "🦵 Radar", "🫀 Cardio Engine", "🧬 Recomp & Recovery"])
         
         with at1:
             st.subheader("Historical Milestones")
@@ -738,11 +731,21 @@ with tab_analytics:
                     global_max = i_df['Epley_1RM'].max()
                     i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
                     i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'].clip(upper=99))) * 0.5
-                    
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
                     fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
                     fig2.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig2, use_container_width=True)
+
+            st.write("---")
+            st.markdown("### 🛑 Proximity to Failure (Average RIR)")
+            st.write("Are you sandbagging? RIR should ideally sit between 0 and 2 for true muscle growth.")
+            if not lift_df.empty:
+                rir_df = lift_df[lift_df['RIR'] >= 0].groupby('Date')['RIR'].mean().reset_index()
+                if not rir_df.empty:
+                    fig_rir = px.bar(rir_df, x='Date', y='RIR', title="Average Daily Reps in Reserve (RIR)", color='RIR', color_continuous_scale='RdYlGn')
+                    fig_rir.update_yaxes(autorange="reversed") 
+                    fig_rir.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
+                    st.plotly_chart(fig_rir, use_container_width=True)
 
         with at4:
             st.subheader("⚖️ Volume Engineering (MEV/MRV)")
@@ -784,12 +787,25 @@ with tab_analytics:
                     week_label = row['Date'].strftime('%Y-W%V')
                     if ex in MUSCLE_MAP:
                         for muscle, multiplier in MUSCLE_MAP[ex].items(): trend_data.append({'Week': week_label, 'Muscle': muscle, 'Sets': 1 * multiplier})
-                
                 if trend_data:
                     trend_df = pd.DataFrame(trend_data).groupby(['Week', 'Muscle'])['Sets'].sum().reset_index()
                     fig_trend = px.line(trend_df, x='Week', y='Sets', color='Muscle', markers=True, title="Muscle Volume Escalation (Last 4 Weeks)")
                     st.plotly_chart(fig_trend, use_container_width=True)
                 else: st.info("Not enough data yet for a 4-week trend.")
+                
+                st.write("---")
+                st.markdown("### ⚠️ Acute:Chronic Workload Ratio (ACWR)")
+                st.write("Tracks injury risk. **Sweet Spot:** 0.8 - 1.3. **Danger Zone:** > 1.5.")
+                daily_vol = lift_df.groupby('Date')['Volume'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
+                daily_vol['Acute_7D'] = daily_vol['Volume'].rolling(window=7, min_periods=1).sum()
+                daily_vol['Chronic_28D'] = daily_vol['Volume'].rolling(window=28, min_periods=1).sum() / 4
+                daily_vol['ACWR'] = daily_vol['Acute_7D'] / daily_vol['Chronic_28D'].replace(0, np.nan)
+                fig_acwr = go.Figure()
+                fig_acwr.add_trace(go.Scatter(x=daily_vol.index, y=daily_vol['ACWR'], mode='lines+markers', name='ACWR', line=dict(color='#8A2BE2', width=3)))
+                fig_acwr.add_hrect(y0=0.8, y1=1.3, fillcolor="#00CC96", opacity=0.2, line_width=0, annotation_text="Sweet Spot (0.8 - 1.3)", annotation_position="top left")
+                fig_acwr.add_hline(y=1.5, line_dash="dash", line_color="#FF4B4B", annotation_text="Danger Zone (>1.5)")
+                fig_acwr.update_layout(yaxis_title="ACWR Ratio")
+                st.plotly_chart(fig_acwr, use_container_width=True)
 
         with at5:
             st.subheader("7-Day Microcycle Radar")
@@ -800,7 +816,6 @@ with tab_analytics:
                     ex = row['Exercise']
                     if ex in MUSCLE_MAP:
                         for muscle, multiplier in MUSCLE_MAP[ex].items(): muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
-                
                 if muscle_sets:
                     heat_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Total Sets'])
                     fig_radar = go.Figure(data=go.Scatterpolar(r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]], fill='toself'))
@@ -820,6 +835,14 @@ with tab_analytics:
                     fig_aerobic.update_layout(yaxis=dict(title="Pace/Speed", side='left'), yaxis2=dict(title='Avg HR (bpm)', side='right', overlaying='y', showgrid=False))
                     fig_aerobic.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_aerobic, use_container_width=True)
+                    
+                    st.write("---")
+                    st.markdown("### 🚀 Aerobic Efficiency (Cardiac Drift)")
+                    st.write("Measures Output (Speed in km/h) per Heart Beat. An upward trend proves extreme aerobic adaptation.")
+                    cx_df['Speed_kmh'] = cx_df['Distance_km'] / (cx_df['Duration_Mins'] / 60)
+                    cx_df['Efficiency'] = (cx_df['Speed_kmh'] / cx_df['Avg_HR']) * 100
+                    fig_eff = px.line(cx_df, x='Date', y='Efficiency', markers=True, title="Aerobic Efficiency Score", color_discrete_sequence=['#1f77b4'])
+                    st.plotly_chart(fig_eff, use_container_width=True)
 
         with at7:
             st.subheader("🧬 Biological Recomp & Recovery")
@@ -839,6 +862,20 @@ with tab_analytics:
                 if not rc_df.empty:
                     fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", title=f"Sleep vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_sleep, use_container_width=True)
+                    
+            st.write("---")
+            st.markdown("### ⚡ CNS Autonomic Balance (HRV Trends)")
+            st.write("If your 7-Day HRV (Green) dips significantly below your 30-Day baseline (Red), your CNS is under-recovered. Take a rest day.")
+            if not df_health.empty and 'HRV' in df_health.columns and df_health['HRV'].sum() > 0:
+                hrv_df = df_health[df_health['HRV'] > 0][['Date', 'HRV']].copy().set_index('Date').resample('D').mean().ffill()
+                hrv_df['7D_Avg'] = hrv_df['HRV'].rolling(window=7, min_periods=1).mean()
+                hrv_df['30D_Avg'] = hrv_df['HRV'].rolling(window=30, min_periods=1).mean()
+                fig_hrv = go.Figure()
+                fig_hrv.add_trace(go.Scatter(x=hrv_df.index, y=hrv_df['HRV'], mode='markers', name='Daily HRV', marker=dict(color='gray', opacity=0.4)))
+                fig_hrv.add_trace(go.Scatter(x=hrv_df.index, y=hrv_df['7D_Avg'], mode='lines', name='7-Day Trend', line=dict(color='#00CC96', width=3)))
+                fig_hrv.add_trace(go.Scatter(x=hrv_df.index, y=hrv_df['30D_Avg'], mode='lines', name='30-Day Baseline', line=dict(color='#FF4B4B', dash='dash')))
+                fig_hrv.update_layout(yaxis_title="Heart Rate Variability (ms)")
+                st.plotly_chart(fig_hrv, use_container_width=True)
 
 with tab_overview:
     st.subheader("📋 Program Overview & Documentation")
