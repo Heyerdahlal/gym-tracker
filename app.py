@@ -120,19 +120,19 @@ COOL_DOWNS = {
 MOBILITY_GUIDES = {
     "Band Pull-aparts": "Hold a light band at chest height, arms straight. Squeeze shoulder blades together to pull the band apart until it touches your chest. Keeps shoulders healthy.",
     "Push-up to Downward Dog": "Perform a push-up, then immediately push your hips high into the air (Downward Dog), pressing your chest toward your toes to open the shoulders.",
-    "Deep Bodyweight Squats": "Sit into a deep squat. Use your elbows to actively press your knees outward. Gently shift your weight side to side to loosen the hip capsules.",
-    "Cossack Squats": "Take a very wide stance. Squat deep onto one leg while keeping the other leg completely straight, toes pointing to the ceiling. Stretches the adductors/groin.",
-    "Couch Stretch": "Place one knee in the corner where the floor meets a wall (or couch). Keep your shin vertical against the wall. Step the other foot forward. Squeeze your glute to brutally stretch the hip flexor.",
-    "Scapular Pull-ups": "Hang from a bar. Without bending your elbows, pull your shoulder blades DOWN and TOGETHER to lift your body an inch or two. Pause, then lower. Activates lats.",
-    "BW Glute Bridges": "Lie on your back, knees bent, feet flat. Drive through your heels to bridge your hips to the ceiling. Pause and squeeze the glutes to wake them up.",
-    "KB Goblet Squats": "Hold a kettlebell at your chest. Drop into a deep squat. Keep your chest tall and let the weight anchor you into the bottom stretch to pry open the hips.",
-    "BW Good Mornings": "Hands gently behind your head. Unlock knees slightly, then push your hips straight back until your torso is almost parallel to the floor to dynamically stretch hamstrings.",
-    "Floor Scorpion Pec Stretch": "Lie flat on your stomach with arms out in a 'T'. Lift your left leg, bend the knee, and roll your body to the right, trying to touch your left foot to the floor behind your right leg. Massive, safe chest stretch.",
-    "90/90 hip breathing": "Sit on the floor with both legs bent at 90 degrees (one in front, one to the side). Lean forward over the front shin with a flat back. Take deep, slow breaths.",
-    "thoracic spine": "Place a foam roller horizontal across your upper back. Support your neck with your hands. Slowly extend your upper back over the roller to reverse poor posture.",
-    "Lat stretch holding an upright pole": "Grab a vertical rack or pole with one hand at hip height. Sit your hips back and let your arm act as a rope, feeling a massive stretch from your armpit down your side.",
-    "Banded hamstring stretch": "Lie on your back. Loop a band around one foot. Keep the leg perfectly straight and pull it toward your face until you feel a deep hamstring stretch.",
-    "Seated pigeon/glute stretch": "Sit on a bench. Cross your right ankle over your left knee. Keeping your back perfectly flat, hinge forward from the hips to stretch the right glute."
+    "Deep Bodyweight Squats": "Sit into a deep squat. Use elbows to actively press knees outward. Gently shift weight side to side to loosen hip capsules.",
+    "Cossack Squats": "Take a very wide stance. Squat deep onto one leg while keeping the other leg completely straight, toes pointing to the ceiling. Stretches the adductors.",
+    "Couch Stretch": "Place knee in corner where floor meets a wall (or couch). Keep shin vertical against wall. Step other foot forward. Squeeze glute to brutally stretch hip flexor.",
+    "Scapular Pull-ups": "Hang from a bar. Without bending elbows, pull shoulder blades DOWN and TOGETHER to lift body an inch or two. Pause, then lower.",
+    "BW Glute Bridges": "Lie on back, knees bent, feet flat. Drive through heels to bridge hips to ceiling. Pause and squeeze glutes to wake them up.",
+    "KB Goblet Squats": "Hold a kettlebell at chest. Drop into a deep squat. Keep chest tall and let weight anchor you into bottom stretch to pry open hips.",
+    "BW Good Mornings": "Hands gently behind head. Unlock knees slightly, then push hips straight back until torso is almost parallel to floor to dynamically stretch hamstrings.",
+    "Floor Scorpion Pec Stretch": "Lie flat on stomach with arms in 'T'. Lift left leg, bend knee, and roll body to right, trying to touch left foot to floor behind right leg.",
+    "90/90 hip breathing": "Sit on floor with both legs bent at 90 degrees (one in front, one to side). Lean forward over front shin with a flat back. Take deep breaths.",
+    "thoracic spine": "Place foam roller horizontal across upper back. Support neck with hands. Slowly extend upper back over roller to reverse poor posture.",
+    "Lat stretch holding an upright pole": "Grab a vertical rack or pole with one hand at hip height. Sit hips back and let arm act as a rope, feeling a massive stretch from armpit down side.",
+    "Banded hamstring stretch": "Lie on back. Loop a band around one foot. Keep leg perfectly straight and pull it toward face until you feel a deep hamstring stretch.",
+    "Seated pigeon/glute stretch": "Sit on bench. Cross right ankle over left knee. Keeping back perfectly flat, hinge forward from hips to stretch the right glute."
 }
 
 DAY_PHILOSOPHY = {
@@ -566,28 +566,42 @@ with tab_sessions:
             st.markdown("- **Goal:** Mitochondrial density and aerobic base building. Pushing into Zone 3 kills the specific adaptations we want here. Stay slow!")
 
         st.write("---")
-        st.write("Sync or manually log your cardio sessions here. This isolates perfectly into your pure Cardio database.")
+        st.write("Sync your specific session from Garmin, filtering out the noise. Data isolates perfectly into your Cardio database.")
         mfa_input_c = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_cardio")
         
-        if st.button("🔄 Sync Latest Garmin Activity"):
-            with st.spinner("Connecting..."):
+        sync_target = st.selectbox("Select Activity to Sync:", ["Row Indoor", "Bike Indoor"])
+        if st.button("🔄 Sync Target Garmin Activity"):
+            with st.spinner(f"Hunting down your latest {sync_target} session..."):
                 client = get_garmin_client(mfa_input_c)
                 if client:
                     try:
-                        activities = client.get_activities(0, 1) 
+                        activities = client.get_activities(0, 20) 
+                        found_act = None
                         if activities:
-                            act = activities[0]
-                            st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
-                            st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
-                            st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
-                            st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
-                            st.success(f"Synced: {act.get('activityName', 'Unknown')}")
-                            st.rerun()
+                            for act in activities:
+                                name = act.get('activityName', '').lower()
+                                act_type = act.get('activityType', {}).get('typeKey', '').lower()
+                                
+                                if sync_target == "Row Indoor" and ("row" in name or "row" in act_type):
+                                    found_act = act
+                                    break
+                                elif sync_target == "Bike Indoor" and ("bike" in name or "cycl" in act_type or "bike" in act_type):
+                                    found_act = act
+                                    break
+                                    
+                        if found_act:
+                            st.session_state['g_dur'] = round(found_act.get('duration', 0) / 60, 1)
+                            st.session_state['g_dist'] = round(found_act.get('distance', 0) / 1000, 2)
+                            st.session_state['g_avg_hr'] = float(found_act.get('averageHR', 130.0))
+                            st.session_state['g_max_hr'] = float(found_act.get('maxHR', 165.0))
+                            st.success(f"🎯 Target Acquired: {found_act.get('activityName', 'Unknown')} ({st.session_state['g_dur']} mins)")
+                        else:
+                            st.error(f"⚠️ Could not find a recent '{sync_target}' session in your last 20 activities.")
                     except Exception as e: st.error(f"Activity Sync Failed: {e}")
 
         st.write("---")
         with st.form("cardio_form", clear_on_submit=True):
-            c_ex = st.selectbox("Select Cardio Type", ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])
+            c_ex = st.selectbox("Select Protocol Executed", ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])
             c_date = st.date_input("Date", date.today(), key="cardio_date")
             duration = st.number_input("Duration (Mins)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
             distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
