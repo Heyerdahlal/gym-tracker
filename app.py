@@ -394,8 +394,8 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
-# MAIN 5-TAB NAVIGATION
-tab_sessions, tab_analytics, tab_db, tab_health, tab_overview = st.tabs(["🏋️‍♂️ Sessions", "📊 Analytics", "⚙️ Database", "🧬 Morning Health", "📋 Program Overview"])
+# MAIN 5-TAB NAVIGATION (REORDERED)
+tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
 
 with tab_sessions:
     sub_lift, sub_cardio, sub_mob = st.tabs(["💪 Strength Training", "🫀 Cardio Engine", "🧘 System Reset"])
@@ -557,9 +557,7 @@ with tab_sessions:
             st.markdown("- **Active Recovery:** 3 minutes of very easy, light pedaling/rowing (Zone 1/2) to clear lactic acid.")
             st.markdown("- **Repeat:** Do this 4 times total.")
             st.markdown("- **Cool-down:** 3 mins loose pedaling + 60-sec standing calf stretch per leg.")
-            
             st.write("---")
-            
             st.markdown("### 🐢 Zone 2 Flush & Base Building")
             st.markdown("- **Target Duration:** 60-90 minutes. *(Do not exceed 90 mins as it generates unnecessary systemic fatigue that interferes with lifting recovery).*")
             st.markdown("- **Intensity:** Strict Zone 2 (approx. 60-70% Max HR). You should be able to hold a conversation or comfortably watch anime without gasping for breath.")
@@ -581,22 +579,19 @@ with tab_sessions:
                             for act in activities:
                                 name = act.get('activityName', '').lower()
                                 act_type = act.get('activityType', {}).get('typeKey', '').lower()
-                                
                                 if sync_target == "Row Indoor" and ("row" in name or "row" in act_type):
                                     found_act = act
                                     break
                                 elif sync_target == "Bike Indoor" and ("bike" in name or "cycl" in act_type or "bike" in act_type):
                                     found_act = act
                                     break
-                                    
                         if found_act:
                             st.session_state['g_dur'] = round(found_act.get('duration', 0) / 60, 1)
                             st.session_state['g_dist'] = round(found_act.get('distance', 0) / 1000, 2)
                             st.session_state['g_avg_hr'] = float(found_act.get('averageHR', 130.0))
                             st.session_state['g_max_hr'] = float(found_act.get('maxHR', 165.0))
                             st.success(f"🎯 Target Acquired: {found_act.get('activityName', 'Unknown')} ({st.session_state['g_dur']} mins)")
-                        else:
-                            st.error(f"⚠️ Could not find a recent '{sync_target}' session in your last 20 activities.")
+                        else: st.error(f"⚠️ Could not find a recent '{sync_target}' session in your last 20 activities.")
                     except Exception as e: st.error(f"Activity Sync Failed: {e}")
 
         st.write("---")
@@ -637,6 +632,63 @@ with tab_sessions:
                 st.markdown(f"**Target:** {details['Target']}")
                 st.markdown(f"**Execution:** {details['Execution']}")
                 st.markdown(f"**Progression:** {details['Progression']}")
+
+with tab_health:
+    st.subheader("🧬 Bio Data Sync")
+    st.write("Manage your morning stats here. Data is safely isolated into your pure Health database.")
+    mfa_input_h = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_health")
+    h_date = st.date_input("Date", date.today(), key="health_date")
+    
+    if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
+        with st.spinner(f"Pulling biological data for {h_date}..."):
+            client = get_garmin_client(mfa_input_h)
+            if client:
+                target_iso = h_date.isoformat()
+                try:
+                    weigh_ins = client.get_body_composition(target_iso)
+                    if weigh_ins and weigh_ins.get('dateWeightList'):
+                        latest = weigh_ins['dateWeightList'][-1]
+                        raw_w = latest.get('weight', st.session_state['h_weight'])
+                        st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
+                        st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
+                        st.session_state['h_muscle'] = float(latest.get('muscleMass', st.session_state['h_muscle'] * 1000) / 1000)
+                        st.toast("✅ Scale data found")
+                except Exception: pass
+                try:
+                    sleep_data = client.get_sleep_data(target_iso)
+                    if sleep_data and 'dailySleepDTO' in sleep_data:
+                        score = sleep_data['dailySleepDTO'].get('sleepScores', {}).get('overall', {}).get('value')
+                        if score: st.session_state['h_sleep'] = int(score)
+                    stats = client.get_stats(target_iso)
+                    if stats and 'restingHeartRate' in stats: st.session_state['h_rhr'] = int(stats['restingHeartRate'])
+                    hrv_data = client.get_hrv_data(target_iso)
+                    if hrv_data and 'hrvSummary' in hrv_data:
+                        hrv = hrv_data['hrvSummary'].get('lastNightAvg')
+                        if hrv: st.session_state['h_hrv'] = int(hrv)
+                except Exception: pass
+                
+                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
+                
+                health_data = {'Date': h_date, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
+                save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
+                st.success(f"✅ Biological data safely isolated in Health DB for {h_date}!")
+
+    st.write("---")
+    with st.form("health_form", clear_on_submit=True):
+        st.markdown("**Current Bio Data (Manual Override):**")
+        h_weight = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
+        h_bf = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
+        h_muscle = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
+        h_sleep = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+        h_rhr = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
+        h_hrv = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
+        if st.form_submit_button("Save Manual Entry"):
+            lean_mass = h_weight * (1 - (h_bf / 100))
+            ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
+            health_data = {'Date': h_date, 'Weight_kg': h_weight, 'Body_Fat_Pct': h_bf, 'Muscle_Mass_kg': h_muscle, 'Sleep_Score': h_sleep, 'FFMI': ffmi, 'RHR': h_rhr, 'HRV': h_hrv, 'Height_cm': USER_HEIGHT}
+            save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
+            st.success("✅ Saved manual health entry!")
 
 with tab_analytics:
     if df_lifts.empty and df_health.empty and df_cardio.empty:
@@ -788,86 +840,6 @@ with tab_analytics:
                     fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", title=f"Sleep vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_sleep, use_container_width=True)
 
-with tab_db:
-    st.subheader("⚙️ Database Editor")
-    
-    st.markdown("### 🏋️‍♂️ Lifts Database")
-    edited_lifts = st.data_editor(df_lifts.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", width="stretch")
-    if st.button("Save Changes to Lifts DB", type="primary"):
-        overwrite_sheet(ws_lifts, edited_lifts, LIFTS_COLS)
-        st.success("Lifts Database Saved!")
-        
-    st.write("---")
-    st.markdown("### 🧬 Health Database")
-    edited_health = st.data_editor(df_health, num_rows="dynamic", width="stretch")
-    if st.button("Save Changes to Health DB", type="primary"):
-        overwrite_sheet(ws_health, edited_health, HEALTH_COLS)
-        st.success("Health Database Saved!")
-        
-    st.write("---")
-    st.markdown("### 🏃‍♂️ Cardio Database")
-    edited_cardio = st.data_editor(df_cardio, num_rows="dynamic", width="stretch")
-    if st.button("Save Changes to Cardio DB", type="primary"):
-        overwrite_sheet(ws_cardio, edited_cardio, CARDIO_COLS)
-        st.success("Cardio Database Saved!")
-
-with tab_health:
-    st.subheader("🧬 Morning Health Sync")
-    st.write("Manage your morning stats here. Data is safely isolated into your pure Health database.")
-    mfa_input_h = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_health")
-    h_date = st.date_input("Date", date.today(), key="health_date")
-    
-    if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
-        with st.spinner(f"Pulling biological data for {h_date}..."):
-            client = get_garmin_client(mfa_input_h)
-            if client:
-                target_iso = h_date.isoformat()
-                try:
-                    weigh_ins = client.get_body_composition(target_iso)
-                    if weigh_ins and weigh_ins.get('dateWeightList'):
-                        latest = weigh_ins['dateWeightList'][-1]
-                        raw_w = latest.get('weight', st.session_state['h_weight'])
-                        st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
-                        st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
-                        st.session_state['h_muscle'] = float(latest.get('muscleMass', st.session_state['h_muscle'] * 1000) / 1000)
-                        st.toast("✅ Scale data found")
-                except Exception: pass
-                try:
-                    sleep_data = client.get_sleep_data(target_iso)
-                    if sleep_data and 'dailySleepDTO' in sleep_data:
-                        score = sleep_data['dailySleepDTO'].get('sleepScores', {}).get('overall', {}).get('value')
-                        if score: st.session_state['h_sleep'] = int(score)
-                    stats = client.get_stats(target_iso)
-                    if stats and 'restingHeartRate' in stats: st.session_state['h_rhr'] = int(stats['restingHeartRate'])
-                    hrv_data = client.get_hrv_data(target_iso)
-                    if hrv_data and 'hrvSummary' in hrv_data:
-                        hrv = hrv_data['hrvSummary'].get('lastNightAvg')
-                        if hrv: st.session_state['h_hrv'] = int(hrv)
-                except Exception: pass
-                
-                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-                
-                health_data = {'Date': h_date, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
-                save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
-                st.success(f"✅ Biological data safely isolated in Health DB for {h_date}!")
-
-    st.write("---")
-    with st.form("health_form", clear_on_submit=True):
-        st.markdown("**Manual Health Override (Only click save if manually entering):**")
-        h_weight = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
-        h_bf = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
-        h_muscle = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
-        h_sleep = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
-        h_rhr = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
-        h_hrv = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
-        if st.form_submit_button("Save Manual Health Entry"):
-            lean_mass = h_weight * (1 - (h_bf / 100))
-            ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-            health_data = {'Date': h_date, 'Weight_kg': h_weight, 'Body_Fat_Pct': h_bf, 'Muscle_Mass_kg': h_muscle, 'Sleep_Score': h_sleep, 'FFMI': ffmi, 'RHR': h_rhr, 'HRV': h_hrv, 'Height_cm': USER_HEIGHT}
-            save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
-            st.success("✅ Saved manual health entry!")
-
 with tab_overview:
     st.subheader("📋 Program Overview & Documentation")
     st.write("Easily copy this page to share your exact programming, logic, and execution cues with a coach or training partner.")
@@ -898,3 +870,26 @@ with tab_overview:
                     st.markdown(f"  - *Execution:* {guide.get('Execution', '')}")
                     st.markdown(f"  - *Why:* {guide.get('Why', '')}")
         st.write("---")
+
+with tab_db:
+    st.subheader("⚙️ Database Editor")
+    
+    st.markdown("### 🏋️‍♂️ Lifts Database")
+    edited_lifts = st.data_editor(df_lifts.drop(columns=['Volume', 'Epley_1RM', 'Effective_Weight'], errors='ignore'), num_rows="dynamic", width="stretch")
+    if st.button("Save Changes to Lifts DB", type="primary"):
+        overwrite_sheet(ws_lifts, edited_lifts, LIFTS_COLS)
+        st.success("Lifts Database Saved!")
+        
+    st.write("---")
+    st.markdown("### 🧬 Health Database")
+    edited_health = st.data_editor(df_health, num_rows="dynamic", width="stretch")
+    if st.button("Save Changes to Health DB", type="primary"):
+        overwrite_sheet(ws_health, edited_health, HEALTH_COLS)
+        st.success("Health Database Saved!")
+        
+    st.write("---")
+    st.markdown("### 🏃‍♂️ Cardio Database")
+    edited_cardio = st.data_editor(df_cardio, num_rows="dynamic", width="stretch")
+    if st.button("Save Changes to Cardio DB", type="primary"):
+        overwrite_sheet(ws_cardio, edited_cardio, CARDIO_COLS)
+        st.success("Cardio Database Saved!")
