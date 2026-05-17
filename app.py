@@ -61,10 +61,6 @@ CARDIO_COLS = ['Date', 'Exercise', 'Duration_Mins', 'Distance_km', 'Avg_HR', 'Ma
 
 # --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
-    "Day 1: The Cardio Engine": {
-        "Block 1: Rowing": ["4x4 Rowing (Zone 4/5)"],
-        "Block 2: Bike": ["Zone 2 Spin Bike Flush"]
-    },
     "Day 2: Upper A (Horizontal Push/Pull)": {
         "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
         "Block 2 (Superset): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
@@ -108,7 +104,6 @@ PROGRAM = {
 }
 
 WARM_UPS = {
-    "Day 1: The Cardio Engine": "5 mins light dynamic stretching (leg swings, arm circles) + 3 mins easy pacing to slowly build heart rate.",
     "Day 2: Upper A (Horizontal Push/Pull)": "2x15 Band Pull-aparts, 2x10 Push-up to Downward Dog (shoulder flow), 2x15 light Tricep Pushdowns (elbow blood flow).",
     "Day 3: Lower A (Strength, Quads & Armor)": "2x10 Deep Bodyweight Squats (pry the hips), 2x10 Cossack Squats, 90-sec Couch Stretch per leg, 1x20 Wall Tibialis Raises.",
     "Day 4: Upper B (Vertical Push/Pull)": "Dead hang from pull-up bar for 30-45s, 2x10 Scapular Pull-ups (activate lats), 2x15 Banded Face Pulls (rotator cuff prep).",
@@ -116,7 +111,6 @@ WARM_UPS = {
 }
 
 COOL_DOWNS = {
-    "Day 1: The Cardio Engine": "3 mins completely loose pedaling/walking to clear lactic acid. 60-sec standing calf stretch per leg.",
     "Day 2: Upper A (Horizontal Push/Pull)": "90-sec Floor Scorpion Pec Stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
     "Day 3: Lower A (Strength, Quads & Armor)": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
     "Day 4: Upper B (Vertical Push/Pull)": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole.",
@@ -142,7 +136,6 @@ MOBILITY_GUIDES = {
 }
 
 DAY_PHILOSOPHY = {
-    "Day 1: The Cardio Engine": "This day kicks off the week by building the aerobic base and VO2 Max. Establishing cardiovascular efficiency first improves recovery and work capacity for the heavy lifting days that follow.",
     "Day 2: Upper A (Horizontal Push/Pull)": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
     "Day 3: Lower A (Strength, Quads & Armor)": "Quad-dominant strength focus. The goal here is anterior chain power (Front Squats) followed by intense core bracing and armor-building to protect the spine.",
     "Day 4: Upper B (Vertical Push/Pull)": "Vertical plane dominance. Pull-ups and overhead-angled presses (Landmine) build width and shoulder health, followed by targeted isolation for the arms and lateral delts.",
@@ -431,135 +424,148 @@ with tab_sessions:
         st.write("---")
         
         if selected_exercises:
-            is_cardio = "Cardio" in workout_day
-            if is_cardio:
-                st.info("🏃‍♂️ **Cardio Day Selected.** Head over to the **🫀 Cardio Engine** sub-tab above to log your session!")
-            else:
-                default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
-                if is_deload: default_sets = max(1, default_sets - 1)
-                
-                num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
-                st.write("---")
-                st.markdown("#### 🧠 Today's Mission Control")
-                default_vals = {}
-                
-                for exercise in selected_exercises:
-                    ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
-                    if not ex_df.empty:
-                        max_all_time_weight = ex_df['Weight'].max()
-                        working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
-                        dates = working_sessions['Date'].unique() if not working_sessions.empty else ex_df['Date'].unique()
-                        last_date = dates[-1]
-                        last_session = ex_df[ex_df['Date'] == last_date]
-                        set_1 = last_session[last_session['Set_Number'] == 1]
+            default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
+            if is_deload: default_sets = max(1, default_sets - 1)
+            
+            num_sets = st.number_input("🎯 Total Rounds (Sets) to perform:", min_value=1, max_value=10, value=default_sets, step=1)
+            st.write("---")
+            st.markdown("#### 🧠 Today's Mission Control")
+            default_vals = {}
+            
+            for exercise in selected_exercises:
+                ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
+                if not ex_df.empty:
+                    max_all_time_weight = ex_df['Weight'].max()
+                    working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
+                    dates = working_sessions['Date'].unique() if not working_sessions.empty else ex_df['Date'].unique()
+                    last_date = dates[-1]
+                    last_session = ex_df[ex_df['Date'] == last_date]
+                    set_1 = last_session[last_session['Set_Number'] == 1]
+                    
+                    if not set_1.empty:
+                        s1_data = set_1.iloc[0]
+                        last_weight = float(s1_data['Weight'])
+                        last_reps = int(s1_data['Reps_or_Mins'])
+                        last_band = s1_data['Band']
+                        target_sets, top_rep = get_target_reps_and_sets(exercise)
+                        band_str = f" [{last_band} Band]" if last_band != "None" else ""
                         
-                        if not set_1.empty:
-                            s1_data = set_1.iloc[0]
-                            last_weight = float(s1_data['Weight'])
-                            last_reps = int(s1_data['Reps_or_Mins'])
-                            last_band = s1_data['Band']
-                            target_sets, top_rep = get_target_reps_and_sets(exercise)
-                            band_str = f" [{last_band} Band]" if last_band != "None" else ""
+                        if is_deload:
+                            calc_w = max(0.0, last_weight * 0.8)
+                            calc_w = round(calc_w / 2.5) * 2.5 
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
+                            st.info(f"🧘 **DELOAD:** **{exercise}** ➔ Drop weight to {calc_w}kg.")
+                            continue
                             
-                            if is_deload:
-                                calc_w = max(0.0, last_weight * 0.8)
-                                calc_w = round(calc_w / 2.5) * 2.5 
-                                default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
-                                st.info(f"🧘 **DELOAD:** **{exercise}** ➔ Drop weight to {calc_w}kg.")
-                                continue
-                                
-                            default_vals[exercise] = {'w': last_weight, 'r': last_reps, 'b': last_band}
-                            if last_reps >= top_rep: st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}.")
-                            else: st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
-                            
-                            if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
-                                with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
-                                    w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
-                                    w2 = round((last_weight * 0.5) / 2.5) * 2.5
-                                    w3 = round((last_weight * 0.8) / 2.5) * 2.5
-                                    st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps\n- **Set 2:** {w2}kg × 5 reps\n- **Set 3:** {w3}kg × 2-3 reps")
+                        default_vals[exercise] = {'w': last_weight, 'r': last_reps, 'b': last_band}
+                        if last_reps >= top_rep: st.success(f"🚀 **INCREASE WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}.")
+                        else: st.warning(f"🎯 **HOLD WEIGHT:** **{exercise}** hit {last_reps} reps @ {last_weight}kg{band_str}. Chase {top_rep} reps today.")
+                        
+                        if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
+                            with st.expander(f"🔥 Warm-Up Protocol: {exercise}", expanded=False):
+                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
+                                w2 = round((last_weight * 0.5) / 2.5) * 2.5
+                                w3 = round((last_weight * 0.8) / 2.5) * 2.5
+                                st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps\n- **Set 2:** {w2}kg × 5 reps\n- **Set 3:** {w3}kg × 2-3 reps")
 
-                            guide = EXERCISE_GUIDES.get(exercise)
-                            if guide:
-                                with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
+                        guide = EXERCISE_GUIDES.get(exercise)
+                        if guide:
+                            with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
 
-                            min_reps_last_session = last_session['Reps_or_Mins'].min()
-                            if min_reps_last_session < 5: st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps last week. Drop weight by 10% for Sets 2 & 3.")
-                            if len(dates) >= 4:
-                                recent_history = ex_df[(ex_df['Date'].isin(dates[-4:])) & (ex_df['Set_Number'] == 1)]
-                                if len(recent_history) == 4 and recent_history['Weight'].nunique() == 1 and recent_history['Reps_or_Mins'].nunique() == 1:
-                                    st.error(f"🛑 **PLATEAU:** Stuck at {last_weight}kg for {last_reps} reps for 4 sessions. Time to progress or swap.")
-                        else:
-                            st.info(f"**{exercise}:** No Set 1 data found. Establish baseline!")
-                            default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
-                            guide = EXERCISE_GUIDES.get(exercise)
-                            if guide:
-                                with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
+                        min_reps_last_session = last_session['Reps_or_Mins'].min()
+                        if min_reps_last_session < 5: st.error(f"⚠️ **FATIGUE ALERT:** You dropped to {int(min_reps_last_session)} reps last week. Drop weight by 10% for Sets 2 & 3.")
+                        if len(dates) >= 4:
+                            recent_history = ex_df[(ex_df['Date'].isin(dates[-4:])) & (ex_df['Set_Number'] == 1)]
+                            if len(recent_history) == 4 and recent_history['Weight'].nunique() == 1 and recent_history['Reps_or_Mins'].nunique() == 1:
+                                st.error(f"🛑 **PLATEAU:** Stuck at {last_weight}kg for {last_reps} reps for 4 sessions. Time to progress or swap.")
                     else:
-                        st.info(f"**{exercise}:** Establish your baseline today!")
+                        st.info(f"**{exercise}:** No Set 1 data found. Establish baseline!")
                         default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
+                else:
+                    st.info(f"**{exercise}:** Establish your baseline today!")
+                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
+                    guide = EXERCISE_GUIDES.get(exercise)
+                    if guide:
+                        with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
+            
+            st.write("---")
+            with st.form("lifting_form", clear_on_submit=True):
+                weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
+                for i in range(1, num_sets + 1):
+                    st.markdown(f"#### 🔁 Round {i}")
+                    for exercise in selected_exercises:
+                        is_uni = exercise in UNILATERAL_EXERCISES
+                        uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+                        _, top_rep = get_target_reps_and_sets(exercise)
+                        st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
+                        
+                        def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
+                        def_b = default_vals.get(exercise, {}).get('b', "None")
+                        b_idx = list(BAND_SUBTRACTIONS.keys()).index(def_b) if def_b in BAND_SUBTRACTIONS else 0
+                        key = f"{exercise}_{i}" 
+                        
+                        if uses_band:
+                            c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
+                            if is_uni:
+                                sc1, sc2 = c2.columns(2)
+                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
+                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
+                            bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), index=b_idx, key=f"b_{key}")
+                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
+                        else:
+                            c1, c2, c3 = st.columns([1, 1, 2])
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
+                            if is_uni:
+                                sc1, sc2 = c2.columns(2)
+                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
+                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
+                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
+                            rirs[key] = c3.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
+                    st.write("---") 
                 
-                st.write("---")
-                with st.form("lifting_form", clear_on_submit=True):
-                    weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
-                    for i in range(1, num_sets + 1):
-                        st.markdown(f"#### 🔁 Round {i}")
-                        for exercise in selected_exercises:
-                            is_uni = exercise in UNILATERAL_EXERCISES
-                            uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
-                            _, top_rep = get_target_reps_and_sets(exercise)
-                            st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
-                            
-                            def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
-                            def_b = default_vals.get(exercise, {}).get('b', "None")
-                            b_idx = list(BAND_SUBTRACTIONS.keys()).index(def_b) if def_b in BAND_SUBTRACTIONS else 0
-                            key = f"{exercise}_{i}" 
-                            
-                            if uses_band:
-                                c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                                weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
+                if st.form_submit_button("Save Workouts To Database", type="primary"):
+                    new_rows = []
+                    for exercise in selected_exercises:
+                        is_uni = exercise in UNILATERAL_EXERCISES
+                        uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+                        for i in range(1, num_sets + 1):
+                            key = f"{exercise}_{i}"
+                            b_val = bands[key] if uses_band else "None"
+                            if (is_uni and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_uni and reps[key] > 0):
+                                base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
                                 if is_uni:
-                                    sc1, sc2 = c2.columns(2)
-                                    reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                                    reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                                else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                                bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), index=b_idx, key=f"b_{key}")
-                                rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
-                            else:
-                                c1, c2, c3 = st.columns([1, 1, 2])
-                                weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
-                                if is_uni:
-                                    sc1, sc2 = c2.columns(2)
-                                    reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                                    reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                                else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                                rirs[key] = c3.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
-                        st.write("---") 
-                    
-                    if st.form_submit_button("Save Workouts To Database", type="primary"):
-                        new_rows = []
-                        for exercise in selected_exercises:
-                            is_uni = exercise in UNILATERAL_EXERCISES
-                            uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
-                            for i in range(1, num_sets + 1):
-                                key = f"{exercise}_{i}"
-                                b_val = bands[key] if uses_band else "None"
-                                if (is_uni and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_uni and reps[key] > 0):
-                                    base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
-                                    if is_uni:
-                                        if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
-                                        if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
-                                    else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
-                        if new_rows:
-                            save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
-                            st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
-                        else: st.warning("No reps logged.")
+                                    if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
+                                    if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
+                                else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
+                    if new_rows:
+                        save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
+                        st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
+                    else: st.warning("No reps logged.")
 
     with sub_cardio:
-        st.subheader("🏃‍♂️ Aerobic Cardio Engine Sync")
+        st.subheader("🏃‍♂️ Aerobic Cardio Engine")
+        
+        with st.expander("📖 Cardio Protocols & Execution Guides", expanded=False):
+            st.markdown("### 🔥 4x4 Norwegian VO2 Max Protocol")
+            st.markdown("- **Warm-up:** 5 mins light dynamic stretching + 3 mins easy pacing to build heart rate.")
+            st.markdown("- **Work Interval:** 4 minutes pushing hard into Zone 4/5 (approx. 85-95% Max HR). You should be breathing very heavily by the end.")
+            st.markdown("- **Active Recovery:** 3 minutes of very easy, light pedaling/rowing (Zone 1/2) to clear lactic acid.")
+            st.markdown("- **Repeat:** Do this 4 times total.")
+            st.markdown("- **Cool-down:** 3 mins loose pedaling + 60-sec standing calf stretch per leg.")
+            
+            st.write("---")
+            
+            st.markdown("### 🐢 Zone 2 Flush & Base Building")
+            st.markdown("- **Target Duration:** 60-90 minutes. *(Do not exceed 90 mins as it generates unnecessary systemic fatigue that interferes with lifting recovery).*")
+            st.markdown("- **Intensity:** Strict Zone 2 (approx. 60-70% Max HR). You should be able to hold a conversation or comfortably watch anime without gasping for breath.")
+            st.markdown("- **Goal:** Mitochondrial density and aerobic base building. Pushing into Zone 3 kills the specific adaptations we want here. Stay slow!")
+
+        st.write("---")
         st.write("Sync or manually log your cardio sessions here. This isolates perfectly into your pure Cardio database.")
         mfa_input_c = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_cardio")
         
