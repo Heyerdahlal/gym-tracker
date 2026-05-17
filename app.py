@@ -212,6 +212,19 @@ DAILY_SYSTEM_RESET = {
     "8. The 'Neck Anchor'": {"Target": "1min per side: Releases tension in the upper traps and neck.", "Execution": "Place right hand behind back, tilt left ear to left shoulder, rotate chin toward armpit.", "Progression": "Gently use the non-anchored hand to apply microscopic overpressure to the stretch."}
 }
 
+VOLUME_THRESHOLDS = {
+    "Chest": {"MEV": 10, "MRV": 20},
+    "Back": {"MEV": 10, "MRV": 20},
+    "Quads": {"MEV": 8, "MRV": 18},
+    "Hamstrings": {"MEV": 6, "MRV": 14},
+    "Glutes": {"MEV": 4, "MRV": 16},
+    "Biceps": {"MEV": 8, "MRV": 20},
+    "Triceps": {"MEV": 6, "MRV": 18},
+    "Shoulders": {"MEV": 8, "MRV": 22},
+    "Calves": {"MEV": 8, "MRV": 20},
+    "Abs": {"MEV": 4, "MRV": 20}
+}
+
 MUSCLE_MAP = {
     "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5}, "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
     "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
@@ -244,19 +257,6 @@ BAND_SUBTRACTIONS = {
     "None": 0.0, "Yellow (13.6kg)": 13.6, "Red (22.6kg)": 22.6, 
     "Black (36.3kg)": 36.3, "Purple (45.4kg)": 45.4, 
     "Green (68.0kg)": 68.0, "Blue (88.5kg)": 88.5, "Orange (113.4kg)": 113.4
-}
-
-VOLUME_THRESHOLDS = {
-    "Chest": {"MEV": 10, "MRV": 20},
-    "Back": {"MEV": 10, "MRV": 20},
-    "Quads": {"MEV": 8, "MRV": 18},
-    "Hamstrings": {"MEV": 6, "MRV": 14},
-    "Glutes": {"MEV": 4, "MRV": 16},
-    "Biceps": {"MEV": 8, "MRV": 20},
-    "Triceps": {"MEV": 6, "MRV": 18},
-    "Shoulders": {"MEV": 8, "MRV": 22},
-    "Calves": {"MEV": 8, "MRV": 20},
-    "Abs": {"MEV": 4, "MRV": 20}
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
@@ -681,7 +681,7 @@ with tab2:
         cardio_df = df_lifts[df_lifts['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         if not cardio_df.empty and not health_latest.empty: cardio_df = pd.merge(cardio_df, health_latest, on='Date', how='left')
 
-        at1, at2, at3, at4, at5, at6, at7 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "⚖️ MEV/MRV", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
+        at1, at2, at3, at4, at5, at6, at7 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "⚖️ Volume Eng (MEV/MRV)", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
             st.subheader("Historical Milestones")
@@ -726,9 +726,10 @@ with tab2:
                     st.plotly_chart(fig2, use_container_width=True)
 
         with at4:
-            st.subheader("⚖️ Weekly MEV & MRV Tracking")
-            st.write("Tracking your 7-day rolling set volume per muscle group against clinical hypertrophy thresholds.")
+            st.subheader("⚖️ Volume Engineering (MEV/MRV)")
             if not lift_df.empty:
+                # --- Chart 1: The 7-Day Speedometer ---
+                st.markdown("### 🚦 Current 7-Day Speedometer")
                 recent_7_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=7)]
                 muscle_sets = {}
                 for _, row in recent_7_df.iterrows():
@@ -739,32 +740,45 @@ with tab2:
                 
                 if muscle_sets:
                     mev_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Sets'])
-                    
-                    # 🧠 Inject the clinical standards
                     mev_df['MEV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MEV', 10))
                     mev_df['MRV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MRV', 20))
                     
+                    def assign_color(row):
+                        if row['Sets'] < row['MEV']: return '#A0AEC0' # Gray (Junk Volume / Too Low)
+                        elif row['Sets'] > row['MRV']: return '#FF4B4B' # Red (Danger Zone / Too High)
+                        else: return '#00CC96' # Green (Anabolic / Goldilocks Zone)
+                        
+                    mev_df['Color'] = mev_df.apply(assign_color, axis=1)
+                    
                     fig_mev = go.Figure()
+                    fig_mev.add_trace(go.Bar(x=mev_df['Muscle'], y=mev_df['Sets'], marker_color=mev_df['Color'], name='Actual Sets'))
+                    fig_mev.add_trace(go.Scatter(x=mev_df['Muscle'], y=mev_df['MEV'], mode='markers', name='MEV', marker=dict(symbol='line-ew', size=40, color='#00CC96', line=dict(width=4))))
+                    fig_mev.add_trace(go.Scatter(x=mev_df['Muscle'], y=mev_df['MRV'], mode='markers', name='MRV', marker=dict(symbol='line-ew', size=40, color='#FF4B4B', line=dict(width=4))))
                     
-                    # The actual volume you performed
-                    fig_mev.add_trace(go.Bar(x=mev_df['Muscle'], y=mev_df['Sets'], name='Actual 7-Day Sets', marker_color='#636EFA'))
-                    
-                    # The dynamic MEV threshold marker (Green)
-                    fig_mev.add_trace(go.Scatter(
-                        x=mev_df['Muscle'], y=mev_df['MEV'], mode='markers', name='MEV (Minimum Required)',
-                        marker=dict(symbol='line-ew', size=40, color='#00CC96', line=dict(width=4))
-                    ))
-                    
-                    # The dynamic MRV threshold marker (Red)
-                    fig_mev.add_trace(go.Scatter(
-                        x=mev_df['Muscle'], y=mev_df['MRV'], mode='markers', name='MRV (Max Recoverable)',
-                        marker=dict(symbol='line-ew', size=40, color='#FF4B4B', line=dict(width=4))
-                    ))
-                    
-                    fig_mev.update_layout(title="Muscle-Specific Volume vs. Growth Thresholds", yaxis_title="Total Sets", barmode='overlay')
+                    fig_mev.update_layout(title="7-Day Traffic Light Tracker", yaxis_title="Total Sets", barmode='overlay')
                     st.plotly_chart(fig_mev, use_container_width=True)
                 else:
                     st.info("No lifting volume detected in the last 7 days.")
+
+                st.write("---")
+                
+                # --- Chart 2: The 4-Week GPS ---
+                st.markdown("### 📈 4-Week Mesocycle GPS")
+                recent_28_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=28)].copy()
+                trend_data = []
+                for _, row in recent_28_df.iterrows():
+                    ex = row['Exercise']
+                    week_label = row['Date'].strftime('%Y-W%V')
+                    if ex in MUSCLE_MAP:
+                        for muscle, multiplier in MUSCLE_MAP[ex].items():
+                            trend_data.append({'Week': week_label, 'Muscle': muscle, 'Sets': 1 * multiplier})
+                
+                if trend_data:
+                    trend_df = pd.DataFrame(trend_data).groupby(['Week', 'Muscle'])['Sets'].sum().reset_index()
+                    fig_trend = px.line(trend_df, x='Week', y='Sets', color='Muscle', markers=True, title="Muscle Volume Escalation (Last 4 Weeks)")
+                    st.plotly_chart(fig_trend, use_container_width=True)
+                else:
+                    st.info("Not enough data yet for a 4-week trend.")
 
         with at5:
             st.subheader("7-Day Microcycle Radar")
