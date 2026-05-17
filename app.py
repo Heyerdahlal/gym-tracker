@@ -246,6 +246,19 @@ BAND_SUBTRACTIONS = {
     "Green (68.0kg)": 68.0, "Blue (88.5kg)": 88.5, "Orange (113.4kg)": 113.4
 }
 
+VOLUME_THRESHOLDS = {
+    "Chest": {"MEV": 10, "MRV": 20},
+    "Back": {"MEV": 10, "MRV": 20},
+    "Quads": {"MEV": 8, "MRV": 18},
+    "Hamstrings": {"MEV": 6, "MRV": 14},
+    "Glutes": {"MEV": 4, "MRV": 16},
+    "Biceps": {"MEV": 8, "MRV": 20},
+    "Triceps": {"MEV": 6, "MRV": 18},
+    "Shoulders": {"MEV": 8, "MRV": 22},
+    "Calves": {"MEV": 8, "MRV": 20},
+    "Abs": {"MEV": 4, "MRV": 20}
+}
+
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press"]
 
@@ -668,7 +681,7 @@ with tab2:
         cardio_df = df_lifts[df_lifts['Exercise'].str.contains("Rowing|Bike", na=False)].copy()
         if not cardio_df.empty and not health_latest.empty: cardio_df = pd.merge(cardio_df, health_latest, on='Date', how='left')
 
-        at1, at2, at3, at4, at5, at6 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
+        at1, at2, at3, at4, at5, at6, at7 = st.tabs(["👻 Milestones", "📈 Relative Strength", "🔥 INOL", "⚖️ MEV/MRV", "🦵 Radar", "🫀 Cardio", "🧬 Recomp & Recovery"])
         
         with at1:
             st.subheader("Historical Milestones")
@@ -713,6 +726,47 @@ with tab2:
                     st.plotly_chart(fig2, use_container_width=True)
 
         with at4:
+            st.subheader("⚖️ Weekly MEV & MRV Tracking")
+            st.write("Tracking your 7-day rolling set volume per muscle group against clinical hypertrophy thresholds.")
+            if not lift_df.empty:
+                recent_7_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=7)]
+                muscle_sets = {}
+                for _, row in recent_7_df.iterrows():
+                    ex = row['Exercise']
+                    if ex in MUSCLE_MAP:
+                        for muscle, multiplier in MUSCLE_MAP[ex].items(): 
+                            muscle_sets[muscle] = muscle_sets.get(muscle, 0) + (1 * multiplier)
+                
+                if muscle_sets:
+                    mev_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Sets'])
+                    
+                    # 🧠 Inject the clinical standards
+                    mev_df['MEV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MEV', 10))
+                    mev_df['MRV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MRV', 20))
+                    
+                    fig_mev = go.Figure()
+                    
+                    # The actual volume you performed
+                    fig_mev.add_trace(go.Bar(x=mev_df['Muscle'], y=mev_df['Sets'], name='Actual 7-Day Sets', marker_color='#636EFA'))
+                    
+                    # The dynamic MEV threshold marker (Green)
+                    fig_mev.add_trace(go.Scatter(
+                        x=mev_df['Muscle'], y=mev_df['MEV'], mode='markers', name='MEV (Minimum Required)',
+                        marker=dict(symbol='line-ew', size=40, color='#00CC96', line=dict(width=4))
+                    ))
+                    
+                    # The dynamic MRV threshold marker (Red)
+                    fig_mev.add_trace(go.Scatter(
+                        x=mev_df['Muscle'], y=mev_df['MRV'], mode='markers', name='MRV (Max Recoverable)',
+                        marker=dict(symbol='line-ew', size=40, color='#FF4B4B', line=dict(width=4))
+                    ))
+                    
+                    fig_mev.update_layout(title="Muscle-Specific Volume vs. Growth Thresholds", yaxis_title="Total Sets", barmode='overlay')
+                    st.plotly_chart(fig_mev, use_container_width=True)
+                else:
+                    st.info("No lifting volume detected in the last 7 days.")
+
+        with at5:
             st.subheader("7-Day Microcycle Radar")
             if not lift_df.empty:
                 recent_7_df = lift_df[lift_df['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=7)]
@@ -727,7 +781,7 @@ with tab2:
                     fig_radar = go.Figure(data=go.Scatterpolar(r=heat_df['Total Sets'].tolist() + [heat_df['Total Sets'].iloc[0]], theta=heat_df['Muscle'].tolist() + [heat_df['Muscle'].iloc[0]], fill='toself'))
                     st.plotly_chart(fig_radar, use_container_width=True)
 
-        with at5:
+        with at6:
             st.subheader("🫀 Cardio Engine Analytics")
             if not cardio_df.empty:
                 c_ex = st.selectbox("Select Cardio Type", cardio_df['Exercise'].unique())
@@ -742,7 +796,7 @@ with tab2:
                     fig_aerobic.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_aerobic, use_container_width=True)
 
-        with at6:
+        with at7:
             st.subheader("🧬 Biological Recomp & Recovery")
             if not health_latest.empty:
                 hdf = health_latest[(health_latest['FFMI'] > 0) & (health_latest['Body_Fat_Pct'] > 0)].copy()
