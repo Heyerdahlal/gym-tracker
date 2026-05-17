@@ -43,14 +43,10 @@ try:
     sh = gc.open("Gym_Tracker_DB")
     ws_lifts = sh.worksheet("Lifts")
     ws_health = sh.worksheet("Health")
-    
-    # Auto-create Cardio and System tabs if they don't exist
     try: ws_cardio = sh.worksheet("Cardio")
     except gspread.exceptions.WorksheetNotFound: ws_cardio = sh.add_worksheet(title="Cardio", rows="100", cols="15")
-        
     try: ws_system = sh.worksheet("System")
     except gspread.exceptions.WorksheetNotFound: ws_system = sh.add_worksheet(title="System", rows="10", cols="5")
-        
 except Exception as e:
     st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs! Error: {e}")
     st.stop()
@@ -334,10 +330,8 @@ def save_to_sheet(ws, df_new, required_cols):
     df_to_save = df_to_save[required_cols]
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
-    
     try: first_row = ws.row_values(1)
     except Exception: first_row = []
-        
     if not first_row or first_row[0] != 'Date':
         ws.clear()
         ws.update(values=[df_to_save.columns.tolist()], range_name="A1")
@@ -354,6 +348,35 @@ def overwrite_sheet(ws, df_new, required_cols):
     ws.clear()
     ws.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
+
+# --- GLOBAL GARMIN AUTH FUNCTION ---
+def get_garmin_client(mfa_val=""):
+    if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
+    g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
+    if not g_email or not g_pass: return None
+    client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_val) if mfa_val else Garmin(g_email, g_pass)
+    try:
+        saved_token = ws_system.acell('A1').value
+        if saved_token:
+            import garth
+            garth.client.loads(json.loads(saved_token))
+            client.garth = garth.client
+            st.session_state['garmin_vip_client'] = client
+            return client
+    except Exception: pass 
+    try:
+        client.login()
+        try:
+            import garth
+            ws_system.update_acell('A1', json.dumps(garth.client.dump()))
+        except Exception: pass 
+        st.session_state['garmin_vip_client'] = client 
+        return client
+    except Exception as e:
+        if "429" in str(e): st.error("🛑 **Garmin Timeout (429):** Please wait 15 minutes.")
+        elif "prompt_mfa" in str(e): st.error("🛑 **Garmin requires 2FA!** Type the code and click sync.")
+        else: st.error(f"Garmin Login Failed: {e}")
+        return None
 
 df_lifts, df_health, df_cardio = load_data()
 
@@ -378,7 +401,8 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📝 Data Collection", "📊 Analytics Engine", "⚙️ Database", "📡 Garmin Hub", "📋 Program Overview", "🧘 System Reset"])
+# UI split precisely into 7 clean tabs
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📝 Data Collection", "📊 Analytics", "⚙️ Database", "🧬 Health Sync", "🏃‍♂️ Cardio Sync", "📋 Program Overview", "🧘 System Reset"])
 
 with tab1:
     col1, col2 = st.columns([1, 2])
@@ -406,7 +430,7 @@ with tab1:
     if selected_exercises:
         is_cardio = "Cardio" in workout_day
         if is_cardio:
-            st.info("🏃‍♂️ **Cardio Day Selected.** Head over to the **📡 Garmin Hub (Tab 4)** to sync your watch or log cardio data manually into the clean Cardio database!")
+            st.info("🏃‍♂️ **Cardio Day Selected.** Head over to the **🏃‍♂️ Cardio Sync (Tab 5)** to pull your Garmin ride into the clean Cardio database!")
         else:
             default_sets, _ = get_target_reps_and_sets(selected_exercises[0])
             if is_deload: default_sets = max(1, default_sets - 1)
@@ -528,127 +552,99 @@ with tab1:
                                 else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
                     if new_rows:
                         save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
-                        st.success(f"✅ Logged {len(new_rows)} sets to the pure Lifts database!")
+                        st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
                     else: st.warning("No reps logged.")
 
 with tab4:
-    st.subheader("📡 Garmin Integration Hub")
-    st.write("Manage all biological and cardio data here. Watch how they save into completely separate, clean databases.")
-    mfa_input = st.text_input("MFA Code (Leave blank if 2FA is disabled)", max_chars=6)
+    st.subheader("🧬 Biological Health Sync")
+    st.write("Manage your morning stats here. Data is safely isolated into your pure Health database.")
+    mfa_input_h = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_health")
     
-    def get_garmin_client():
-        if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
-        g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
-        if not g_email or not g_pass: return None
-        client = Garmin(g_email, g_pass, prompt_mfa=lambda: mfa_input) if mfa_input else Garmin(g_email, g_pass)
-        try:
-            saved_token = ws_system.acell('A1').value
-            if saved_token:
-                import garth
-                garth.client.loads(json.loads(saved_token))
-                client.garth = garth.client
-                st.session_state['garmin_vip_client'] = client
-                return client
-        except Exception: pass 
-        try:
-            client.login()
-            try:
-                import garth
-                ws_system.update_acell('A1', json.dumps(garth.client.dump()))
-            except Exception: pass 
-            st.session_state['garmin_vip_client'] = client 
-            return client
-        except Exception as e:
-            if "429" in str(e): st.error("🛑 **Garmin Timeout (429):** Please wait 15 minutes.")
-            elif "prompt_mfa" in str(e): st.error("🛑 **Garmin requires 2FA!** Type the code and click sync.")
-            else: st.error(f"Garmin Login Failed: {e}")
-            return None
+    if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
+        with st.spinner(f"Pulling biological data for {date_input}..."):
+            client = get_garmin_client(mfa_input_h)
+            if client:
+                target_iso = date_input.isoformat()
+                try:
+                    weigh_ins = client.get_body_composition(target_iso)
+                    if weigh_ins and weigh_ins.get('dateWeightList'):
+                        latest = weigh_ins['dateWeightList'][-1]
+                        raw_w = latest.get('weight', st.session_state['h_weight'])
+                        st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
+                        st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
+                        st.session_state['h_muscle'] = float(latest.get('muscleMass', st.session_state['h_muscle'] * 1000) / 1000)
+                        st.toast("✅ Scale data found")
+                except Exception: pass
+                try:
+                    sleep_data = client.get_sleep_data(target_iso)
+                    if sleep_data and 'dailySleepDTO' in sleep_data:
+                        score = sleep_data['dailySleepDTO'].get('sleepScores', {}).get('overall', {}).get('value')
+                        if score: st.session_state['h_sleep'] = int(score)
+                    stats = client.get_stats(target_iso)
+                    if stats and 'restingHeartRate' in stats: st.session_state['h_rhr'] = int(stats['restingHeartRate'])
+                    hrv_data = client.get_hrv_data(target_iso)
+                    if hrv_data and 'hrvSummary' in hrv_data:
+                        hrv = hrv_data['hrvSummary'].get('lastNightAvg')
+                        if hrv: st.session_state['h_hrv'] = int(hrv)
+                except Exception: pass
+                
+                lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
+                ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
+                
+                health_data = {'Date': date_input, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
+                save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
+                st.success(f"✅ Biological data safely isolated in Health DB for {date_input}!")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("#### 🧬 Morning Health Sync")
-        if st.button("🔄 Sync Scale & Sleep (Auto-Save)"):
-            with st.spinner(f"Pulling biological data for {date_input}..."):
-                client = get_garmin_client()
-                if client:
-                    target_iso = date_input.isoformat()
-                    try:
-                        weigh_ins = client.get_body_composition(target_iso)
-                        if weigh_ins and weigh_ins.get('dateWeightList'):
-                            latest = weigh_ins['dateWeightList'][-1]
-                            raw_w = latest.get('weight', st.session_state['h_weight'])
-                            st.session_state['h_weight'] = float(raw_w / 1000 if raw_w > 1000 else raw_w)
-                            st.session_state['h_bf'] = float(latest.get('bodyFat', st.session_state['h_bf']))
-                            st.session_state['h_muscle'] = float(latest.get('muscleMass', st.session_state['h_muscle'] * 1000) / 1000)
-                            st.toast("✅ Scale data found")
-                    except Exception: pass
-                    try:
-                        sleep_data = client.get_sleep_data(target_iso)
-                        if sleep_data and 'dailySleepDTO' in sleep_data:
-                            score = sleep_data['dailySleepDTO'].get('sleepScores', {}).get('overall', {}).get('value')
-                            if score: st.session_state['h_sleep'] = int(score)
-                        stats = client.get_stats(target_iso)
-                        if stats and 'restingHeartRate' in stats: st.session_state['h_rhr'] = int(stats['restingHeartRate'])
-                        hrv_data = client.get_hrv_data(target_iso)
-                        if hrv_data and 'hrvSummary' in hrv_data:
-                            hrv = hrv_data['hrvSummary'].get('lastNightAvg')
-                            if hrv: st.session_state['h_hrv'] = int(hrv)
-                    except Exception: pass
-                    
-                    lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
-                    ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-                    
-                    # PURE HEALTH ROW (No cardio junk)
-                    health_data = {'Date': date_input, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
-                    save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
-                    st.success(f"✅ Biological data safely isolated in Health DB for {date_input}!")
+    st.write("---")
+    st.markdown("**Current Session Health Data (Manual Override):**")
+    st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
+    st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
+    st.session_state['h_muscle'] = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
+    st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
+    st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
+    st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
 
-        st.markdown("**Current Session Health Data:**")
-        st.session_state['h_weight'] = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
-        st.session_state['h_bf'] = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
-        st.session_state['h_muscle'] = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
-        st.session_state['h_sleep'] = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
-        st.session_state['h_rhr'] = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
-        st.session_state['h_hrv'] = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
+with tab5:
+    st.subheader("🏃‍♂️ Aerobic Cardio Engine Sync")
+    st.write("Sync or manually log your cardio sessions here. This isolates perfectly into your pure Cardio database.")
+    mfa_input_c = st.text_input("MFA Code (Leave blank if 2FA disabled or token saved)", max_chars=6, key="mfa_cardio")
+    
+    if st.button("🔄 Sync Latest Garmin Activity"):
+        with st.spinner("Connecting..."):
+            client = get_garmin_client(mfa_input_c)
+            if client:
+                try:
+                    activities = client.get_activities(0, 1) 
+                    if activities:
+                        act = activities[0]
+                        st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
+                        st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
+                        st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
+                        st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
+                        st.success(f"Synced: {act.get('activityName', 'Unknown')}")
+                        st.rerun()
+                except Exception as e: st.error(f"Activity Sync Failed: {e}")
+
+    st.write("---")
+    with st.form("cardio_form", clear_on_submit=True):
+        c_ex = st.selectbox("Select Cardio Type", ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])
+        duration = st.number_input("Duration (Mins)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
+        distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
+        avg_resp = st.number_input("Avg Resp (brpm)", min_value=0.0, value=20.0, step=1.0)
+        avg_hr = st.number_input("Avg HR (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
+        max_hr = st.number_input("Max HR (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
         
-    with c2:
-        st.markdown("#### 🏃‍♂️ Aerobic Cardio Engine")
-        if st.button("🔄 Sync Latest Cardio"):
-            with st.spinner("Connecting..."):
-                client = get_garmin_client()
-                if client:
-                    try:
-                        activities = client.get_activities(0, 1) 
-                        if activities:
-                            act = activities[0]
-                            st.session_state['g_dur'] = round(act.get('duration', 0) / 60, 1)
-                            st.session_state['g_dist'] = round(act.get('distance', 0) / 1000, 2)
-                            st.session_state['g_avg_hr'] = float(act.get('averageHR', 130.0))
-                            st.session_state['g_max_hr'] = float(act.get('maxHR', 165.0))
-                            st.success(f"Synced: {act.get('activityName', 'Unknown')}")
-                            st.rerun()
-                    except Exception as e: st.error(f"Activity Sync Failed: {e}")
-
-        with st.form("cardio_form", clear_on_submit=True):
-            c_ex = st.selectbox("Select Cardio Type", ["4x4 Rowing (Zone 4/5)", "Zone 2 Spin Bike Flush"])
-            duration = st.number_input("Duration (Mins)", min_value=1.0, value=st.session_state['g_dur'], step=1.0)
-            distance = st.number_input("Distance (km)", min_value=0.0, value=st.session_state['g_dist'], step=0.1)
-            avg_resp = st.number_input("Avg Resp (brpm)", min_value=0.0, value=20.0, step=1.0)
-            avg_hr = st.number_input("Avg HR (bpm)", min_value=40.0, value=st.session_state['g_avg_hr'], step=1.0)
-            max_hr = st.number_input("Max HR (bpm)", min_value=40.0, value=st.session_state['g_max_hr'], step=1.0)
-            
-            zc1, zc2, zc3, zc4, zc5 = st.columns(5)
-            z1 = zc1.number_input("Z1", min_value=0.0, step=1.0)
-            z2 = zc2.number_input("Z2", min_value=0.0, step=1.0)
-            z3 = zc3.number_input("Z3", min_value=0.0, step=1.0)
-            z4 = zc4.number_input("Z4", min_value=0.0, step=1.0)
-            z5 = zc5.number_input("Z5", min_value=0.0, step=1.0)
-            
-            if st.form_submit_button("Save Cardio to Database", type="primary"):
-                # PURE CARDIO ROW (No lifting or sleep junk)
-                cardio_data = {'Date': date_input, 'Exercise': c_ex, 'Duration_Mins': duration, 'Distance_km': distance, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5}
-                save_to_sheet(ws_cardio, pd.DataFrame([cardio_data]), CARDIO_COLS)
-                st.success("✅ Cardio Data isolated into pure Cardio DB!")
+        zc1, zc2, zc3, zc4, zc5 = st.columns(5)
+        z1 = zc1.number_input("Z1", min_value=0.0, step=1.0)
+        z2 = zc2.number_input("Z2", min_value=0.0, step=1.0)
+        z3 = zc3.number_input("Z3", min_value=0.0, step=1.0)
+        z4 = zc4.number_input("Z4", min_value=0.0, step=1.0)
+        z5 = zc5.number_input("Z5", min_value=0.0, step=1.0)
+        
+        if st.form_submit_button("Save Cardio to Database", type="primary"):
+            cardio_data = {'Date': date_input, 'Exercise': c_ex, 'Duration_Mins': duration, 'Distance_km': distance, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5}
+            save_to_sheet(ws_cardio, pd.DataFrame([cardio_data]), CARDIO_COLS)
+            st.success("✅ Cardio Data isolated into pure Cardio DB!")
 
 with tab2:
     if df_lifts.empty and df_health.empty and df_cardio.empty:
@@ -823,7 +819,7 @@ with tab3:
         overwrite_sheet(ws_cardio, edited_cardio, CARDIO_COLS)
         st.success("Cardio Database Saved!")
 
-with tab5:
+with tab6:
     st.subheader("📋 Program Overview & Documentation")
     st.write("Easily copy this page to share your exact programming, logic, and execution cues with a coach or training partner.")
     st.write("---")
@@ -854,7 +850,7 @@ with tab5:
                     st.markdown(f"  - *Why:* {guide.get('Why', '')}")
         st.write("---")
 
-with tab6:
+with tab7:
     st.subheader("🌙 The Daily System Reset")
     st.info("**Frequency:** Daily Evening Protocol  \n**Goal:** Restore joint range of motion, down-regulate the nervous system, and achieve pain-free living.")
     st.write("Check these off as you go for that dopamine hit! *(Resets daily, not logged to database)*")
@@ -862,7 +858,7 @@ with tab6:
     half = len(DAILY_SYSTEM_RESET) // 2
     for i, (ex_name, details) in enumerate(DAILY_SYSTEM_RESET.items()):
         col = reset_c1 if i < half else reset_c2
-        col.checkbox(ex_name, key=f"reset_chk_t6_{i}")
+        col.checkbox(ex_name, key=f"reset_chk_t7_{i}")
     st.write("---")
     st.markdown("### 📖 Execution Guides")
     for ex_name, details in DAILY_SYSTEM_RESET.items():
