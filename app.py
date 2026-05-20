@@ -117,6 +117,24 @@ COOL_DOWNS = {
     "Friday: Upper B": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole."
 }
 
+MOBILITY_GUIDES = {
+    "Band Pull-aparts": "Hold a light band at chest height, arms straight. Squeeze shoulder blades together to pull the band apart until it touches your chest. Keeps shoulders healthy.",
+    "Push-up to Downward Dog": "Perform a push-up, then immediately push your hips high into the air (Downward Dog), pressing your chest toward your toes to open the shoulders.",
+    "Deep Bodyweight Squats": "Sit into a deep squat. Use elbows to actively press knees outward. Gently shift weight side to side to loosen hip capsules.",
+    "Cossack Squats": "Take a very wide stance. Squat deep onto one leg while keeping the other leg completely straight, toes pointing to the ceiling. Stretches the adductors.",
+    "Couch Stretch": "Place knee in corner where floor meets a wall (or couch). Keep shin vertical against wall. Step other foot forward. Squeeze glute to brutally stretch hip flexor.",
+    "Scapular Pull-ups": "Hang from a bar. Without bending elbows, pull shoulder blades DOWN and TOGETHER to lift body an inch or two. Pause, then lower.",
+    "BW Glute Bridges": "Lie on back, knees bent, feet flat. Drive through heels to bridge hips to ceiling. Pause and squeeze glutes to wake them up.",
+    "KB Goblet Squats": "Hold a kettlebell at chest. Drop into a deep squat. Keep chest tall and let weight anchor you into bottom stretch to pry open hips.",
+    "BW Good Mornings": "Hands gently behind head. Unlock knees slightly, then push hips straight back until torso is almost parallel to floor to dynamically stretch hamstrings.",
+    "Floor Scorpion Pec Stretch": "Lie flat on stomach with arms in 'T'. Lift left leg, bend knee, and roll body to right, trying to touch left foot to floor behind right leg.",
+    "90/90 hip breathing": "Sit on floor with both legs bent at 90 degrees (one in front, one to side). Lean forward over front shin with a flat back. Take deep breaths.",
+    "thoracic spine": "Place foam roller horizontal across upper back. Support neck with hands. Slowly extend upper back over roller to reverse poor posture.",
+    "Lat stretch holding an upright pole": "Grab a vertical rack or pole with one hand at hip height. Sit hips back and let arm act as a rope, feeling a massive stretch from armpit down side.",
+    "Banded hamstring stretch": "Lie on back. Loop a band around one foot. Keep leg perfectly straight and pull it toward face until you feel a deep hamstring stretch.",
+    "Seated pigeon/glute stretch": "Sit on bench. Cross right ankle over left knee. Keeping back perfectly flat, hinge forward from hips to stretch the right glute."
+}
+
 DAY_PHILOSOPHY = {
     "Tuesday: Lower A": "Quad-dominant strength focus. The goal here is anterior chain power (Front Squats) followed by intense core bracing and armor-building to protect the spine.",
     "Wednesday: Upper A": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
@@ -324,7 +342,6 @@ def overwrite_sheet(ws, df_new, required_cols):
     ws.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
     st.cache_data.clear()
 
-# --- GLOBAL GARMIN AUTH FUNCTION ---
 def get_garmin_client(mfa_val=""):
     if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
     g_email, g_pass = st.secrets.get("garmin_email"), st.secrets.get("garmin_password")
@@ -376,7 +393,6 @@ if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_n
 
 st.title("🔬 Sports Science Dashboard")
 
-# MAIN 5-TAB NAVIGATION (REORDERED)
 tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
 
 with tab_sessions:
@@ -388,11 +404,9 @@ with tab_sessions:
             date_input = st.date_input("Date", date.today())
             is_deload = st.toggle("🧘 Activate Deload Week")
         with col2:
-            # --- AUTO-DETECT DAY OF THE WEEK ---
-            today_name = date_input.strftime('%A') # Gets 'Tuesday', 'Wednesday', etc.
+            today_name = date_input.strftime('%A')
             program_keys = list(PROGRAM.keys())
-            
-            default_idx = 0 # Defaults to the first item if no match is found
+            default_idx = 0
             for i, key in enumerate(program_keys):
                 if today_name in key:
                     default_idx = i
@@ -416,7 +430,6 @@ with tab_sessions:
         st.write("---")
         
         if selected_exercises:
-            # GORILLA MODE: DYNAMIC SET CALCULATION
             primary_ex = selected_exercises[0]
             base_sets, _ = get_target_reps_and_sets(primary_ex)
             suggested_sets = base_sets
@@ -429,7 +442,6 @@ with tab_sessions:
                     last_date = ex_df_primary['Date'].max()
                     last_session = ex_df_primary[ex_df_primary['Date'] == last_date]
                     last_sets_done = last_session['Set_Number'].max()
-                    
                     if last_sets_done < base_sets: suggested_sets = base_sets
                     else: suggested_sets = min(6, last_sets_done + 1)
             
@@ -850,6 +862,7 @@ with tab_analytics:
 
         with at7:
             st.subheader("🧬 Biological Recomp & Recovery")
+            
             if not health_latest.empty:
                 hdf = health_latest[(health_latest['FFMI'] > 0) & (health_latest['Body_Fat_Pct'] > 0)].copy()
                 if not hdf.empty:
@@ -859,6 +872,10 @@ with tab_analytics:
                     fig_ffmi.update_layout(yaxis=dict(title='FFMI Score', side='left'), yaxis2=dict(title='Body Fat %', side='right', overlaying='y', showgrid=False))
                     fig_ffmi.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
                     st.plotly_chart(fig_ffmi, use_container_width=True)
+                else:
+                    st.info("📊 Log your Body Fat % in the Bio Data tab to unlock the FFMI Recomp Chart.")
+            else:
+                st.info("📊 Log your Body Fat % in the Bio Data tab to unlock the FFMI Recomp Chart.")
             
             if not lift_df.empty and 'Sleep_Score' in lift_df.columns:
                 rc_ex = st.selectbox("Compare Sleep vs Strength", lift_df['Exercise'].unique())
@@ -866,10 +883,15 @@ with tab_analytics:
                 if not rc_df.empty:
                     fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", title=f"Sleep vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_sleep, use_container_width=True)
+                else:
+                    st.info(f"💤 Awaiting linked Sleep Data for {rc_ex}.")
+            else:
+                st.info("💤 Awaiting strength data to compare against sleep scores.")
                     
             st.write("---")
             st.markdown("### ⚡ CNS Autonomic Balance (HRV Trends)")
             st.write("If your 7-Day HRV (Green) dips significantly below your 30-Day baseline (Red), your CNS is under-recovered. Take a rest day.")
+            
             if not df_health.empty and 'HRV' in df_health.columns and df_health['HRV'].sum() > 0:
                 hrv_df = df_health[df_health['HRV'] > 0][['Date', 'HRV']].copy().set_index('Date').resample('D').mean().ffill()
                 hrv_df['7D_Avg'] = hrv_df['HRV'].rolling(window=7, min_periods=1).mean()
@@ -880,6 +902,8 @@ with tab_analytics:
                 fig_hrv.add_trace(go.Scatter(x=hrv_df.index, y=hrv_df['30D_Avg'], mode='lines', name='30-Day Baseline', line=dict(color='#FF4B4B', dash='dash')))
                 fig_hrv.update_layout(yaxis_title="Heart Rate Variability (ms)")
                 st.plotly_chart(fig_hrv, use_container_width=True)
+            else:
+                st.info("❤️‍🔥 Log your daily HRV in the Bio Data tab to unlock Autonomic Balance tracking.")
 
 with tab_overview:
     st.subheader("📋 Program Overview & Documentation")
