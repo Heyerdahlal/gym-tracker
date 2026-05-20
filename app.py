@@ -388,7 +388,17 @@ with tab_sessions:
             date_input = st.date_input("Date", date.today())
             is_deload = st.toggle("🧘 Activate Deload Week")
         with col2:
-            workout_day = st.selectbox("Select Workout Day", list(PROGRAM.keys()))
+            # --- AUTO-DETECT DAY OF THE WEEK ---
+            today_name = date_input.strftime('%A') # Gets 'Tuesday', 'Wednesday', etc.
+            program_keys = list(PROGRAM.keys())
+            
+            default_idx = 0 # Defaults to the first item if no match is found
+            for i, key in enumerate(program_keys):
+                if today_name in key:
+                    default_idx = i
+                    break
+                    
+            workout_day = st.selectbox("Select Workout Day", program_keys, index=default_idx)
             workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
             
             if "Freestyle" in workout_day: selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=[])
