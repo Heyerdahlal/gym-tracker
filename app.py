@@ -61,29 +61,29 @@ CARDIO_COLS = ['Date', 'Exercise', 'Duration_Mins', 'Distance_km', 'Avg_HR', 'Ma
 
 # --- PROGRAM & DICTIONARIES ---
 PROGRAM = {
-    "Day 2: Upper A (Horizontal Push/Pull)": {
-        "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
-        "Block 2 (Superset): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
-        "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
-        "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
-    },
-    "Day 3: Lower A (Strength, Quads & Armor)": {
+    "Tuesday: Lower A": {
         "Block 1: Heavy Front Squat": ["Heavy Barbell Front Squat"],
         "Block 2 (Superset): Landmine Squat & Core": ["Heels-Elevated Landmine Squat", "Anchored Reverse Crunch"],
         "Block 3 (Superset): KB Swings & Nordics": ["Heavy Russian Kettlebell Swings", "Nordic Curls"],
         "Block 4 (Tri-Set): Calves, Tibs & Core": ["Squat Wedge Dumbbell Calf Raises", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
     },
-    "Day 4: Upper B (Vertical Push/Pull)": {
-        "Block 1 (Superset): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
-        "Block 2 (Superset): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
-        "Block 3 (Superset): Curls & Pushdowns": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"],
-        "Block 4: Lateral Raises": ["Chest-Supported Lateral Raise"]
+    "Wednesday: Upper A": {
+        "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
+        "Block 2 (Superset): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
+        "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
+        "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
     },
-    "Day 5: Lower B (Hinge, Power & Posterior)": {
+    "Thursday: Lower B": {
         "Block 1: RDL": ["Romanian Deadlift (RDL)"],
         "Block 2 (Superset): Bulgarians & Rollouts": ["Bulgarian Split Squats", "Ab-Wheel Rollouts"],
         "Block 3 (Superset): Hip Thrusts & Hamstrings": ["Barbell Hip Thrusts", "Hamstring-Focused Roman Chair Extension"],
         "Block 4 (Tri-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+    },
+    "Friday: Upper B": {
+        "Block 1 (Superset): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
+        "Block 2 (Superset): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
+        "Block 3 (Superset): Curls & Pushdowns": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"],
+        "Block 4: Lateral Raises": ["Chest-Supported Lateral Raise"]
     },
     "Freestyle / Custom Day": {
         "Select Any Exercise(s)": [
@@ -104,42 +104,24 @@ PROGRAM = {
 }
 
 WARM_UPS = {
-    "Day 2: Upper A (Horizontal Push/Pull)": "2x15 Band Pull-aparts, 2x10 Push-up to Downward Dog (shoulder flow), 2x15 light Tricep Pushdowns (elbow blood flow).",
-    "Day 3: Lower A (Strength, Quads & Armor)": "2x10 Deep Bodyweight Squats (pry the hips), 2x10 Cossack Squats, 90-sec Couch Stretch per leg, 1x20 Wall Tibialis Raises.",
-    "Day 4: Upper B (Vertical Push/Pull)": "Dead hang from pull-up bar for 30-45s, 2x10 Scapular Pull-ups (activate lats), 2x15 Banded Face Pulls (rotator cuff prep).",
-    "Day 5: Lower B (Hinge, Power & Posterior)": "2x15 BW Glute Bridges, 1x15 KB Goblet Squats (stay at bottom to open hips), 2x10 BW Good Mornings, 90-sec Couch Stretch."
+    "Tuesday: Lower A": "2x10 Deep Bodyweight Squats (pry the hips), 2x10 Cossack Squats, 90-sec Couch Stretch per leg, 1x20 Wall Tibialis Raises.",
+    "Wednesday: Upper A": "2x15 Band Pull-aparts, 2x10 Push-up to Downward Dog (shoulder flow), 2x15 light Tricep Pushdowns (elbow blood flow).",
+    "Thursday: Lower B": "2x15 BW Glute Bridges, 1x15 KB Goblet Squats (stay at bottom to open hips), 2x10 BW Good Mornings, 90-sec Couch Stretch.",
+    "Friday: Upper B": "Dead hang from pull-up bar for 30-45s, 2x10 Scapular Pull-ups (activate lats), 2x15 Banded Face Pulls (rotator cuff prep)."
 }
 
 COOL_DOWNS = {
-    "Day 2: Upper A (Horizontal Push/Pull)": "90-sec Floor Scorpion Pec Stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
-    "Day 3: Lower A (Strength, Quads & Armor)": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
-    "Day 4: Upper B (Vertical Push/Pull)": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole.",
-    "Day 5: Lower B (Hinge, Power & Posterior)": "90-sec Banded hamstring stretch per leg (lying on back). 2 mins Seated pigeon/glute stretch."
-}
-
-MOBILITY_GUIDES = {
-    "Band Pull-aparts": "Hold a light band at chest height, arms straight. Squeeze shoulder blades together to pull the band apart until it touches your chest. Keeps shoulders healthy.",
-    "Push-up to Downward Dog": "Perform a push-up, then immediately push your hips high into the air (Downward Dog), pressing your chest toward your toes to open the shoulders.",
-    "Deep Bodyweight Squats": "Sit into a deep squat. Use elbows to actively press knees outward. Gently shift weight side to side to loosen hip capsules.",
-    "Cossack Squats": "Take a very wide stance. Squat deep onto one leg while keeping the other leg completely straight, toes pointing to the ceiling. Stretches the adductors.",
-    "Couch Stretch": "Place knee in corner where floor meets a wall (or couch). Keep shin vertical against wall. Step other foot forward. Squeeze glute to brutally stretch hip flexor.",
-    "Scapular Pull-ups": "Hang from a bar. Without bending elbows, pull shoulder blades DOWN and TOGETHER to lift body an inch or two. Pause, then lower.",
-    "BW Glute Bridges": "Lie on back, knees bent, feet flat. Drive through heels to bridge hips to ceiling. Pause and squeeze glutes to wake them up.",
-    "KB Goblet Squats": "Hold a kettlebell at chest. Drop into a deep squat. Keep chest tall and let weight anchor you into bottom stretch to pry open hips.",
-    "BW Good Mornings": "Hands gently behind head. Unlock knees slightly, then push hips straight back until torso is almost parallel to floor to dynamically stretch hamstrings.",
-    "Floor Scorpion Pec Stretch": "Lie flat on stomach with arms in 'T'. Lift left leg, bend knee, and roll body to right, trying to touch left foot to floor behind right leg.",
-    "90/90 hip breathing": "Sit on floor with both legs bent at 90 degrees (one in front, one to side). Lean forward over front shin with a flat back. Take deep breaths.",
-    "thoracic spine": "Place foam roller horizontal across upper back. Support neck with hands. Slowly extend upper back over roller to reverse poor posture.",
-    "Lat stretch holding an upright pole": "Grab a vertical rack or pole with one hand at hip height. Sit hips back and let arm act as a rope, feeling a massive stretch from armpit down side.",
-    "Banded hamstring stretch": "Lie on back. Loop a band around one foot. Keep leg perfectly straight and pull it toward face until you feel a deep hamstring stretch.",
-    "Seated pigeon/glute stretch": "Sit on bench. Cross right ankle over left knee. Keeping back perfectly flat, hinge forward from hips to stretch the right glute."
+    "Tuesday: Lower A": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
+    "Wednesday: Upper A": "90-sec Floor Scorpion Pec Stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
+    "Thursday: Lower B": "90-sec Banded hamstring stretch per leg (lying on back). 2 mins Seated pigeon/glute stretch.",
+    "Friday: Upper B": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole."
 }
 
 DAY_PHILOSOPHY = {
-    "Day 2: Upper A (Horizontal Push/Pull)": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
-    "Day 3: Lower A (Strength, Quads & Armor)": "Quad-dominant strength focus. The goal here is anterior chain power (Front Squats) followed by intense core bracing and armor-building to protect the spine.",
-    "Day 4: Upper B (Vertical Push/Pull)": "Vertical plane dominance. Pull-ups and overhead-angled presses (Landmine) build width and shoulder health, followed by targeted isolation for the arms and lateral delts.",
-    "Day 5: Lower B (Hinge, Power & Posterior)": "Posterior chain obliteration. The RDL stretches the hamstrings under extreme load, while unilateral split squats fix imbalances. Finishes with intense erector and glute isolation."
+    "Tuesday: Lower A": "Quad-dominant strength focus. The goal here is anterior chain power (Front Squats) followed by intense core bracing and armor-building to protect the spine.",
+    "Wednesday: Upper A": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
+    "Thursday: Lower B": "Posterior chain obliteration. The RDL stretches the hamstrings under extreme load, while unilateral split squats fix imbalances. Finishes with intense erector and glute isolation.",
+    "Friday: Upper B": "Vertical plane dominance. Pull-ups and overhead-angled presses (Landmine) build width and shoulder health, followed by targeted isolation for the arms and lateral delts."
 }
 
 REP_TARGETS = {
