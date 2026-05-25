@@ -242,17 +242,11 @@ BW_MULTIPLIERS = {
 }
 
 BAND_SUBTRACTIONS = {
-    "None": 0.0, 
-    "Yellow (13.6kg)": 13.6, 
-    "Red (22.6kg)": 22.6, 
-    "Black (36.3kg)": 36.3, 
-    "Purple (45.4kg)": 45.4, 
-    "Green (68.0kg)": 68.0, 
-    "Green + Yellow (81.6kg)": 81.6,
-    "Blue (88.5kg)": 88.5, 
-    "Blue + Yellow (102.1kg)": 102.1,
-    "Blue + Red (111.1kg)": 111.1,
-    "Orange (113.4kg)": 113.4,
+    "None": 0.0, "Yellow (13.6kg)": 13.6, "Red (22.6kg)": 22.6, 
+    "Black (36.3kg)": 36.3, "Purple (45.4kg)": 45.4, 
+    "Green (68.0kg)": 68.0, "Green + Yellow (81.6kg)": 81.6,
+    "Blue (88.5kg)": 88.5, "Blue + Yellow (102.1kg)": 102.1,
+    "Blue + Red (111.1kg)": 111.1, "Orange (113.4kg)": 113.4,
     "Orange + Yellow (127.0kg)": 127.0
 }
 
@@ -409,6 +403,38 @@ with tab_sessions:
     sub_lift, sub_cardio, sub_mob = st.tabs(["💪 Strength Training", "🫀 Cardio Engine", "🧘 System Reset"])
     
     with sub_lift:
+        # --- ALARM 4: BACKGROUND AUTO-DELOAD PROTOCOL ---
+        acwr_alert = False
+        hrv_alert = False
+        meso_alert = False
+        
+        if not df_lifts.empty:
+            active_weeks = len(df_lifts['Date'].dt.isocalendar().week.unique())
+            if active_weeks >= 5: meso_alert = True
+                
+            daily_vol = df_lifts.groupby('Date')['Volume'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
+            if len(daily_vol) >= 7:
+                acute = daily_vol['Volume'].iloc[-7:].sum()
+                chronic = daily_vol['Volume'].iloc[-28:].sum() / 4 if len(daily_vol) >= 28 else (daily_vol['Volume'].sum() / (len(daily_vol)/7) if len(daily_vol)>0 else 0)
+                acwr = acute / chronic if chronic > 0 else 1.0
+                if acwr > 1.5: acwr_alert = True
+        
+        hrv_7d, hrv_30d = 0, 0
+        if not df_health.empty and 'HRV' in df_health.columns:
+            valid_hrv = df_health[df_health['HRV'] > 0].set_index('Date').resample('D').mean().ffill()
+            if len(valid_hrv) >= 7:
+                hrv_7d = valid_hrv['HRV'].iloc[-7:].mean()
+                hrv_30d = valid_hrv['HRV'].iloc[-30:].mean() if len(valid_hrv) >= 30 else valid_hrv['HRV'].mean()
+                if hrv_7d < (hrv_30d * 0.90): hrv_alert = True
+
+        if acwr_alert or hrv_alert:
+            st.error(f"🚨 **CRITICAL SYSTEM ALERT:** " + 
+                     ("Your ACWR is dangerously high (>1.5). " if acwr_alert else "") +
+                     ("Your 7-Day HRV has crashed significantly below baseline. " if hrv_alert else "") +
+                     "Your CNS is fried. Mandatory Deload advised today.")
+        elif meso_alert:
+            st.warning("📅 **Mesocycle Peak Reached:** You have accumulated 5+ weeks of volume. A systemic deload is highly recommended to realize strength adaptations.")
+
         col1, col2 = st.columns([1, 2])
         with col1:
             date_input = st.date_input("Date", date.today())
@@ -479,43 +505,67 @@ with tab_sessions:
                         last_band = s1_data['Band']
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
                         band_str = f" [{last_band}]" if last_band != "None" else ""
-                        
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         
-                        # --- DYNAMIC TEXT UI FOR FATIGUE ALERTS ---
-                        if min_reps_last_session < 5 and not is_deload: 
-                            fatigue_drop = True
-                            if exercise in ASSISTED_EXERCISES:
-                                if last_weight > 0.0:
-                                    drop_amt = max(2.5, last_weight * 0.10)
-                                    new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
-                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Strip **{last_weight - new_w}kg** plate for Sets 2+.")
-                                else:
-                                    band_keys = list(BAND_SUBTRACTIONS.keys())
-                                    b_idx = band_keys.index(last_band) if last_band in band_keys else 0
-                                    if b_idx < len(band_keys) - 1:
-                                        next_band = band_keys[b_idx + 1]
-                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Switch to **{next_band}** for Sets 2+.")
-                                    else:
-                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Max band reached.")
-                            elif exercise in RESISTED_EXERCISES:
-                                band_keys = list(BAND_SUBTRACTIONS.keys())
-                                b_idx = band_keys.index(last_band) if last_band in band_keys else 0
-                                if b_idx > 0:
-                                    prev_band = band_keys[b_idx - 1]
-                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop to **{prev_band}** for Sets 2+.")
-                                else:
-                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. No lighter band available.")
-                            else:
-                                drop_amt = max(2.5, last_weight * 0.10)
-                                new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
-                                st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop load to **{new_w}kg** for Sets 2+.")
+                        # --- THE SCIENTIST ENGINE (ALARMS 1, 2, 3) ---
+                        s1_history = ex_df[ex_df['Set_Number'] == 1].sort_values('Date')
+                        last_3 = s1_history.tail(3)
+                        plateau = False
+                        bleed_out = False
+                        
+                        if len(last_3) >= 3 and not is_deload:
+                            w_vals = last_3['Weight'].tolist()
+                            r_vals = last_3['Reps_or_Mins'].tolist()
+                            if w_vals[0] == w_vals[1] == w_vals[2] and r_vals[0] == r_vals[1] == r_vals[2]:
+                                plateau = True
+                            elif w_vals[0] == w_vals[1] == w_vals[2] and r_vals[0] > r_vals[1] > r_vals[2]:
+                                bleed_out = True
 
                         if is_deload:
                             calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
                             st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
+                        elif plateau:
+                            calc_w = max(0.0, round((last_weight * 0.9) / 2.5) * 2.5)
+                            st.warning(f"🚧 **Plateau Alert:** Stuck at {last_weight}kg for {last_reps} reps for 3 weeks. Neurological stagnation. Drop weight to **{calc_w}kg** and push high reps today to force adaptation.")
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
+                        elif bleed_out:
+                            calc_w = max(0.0, round((last_weight * 0.85) / 2.5) * 2.5)
+                            if hrv_alert: st.error(f"🛑 **CNS FRIED:** {exercise} reps are regressing and HRV is tanking. Mandatory 15% drop to **{calc_w}kg** for localized active recovery.")
+                            else: st.error(f"🩸 **Bleed-Out Alert:** {exercise} reps are regressing. Tissue fatigue detected. Dropping weight by 15% to **{calc_w}kg** to recover joints.")
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
                         else:
+                            # Standard Gorilla Mode Logic
+                            if min_reps_last_session < 5: 
+                                fatigue_drop = True
+                                if hrv_alert: st.error(f"🛑 **CNS Alert:** {exercise} dropped below target AND your HRV is tanking. Your nervous system is resisting this load.")
+                                
+                                if exercise in ASSISTED_EXERCISES:
+                                    if last_weight > 0.0:
+                                        drop_amt = max(2.5, last_weight * 0.10)
+                                        new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Strip **{last_weight - new_w}kg** plate for Sets 2+.")
+                                    else:
+                                        band_keys = list(BAND_SUBTRACTIONS.keys())
+                                        b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                        if b_idx < len(band_keys) - 1:
+                                            next_band = band_keys[b_idx + 1]
+                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Switch to **{next_band}** for Sets 2+.")
+                                        else:
+                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Max band reached.")
+                                elif exercise in RESISTED_EXERCISES:
+                                    band_keys = list(BAND_SUBTRACTIONS.keys())
+                                    b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                    if b_idx > 0:
+                                        prev_band = band_keys[b_idx - 1]
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop to **{prev_band}** for Sets 2+.")
+                                    else:
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. No lighter band available.")
+                                else:
+                                    drop_amt = max(2.5, last_weight * 0.10)
+                                    new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop load to **{new_w}kg** for Sets 2+.")
+
                             if last_reps >= top_rep: 
                                 calc_w = last_weight + 2.5
                                 st.success(f"📈 **{exercise}:** Hit {last_reps} reps last week. Load increased to **{calc_w}kg**.")
@@ -524,11 +574,12 @@ with tab_sessions:
                                 st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Hold at **{calc_w}kg** and fight.")
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': fatigue_drop}
                             
-                        if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
+                        if exercise in HEAVY_COMPOUNDS and default_vals[exercise]['w'] >= 20.0:
                             with st.expander(f"🔥 Warm-Up Load: {exercise}", expanded=False):
-                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((last_weight*0.3)/2.5)*2.5)
-                                w2 = round((last_weight * 0.5) / 2.5) * 2.5
-                                w3 = round((last_weight * 0.8) / 2.5) * 2.5
+                                trg_w = default_vals[exercise]['w']
+                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((trg_w*0.3)/2.5)*2.5)
+                                w2 = round((trg_w * 0.5) / 2.5) * 2.5
+                                w3 = round((trg_w * 0.8) / 2.5) * 2.5
                                 st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps\n- **Set 2:** {w2}kg × 5 reps\n- **Set 3:** {w3}kg × 2-3 reps")
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
@@ -564,7 +615,6 @@ with tab_sessions:
                         band_keys = list(BAND_SUBTRACTIONS.keys())
                         b_idx = band_keys.index(def_b) if def_b in band_keys else 0
                         
-                        # --- GORILLA MODE: SMART FATIGUE BAND LOGIC ---
                         if i > 1 and default_vals.get(exercise, {}).get('fatigue', False):
                             if exercise in ASSISTED_EXERCISES:
                                 if def_w > 0.0:
@@ -572,11 +622,11 @@ with tab_sessions:
                                     def_w = max(0.0, round((def_w - drop_amt) / 2.5) * 2.5)
                                 else:
                                     if b_idx < len(band_keys) - 1:
-                                        b_idx += 1  # Heavier band = More Assistance
+                                        b_idx += 1 
                                         def_b = band_keys[b_idx]
                             elif exercise in RESISTED_EXERCISES:
                                 if b_idx > 0:
-                                    b_idx -= 1  # Lighter band = Less Resistance
+                                    b_idx -= 1 
                                     def_b = band_keys[b_idx]
                             else:
                                 drop_amt = max(2.5, def_w * 0.10)
