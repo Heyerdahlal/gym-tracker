@@ -943,7 +943,7 @@ with tab_analytics:
                 rc_ex = st.selectbox("Compare Sleep vs Strength", lift_df['Exercise'].unique())
                 rc_df = lift_df[(lift_df['Exercise'] == rc_ex) & (lift_df['Sleep_Score'] > 0)].groupby('Date').agg({'Epley_1RM': 'max', 'Sleep_Score': 'max'}).reset_index()
                 if not rc_df.empty:
-                    fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', trendline="ols", title=f"Sleep vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
+                    fig_sleep = px.scatter(rc_df, x='Sleep_Score', y='Epley_1RM', title=f"Sleep vs. {rc_ex} e1RM", color='Sleep_Score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_sleep, use_container_width=True)
                 else:
                     st.info(f"💤 Awaiting linked Sleep Data for {rc_ex}.")
