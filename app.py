@@ -242,13 +242,26 @@ BW_MULTIPLIERS = {
 }
 
 BAND_SUBTRACTIONS = {
-    "None": 0.0, "Yellow (13.6kg)": 13.6, "Red (22.6kg)": 22.6, 
-    "Black (36.3kg)": 36.3, "Purple (45.4kg)": 45.4, 
-    "Green (68.0kg)": 68.0, "Blue (88.5kg)": 88.5, "Orange (113.4kg)": 113.4
+    "None": 0.0, 
+    "Yellow (13.6kg)": 13.6, 
+    "Red (22.6kg)": 22.6, 
+    "Black (36.3kg)": 36.3, 
+    "Purple (45.4kg)": 45.4, 
+    "Green (68.0kg)": 68.0, 
+    "Green + Yellow (81.6kg)": 81.6,
+    "Blue (88.5kg)": 88.5, 
+    "Blue + Yellow (102.1kg)": 102.1,
+    "Blue + Red (111.1kg)": 111.1,
+    "Orange (113.4kg)": 113.4,
+    "Orange + Yellow (127.0kg)": 127.0
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press"]
+
+# --- GLOBAL EXERCISE CATEGORIES FOR FATIGUE LOGIC ---
+ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
+RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
 
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
@@ -282,9 +295,6 @@ def load_data():
     for col in num_cols_lifts: df_lifts[col] = pd.to_numeric(df_lifts[col], errors='coerce').fillna(0)
     df_lifts['Side'] = df_lifts['Side'].replace('', 'Both').fillna('Both')
     df_lifts['Date'] = pd.to_datetime(df_lifts['Date'], errors='coerce')
-    
-    ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
-    RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
     
     def calc_effective_weight(row):
         ex = row['Exercise']
@@ -452,6 +462,8 @@ with tab_sessions:
             default_vals = {}
             for exercise in selected_exercises:
                 ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
+                fatigue_drop = False
+                
                 if not ex_df.empty:
                     max_all_time_weight = ex_df['Weight'].max()
                     working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
@@ -466,11 +478,42 @@ with tab_sessions:
                         last_reps = int(s1_data['Reps_or_Mins'])
                         last_band = s1_data['Band']
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
-                        band_str = f" [{last_band} Band]" if last_band != "None" else ""
+                        band_str = f" [{last_band}]" if last_band != "None" else ""
                         
+                        min_reps_last_session = last_session['Reps_or_Mins'].min()
+                        
+                        # --- DYNAMIC TEXT UI FOR FATIGUE ALERTS ---
+                        if min_reps_last_session < 5 and not is_deload: 
+                            fatigue_drop = True
+                            if exercise in ASSISTED_EXERCISES:
+                                if last_weight > 0.0:
+                                    drop_amt = max(2.5, last_weight * 0.10)
+                                    new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Strip **{last_weight - new_w}kg** plate for Sets 2+.")
+                                else:
+                                    band_keys = list(BAND_SUBTRACTIONS.keys())
+                                    b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                    if b_idx < len(band_keys) - 1:
+                                        next_band = band_keys[b_idx + 1]
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Switch to **{next_band}** for Sets 2+.")
+                                    else:
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Max band reached.")
+                            elif exercise in RESISTED_EXERCISES:
+                                band_keys = list(BAND_SUBTRACTIONS.keys())
+                                b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                if b_idx > 0:
+                                    prev_band = band_keys[b_idx - 1]
+                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop to **{prev_band}** for Sets 2+.")
+                                else:
+                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. No lighter band available.")
+                            else:
+                                drop_amt = max(2.5, last_weight * 0.10)
+                                new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop load to **{new_w}kg** for Sets 2+.")
+
                         if is_deload:
                             calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
                             st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
                         else:
                             if last_reps >= top_rep: 
@@ -479,7 +522,7 @@ with tab_sessions:
                             else: 
                                 calc_w = last_weight
                                 st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Hold at **{calc_w}kg** and fight.")
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band}
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': fatigue_drop}
                             
                         if exercise in HEAVY_COMPOUNDS and last_weight >= 20.0:
                             with st.expander(f"🔥 Warm-Up Load: {exercise}", expanded=False):
@@ -491,17 +534,15 @@ with tab_sessions:
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
 
-                        min_reps_last_session = last_session['Reps_or_Mins'].min()
-                        if min_reps_last_session < 5: st.error(f"⚠️ **Fatigue Alert:** Dropped to {int(min_reps_last_session)} reps last week. Drop weight by 10% for Sets 2 & 3.")
                     else:
                         st.info(f"**{exercise}:** Establish baseline weight today.")
-                        default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
+                        default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'fatigue': False}
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
                 else:
                     st.info(f"**{exercise}:** Establish baseline weight today.")
-                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None"}
+                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'fatigue': False}
                     guide = EXERCISE_GUIDES.get(exercise)
                     if guide:
                         with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
@@ -513,13 +554,34 @@ with tab_sessions:
                     st.markdown(f"#### 🔁 Round {i}")
                     for exercise in selected_exercises:
                         is_uni = exercise in UNILATERAL_EXERCISES
-                        uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+                        uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
                         _, top_rep = get_target_reps_and_sets(exercise)
                         st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
                         
                         def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
                         def_b = default_vals.get(exercise, {}).get('b', "None")
-                        b_idx = list(BAND_SUBTRACTIONS.keys()).index(def_b) if def_b in BAND_SUBTRACTIONS else 0
+                        
+                        band_keys = list(BAND_SUBTRACTIONS.keys())
+                        b_idx = band_keys.index(def_b) if def_b in band_keys else 0
+                        
+                        # --- GORILLA MODE: SMART FATIGUE BAND LOGIC ---
+                        if i > 1 and default_vals.get(exercise, {}).get('fatigue', False):
+                            if exercise in ASSISTED_EXERCISES:
+                                if def_w > 0.0:
+                                    drop_amt = max(2.5, def_w * 0.10)
+                                    def_w = max(0.0, round((def_w - drop_amt) / 2.5) * 2.5)
+                                else:
+                                    if b_idx < len(band_keys) - 1:
+                                        b_idx += 1  # Heavier band = More Assistance
+                                        def_b = band_keys[b_idx]
+                            elif exercise in RESISTED_EXERCISES:
+                                if b_idx > 0:
+                                    b_idx -= 1  # Lighter band = Less Resistance
+                                    def_b = band_keys[b_idx]
+                            else:
+                                drop_amt = max(2.5, def_w * 0.10)
+                                def_w = max(0.0, round((def_w - drop_amt) / 2.5) * 2.5)
+
                         key = f"{exercise}_{i}" 
                         
                         if uses_band:
@@ -530,7 +592,7 @@ with tab_sessions:
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
                                 reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
                             else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            bands[key] = c3.selectbox("Band", list(BAND_SUBTRACTIONS.keys()), index=b_idx, key=f"b_{key}")
+                            bands[key] = c3.selectbox("Band", band_keys, index=b_idx, key=f"b_{key}")
                             rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
@@ -547,7 +609,7 @@ with tab_sessions:
                     new_rows = []
                     for exercise in selected_exercises:
                         is_uni = exercise in UNILATERAL_EXERCISES
-                        uses_band = exercise in ["Neutral Grip Pull-Ups", "Band-Assisted Dips", "Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+                        uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
                         for i in range(1, num_sets + 1):
                             key = f"{exercise}_{i}"
                             b_val = bands[key] if uses_band else "None"
