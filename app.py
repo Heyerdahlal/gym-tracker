@@ -266,6 +266,11 @@ def get_target_reps_and_sets(exercise_name):
     return target_sets, top_rep
 
 @st.cache_data(ttl=600)
+def get_last_deload():
+    try: return ws_system.acell('B1').value
+    except Exception: return None
+
+@st.cache_data(ttl=600)
 def load_data():
     try: l_recs = ws_lifts.get_all_records()
     except Exception: l_recs = []
@@ -299,7 +304,9 @@ def load_data():
         if ex in ASSISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load - avg_band_force
         elif ex in RESISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load + avg_band_force
         else: eff_wt = row['Weight'] + base_body_load
-        return max(eff_wt, 0.0) 
+        
+        # --- FIX 3: THE EFFECTIVE WEIGHT FLOOR ---
+        return max(eff_wt, 5.0) 
         
     df_lifts['Effective_Weight'] = df_lifts.apply(calc_effective_weight, axis=1) if not df_lifts.empty else 0.0
     is_lift = ~df_lifts['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
@@ -408,8 +415,13 @@ with tab_sessions:
         hrv_alert = False
         meso_alert = False
         
+        # --- FIX 1: THE MESOCYCLE CLOCK RESET ---
+        last_deload_str = get_last_deload()
+        last_deload_date = pd.to_datetime(last_deload_str) if last_deload_str else pd.to_datetime('2000-01-01')
+        
         if not df_lifts.empty:
-            active_weeks = len(df_lifts['Date'].dt.isocalendar().week.unique())
+            post_deload_lifts = df_lifts[df_lifts['Date'] >= last_deload_date]
+            active_weeks = len(post_deload_lifts['Date'].dt.isocalendar().week.unique())
             if active_weeks >= 5: meso_alert = True
                 
             daily_vol = df_lifts.groupby('Date')['Volume'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
@@ -433,7 +445,7 @@ with tab_sessions:
                      ("Your 7-Day HRV has crashed significantly below baseline. " if hrv_alert else "") +
                      "Your CNS is fried. Mandatory Deload advised today.")
         elif meso_alert:
-            st.warning("📅 **Mesocycle Peak Reached:** You have accumulated 5+ weeks of volume. A systemic deload is highly recommended to realize strength adaptations.")
+            st.warning("📅 **Mesocycle Peak Reached:** You have accumulated 5+ weeks of volume since your last rest period. A systemic deload is highly recommended.")
 
         col1, col2 = st.columns([1, 2])
         with col1:
@@ -522,9 +534,24 @@ with tab_sessions:
                                 bleed_out = True
 
                         if is_deload:
+                            # --- FIX 2: ZERO-KG DELOAD BUGS ---
                             calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
-                            st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
+                            calc_b = last_band
+                            
+                            if calc_w == 0.0 and last_band != "None":
+                                band_keys = list(BAND_SUBTRACTIONS.keys())
+                                b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                if exercise in ASSISTED_EXERCISES and b_idx < len(band_keys) - 1:
+                                    calc_b = band_keys[b_idx + 1] # Heavier band = more help
+                                elif exercise in RESISTED_EXERCISES and b_idx > 0:
+                                    calc_b = band_keys[b_idx - 1] # Lighter band = less resistance
+                            
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': calc_b, 'fatigue': False}
+                            if calc_b != last_band:
+                                st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg** and shifted band to **{calc_b}**.")
+                            else:
+                                st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
+
                         elif plateau:
                             calc_w = max(0.0, round((last_weight * 0.9) / 2.5) * 2.5)
                             st.warning(f"🚧 **Plateau Alert:** Stuck at {last_weight}kg for {last_reps} reps for 3 weeks. Neurological stagnation. Drop weight to **{calc_w}kg** and push high reps today to force adaptation.")
@@ -671,6 +698,14 @@ with tab_sessions:
                                 else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
                     if new_rows:
                         save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
+                        
+                        # --- CLOCK RESET LOGIC ---
+                        if is_deload:
+                            try:
+                                ws_system.update_acell('B1', date_input.strftime('%Y-%m-%d'))
+                                get_last_deload.clear()
+                            except Exception: pass
+                            
                         st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
                     else: st.warning("No reps logged.")
 
