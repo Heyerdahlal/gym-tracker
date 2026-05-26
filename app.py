@@ -68,8 +68,8 @@ PROGRAM = {
         "Block 4 (Tri-Set): Calves, Tibs & Core": ["Squat Wedge Dumbbell Calf Raises", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
     },
     "Wednesday: Upper A": {
-        "Block 1 (Superset): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
-        "Block 2 (Superset): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
+        "Block 1 (Alternating): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
+        "Block 2 (Alternating): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
         "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
         "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
     },
@@ -77,13 +77,12 @@ PROGRAM = {
         "Block 1: RDL": ["Romanian Deadlift (RDL)"],
         "Block 2 (Superset): Bulgarians & Rollouts": ["Bulgarian Split Squats", "Ab-Wheel Rollouts"],
         "Block 3 (Superset): Hip Thrusts & Hamstrings": ["Barbell Hip Thrusts", "Hamstring-Focused Roman Chair Extension"],
-        "Block 4 (Tri-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+        "Block 4 (Quad-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
     },
     "Friday: Upper B": {
-        "Block 1 (Superset): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
-        "Block 2 (Superset): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
-        "Block 3 (Superset): Curls & Pushdowns": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"],
-        "Block 4: Lateral Raises": ["Chest-Supported Lateral Raise"]
+        "Block 1 (Alternating): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
+        "Block 2 (Alternating): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
+        "Block 3 (Tri-Set): Curls, Pushdowns & Lateral Raises": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns", "Chest-Supported Lateral Raise"]
     },
     "Freestyle / Custom Day": {
         "Select Any Exercise(s)": [
@@ -100,6 +99,32 @@ PROGRAM = {
     },
     "🧬 Life Event (Sick/Travel)": {
         "Rest": ["Rest / Recovery / Frozen Week"]
+    }
+}
+
+REST_PROTOCOLS = {
+    "Tuesday: Lower A": {
+        "Block 1: Heavy Front Squat": "Perform Squats ➔ Rest 3 full minutes.",
+        "Block 2 (Superset): Landmine Squat & Core": "Landmine Squat ➔ Reverse Crunch ➔ Rest 90s.",
+        "Block 3 (Superset): KB Swings & Nordics": "KB Swings ➔ Nordic Curls ➔ Rest 90-120s.",
+        "Block 4 (Tri-Set): Calves, Tibs & Core": "Calves ➔ Tibs ➔ Pallof Press ➔ Rest 60s."
+    },
+    "Wednesday: Upper A": {
+        "Block 1 (Alternating): T-Bar Row & DB Bench": "T-Bar Row ➔ Rest 90s ➔ DB Bench ➔ Rest 90s.",
+        "Block 2 (Alternating): DB Row & Push-Ups": "DB Row ➔ Rest 60-90s ➔ Push-Ups ➔ Rest 60-90s.",
+        "Block 3 (Tri-Set): Triceps, Biceps & Chest": "Triceps Ext ➔ Hammer Curls ➔ Crossovers ➔ Rest 60s.",
+        "Block 4 (Superset): Lateral & Rear Delts": "Lateral Raise ➔ Rear Delt Flye ➔ Rest 45-60s."
+    },
+    "Thursday: Lower B": {
+        "Block 1: RDL": "Perform RDL ➔ Rest 3 full minutes.",
+        "Block 2 (Superset): Bulgarians & Rollouts": "Split Squats ➔ Rollouts ➔ Rest 90s.",
+        "Block 3 (Superset): Hip Thrusts & Hamstrings": "Hip Thrusts ➔ Roman Chair Ext ➔ Rest 90s.",
+        "Block 4 (Quad-Set): Erectors, Calves & Carries": "Erectors ➔ Calves ➔ Suitcase Holds ➔ KB Marches ➔ Rest 60s."
+    },
+    "Friday: Upper B": {
+        "Block 1 (Alternating): Pull-Ups & Dips": "Pull-Ups ➔ Rest 90-120s ➔ Dips ➔ Rest 90-120s.",
+        "Block 2 (Alternating): Landmine Press & Face Pulls": "Landmine Press ➔ Rest 60s ➔ Face Pulls ➔ Rest 60s.",
+        "Block 3 (Tri-Set): Curls, Pushdowns & Lateral Raises": "Curls ➔ Pushdowns ➔ Lateral Raises ➔ Rest 60s."
     }
 }
 
@@ -309,7 +334,6 @@ def load_data():
     df_lifts['Side'] = df_lifts['Side'].replace('', 'Both').fillna('Both')
     df_lifts['Date'] = pd.to_datetime(df_lifts['Date'], errors='coerce')
     
-    # --- FIX 3: DATA BLOAT VECTORIZATION ---
     if not df_lifts.empty:
         bw_mod = df_lifts['Exercise'].map(BW_MULTIPLIERS).fillna(0.0)
         base_body_load = df_lifts['Bodyweight'] * bw_mod
@@ -324,7 +348,7 @@ def load_data():
         eff_wt = np.where(is_assisted, eff_wt - avg_band_force, eff_wt)
         eff_wt = np.where(is_resisted, eff_wt + avg_band_force, eff_wt)
         
-        df_lifts['Effective_Weight'] = np.maximum(eff_wt, 5.0) # HARD FLOOR
+        df_lifts['Effective_Weight'] = np.maximum(eff_wt, 5.0)
     else:
         df_lifts['Effective_Weight'] = 0.0
 
@@ -334,8 +358,6 @@ def load_data():
     
     if not df_lifts.empty:
         df_lifts.loc[is_lift, 'Volume'] = df_lifts.loc[is_lift, 'Effective_Weight'] * df_lifts.loc[is_lift, 'Reps_or_Mins']
-        
-        # --- FIX 1: THE EPLEY CAP ---
         capped_reps = df_lifts.loc[is_lift, 'Reps_or_Mins'].clip(upper=12)
         df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + capped_reps / 30)
     
@@ -503,7 +525,7 @@ with tab_sessions:
         if selected_exercises:
             primary_ex = selected_exercises[0]
             base_sets, _ = get_target_reps_and_sets(primary_ex)
-            ex_cap = EXERCISE_CAPS.get(primary_ex, 5) # Default to 5 if not found
+            ex_cap = EXERCISE_CAPS.get(primary_ex, 5)
             suggested_sets = base_sets
             
             if is_deload:
@@ -654,6 +676,12 @@ with tab_sessions:
                 weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
                 for i in range(1, num_sets + 1):
                     st.markdown(f"#### 🔁 Round {i}")
+                    
+                    if not "Freestyle" in workout_day:
+                        rest_flow = REST_PROTOCOLS.get(workout_day, {}).get(workout_block, "")
+                        if rest_flow:
+                            st.info(f"⏱️ **Execution Flow:** {rest_flow}")
+                            
                     for exercise in selected_exercises:
                         is_uni = exercise in UNILATERAL_EXERCISES
                         uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
