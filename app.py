@@ -213,6 +213,20 @@ VOLUME_THRESHOLDS = {
     "Shoulders": {"MEV": 8, "MRV": 22}, "Calves": {"MEV": 8, "MRV": 20}, "Abs": {"MEV": 4, "MRV": 20}
 }
 
+EXERCISE_CAPS = {
+    "Heavy Barbell Front Squat": 4, "Heels-Elevated Landmine Squat": 4, "Romanian Deadlift (RDL)": 4,
+    "Bulgarian Split Squats": 4, "T-Bar Landmine Row": 4, "Dumbbell Bench Press": 4,
+    "Landmine Press": 4, "Neutral Grip Pull-Ups": 4, "Band-Assisted Dips": 4,
+    "Heavy Russian Kettlebell Swings": 4, "Barbell Hip Thrusts": 4, "Nordic Curls": 4,
+    "Single-Arm Bench-Supported Dumbbell Row": 6, "Push-Ups": 6, "Overhead Tricep Extension": 6,
+    "Dumbbell Hammer Curls": 6, "Banded Crossovers": 6, "Chest-Supported Lateral Raise": 6,
+    "Chest-Supported Rear Delt Flye": 6, "Anchored Reverse Crunch": 6, "Wall Tibialis Raises": 6,
+    "Squat Wedge Dumbbell Calf Raises": 6, "Half-Kneeling Pallof Press": 6, "Banded Face Pulls": 6,
+    "Incline Supinated Dumbbell Curls": 6, "Banded Tricep Pushdowns": 6, "Ab-Wheel Rollouts": 6,
+    "Erector-Focused Roman Chair Extension": 6, "Heavy Suitcase Holds": 6, "Front-Rack Kettlebell Marches": 6,
+    "Hamstring-Focused Roman Chair Extension": 6
+}
+
 MUSCLE_MAP = {
     "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5}, "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
     "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
@@ -295,27 +309,35 @@ def load_data():
     df_lifts['Side'] = df_lifts['Side'].replace('', 'Both').fillna('Both')
     df_lifts['Date'] = pd.to_datetime(df_lifts['Date'], errors='coerce')
     
-    def calc_effective_weight(row):
-        ex = row['Exercise']
-        bw_mod = BW_MULTIPLIERS.get(ex, 0.0)
-        base_body_load = row['Bodyweight'] * bw_mod
-        peak_band_force = BAND_SUBTRACTIONS.get(row.get('Band', 'None'), 0.0)
+    # --- FIX 3: DATA BLOAT VECTORIZATION ---
+    if not df_lifts.empty:
+        bw_mod = df_lifts['Exercise'].map(BW_MULTIPLIERS).fillna(0.0)
+        base_body_load = df_lifts['Bodyweight'] * bw_mod
+        
+        peak_band_force = df_lifts['Band'].map(BAND_SUBTRACTIONS).fillna(0.0)
         avg_band_force = peak_band_force * 0.5
-        if ex in ASSISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load - avg_band_force
-        elif ex in RESISTED_EXERCISES: eff_wt = row['Weight'] + base_body_load + avg_band_force
-        else: eff_wt = row['Weight'] + base_body_load
         
-        # --- FIX 3: THE EFFECTIVE WEIGHT FLOOR ---
-        return max(eff_wt, 5.0) 
+        is_assisted = df_lifts['Exercise'].isin(ASSISTED_EXERCISES)
+        is_resisted = df_lifts['Exercise'].isin(RESISTED_EXERCISES)
         
-    df_lifts['Effective_Weight'] = df_lifts.apply(calc_effective_weight, axis=1) if not df_lifts.empty else 0.0
+        eff_wt = df_lifts['Weight'] + base_body_load
+        eff_wt = np.where(is_assisted, eff_wt - avg_band_force, eff_wt)
+        eff_wt = np.where(is_resisted, eff_wt + avg_band_force, eff_wt)
+        
+        df_lifts['Effective_Weight'] = np.maximum(eff_wt, 5.0) # HARD FLOOR
+    else:
+        df_lifts['Effective_Weight'] = 0.0
+
     is_lift = ~df_lifts['Exercise'].str.contains("Rowing|Bike|Rest", na=False)
     df_lifts['Volume'] = 0.0
     df_lifts['Epley_1RM'] = 0.0
     
     if not df_lifts.empty:
         df_lifts.loc[is_lift, 'Volume'] = df_lifts.loc[is_lift, 'Effective_Weight'] * df_lifts.loc[is_lift, 'Reps_or_Mins']
-        df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + df_lifts.loc[is_lift, 'Reps_or_Mins'] / 30)
+        
+        # --- FIX 1: THE EPLEY CAP ---
+        capped_reps = df_lifts.loc[is_lift, 'Reps_or_Mins'].clip(upper=12)
+        df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + capped_reps / 30)
     
     df_health['Date'] = pd.to_datetime(df_health['Date'], errors='coerce')
     num_cols_health = [c for c in HEALTH_COLS if c != 'Date']
@@ -402,6 +424,9 @@ if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = int(get_late
 if 'h_rhr' not in st.session_state: st.session_state['h_rhr'] = int(get_latest_nonzero(df_health, 'RHR', 50))
 if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_nonzero(df_health, 'HRV', 60))
 
+# --- FAST-PATH RECENT LIFTS DATAFRAME FOR SESSIONS ---
+df_lifts_recent = df_lifts[df_lifts['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=90)] if not df_lifts.empty else df_lifts
+
 st.title("🔬 Sports Science Dashboard")
 
 tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
@@ -410,12 +435,10 @@ with tab_sessions:
     sub_lift, sub_cardio, sub_mob = st.tabs(["💪 Strength Training", "🫀 Cardio Engine", "🧘 System Reset"])
     
     with sub_lift:
-        # --- ALARM 4: BACKGROUND AUTO-DELOAD PROTOCOL ---
         acwr_alert = False
         hrv_alert = False
         meso_alert = False
         
-        # --- FIX 1: THE MESOCYCLE CLOCK RESET ---
         last_deload_str = get_last_deload()
         last_deload_date = pd.to_datetime(last_deload_str) if last_deload_str else pd.to_datetime('2000-01-01')
         
@@ -480,26 +503,31 @@ with tab_sessions:
         if selected_exercises:
             primary_ex = selected_exercises[0]
             base_sets, _ = get_target_reps_and_sets(primary_ex)
+            ex_cap = EXERCISE_CAPS.get(primary_ex, 5) # Default to 5 if not found
             suggested_sets = base_sets
             
             if is_deload:
                 suggested_sets = max(1, base_sets - 1)
             else:
-                ex_df_primary = df_lifts[(df_lifts['Exercise'] == primary_ex) & (df_lifts['Reps_or_Mins'] > 0)]
+                ex_df_primary = df_lifts_recent[(df_lifts_recent['Exercise'] == primary_ex) & (df_lifts_recent['Reps_or_Mins'] > 0)]
                 if not ex_df_primary.empty:
                     last_date = ex_df_primary['Date'].max()
                     last_session = ex_df_primary[ex_df_primary['Date'] == last_date]
                     last_sets_done = last_session['Set_Number'].max()
                     if last_sets_done < base_sets: suggested_sets = base_sets
-                    else: suggested_sets = min(6, last_sets_done + 1)
+                    else: suggested_sets = min(ex_cap, last_sets_done + 1)
             
             num_sets = st.number_input("🎯 Target Rounds (Auto-Calculated by Mesocycle):", min_value=1, max_value=10, value=int(suggested_sets), step=1)
+            
+            if suggested_sets == ex_cap and not is_deload:
+                st.success(f"🏆 **Volume Cap Reached:** {primary_ex} is capped at {ex_cap} sets to prevent systemic junk volume. Focus on adding weight or reducing rest!")
+                
             st.write("---")
             st.markdown("#### 🦍 Gorilla Protocol: Just Lift.")
             
             default_vals = {}
             for exercise in selected_exercises:
-                ex_df = df_lifts[(df_lifts['Exercise'] == exercise) & (df_lifts['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
+                ex_df = df_lifts_recent[(df_lifts_recent['Exercise'] == exercise) & (df_lifts_recent['Reps_or_Mins'] > 0)].sort_values(by=['Date', 'Set_Number'])
                 fatigue_drop = False
                 
                 if not ex_df.empty:
@@ -516,10 +544,8 @@ with tab_sessions:
                         last_reps = int(s1_data['Reps_or_Mins'])
                         last_band = s1_data['Band']
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
-                        band_str = f" [{last_band}]" if last_band != "None" else ""
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         
-                        # --- THE SCIENTIST ENGINE (ALARMS 1, 2, 3) ---
                         s1_history = ex_df[ex_df['Set_Number'] == 1].sort_values('Date')
                         last_3 = s1_history.tail(3)
                         plateau = False
@@ -534,7 +560,6 @@ with tab_sessions:
                                 bleed_out = True
 
                         if is_deload:
-                            # --- FIX 2: ZERO-KG DELOAD BUGS ---
                             calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
                             calc_b = last_band
                             
@@ -542,9 +567,9 @@ with tab_sessions:
                                 band_keys = list(BAND_SUBTRACTIONS.keys())
                                 b_idx = band_keys.index(last_band) if last_band in band_keys else 0
                                 if exercise in ASSISTED_EXERCISES and b_idx < len(band_keys) - 1:
-                                    calc_b = band_keys[b_idx + 1] # Heavier band = more help
+                                    calc_b = band_keys[b_idx + 1]
                                 elif exercise in RESISTED_EXERCISES and b_idx > 0:
-                                    calc_b = band_keys[b_idx - 1] # Lighter band = less resistance
+                                    calc_b = band_keys[b_idx - 1]
                             
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': calc_b, 'fatigue': False}
                             if calc_b != last_band:
@@ -562,7 +587,6 @@ with tab_sessions:
                             else: st.error(f"🩸 **Bleed-Out Alert:** {exercise} reps are regressing. Tissue fatigue detected. Dropping weight by 15% to **{calc_w}kg** to recover joints.")
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
                         else:
-                            # Standard Gorilla Mode Logic
                             if min_reps_last_session < 5: 
                                 fatigue_drop = True
                                 if hrv_alert: st.error(f"🛑 **CNS Alert:** {exercise} dropped below target AND your HRV is tanking. Your nervous system is resisting this load.")
@@ -683,31 +707,47 @@ with tab_sessions:
                     st.write("---") 
                 
                 if st.form_submit_button("Save Workouts To Database", type="primary"):
-                    new_rows = []
+                    
+                    sanity_failed = False
                     for exercise in selected_exercises:
-                        is_uni = exercise in UNILATERAL_EXERCISES
-                        uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
+                        max_hist_w = df_lifts[df_lifts['Exercise'] == exercise]['Weight'].max() if not df_lifts.empty else 0.0
                         for i in range(1, num_sets + 1):
                             key = f"{exercise}_{i}"
-                            b_val = bands[key] if uses_band else "None"
-                            if (is_uni and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_uni and reps[key] > 0):
-                                base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
-                                if is_uni:
-                                    if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
-                                    if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
-                                else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
-                    if new_rows:
-                        save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
-                        
-                        # --- CLOCK RESET LOGIC ---
-                        if is_deload:
-                            try:
-                                ws_system.update_acell('B1', date_input.strftime('%Y-%m-%d'))
-                                get_last_deload.clear()
-                            except Exception: pass
+                            w_val = weights[key]
+                            is_uni = exercise in UNILATERAL_EXERCISES
+                            reps_val = max(reps_l.get(key, 0), reps_r.get(key, 0)) if is_uni else reps.get(key, 0)
                             
-                        st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
-                    else: st.warning("No reps logged.")
+                            if reps_val > 0 and max_hist_w >= 10.0 and w_val > (max_hist_w * 1.5):
+                                st.error(f"🛑 **Sanity Check Failed:** You logged **{w_val}kg** for {exercise}. Your historical max is **{max_hist_w}kg**. Did your thumb slip? (Fix the typo and click save again).")
+                                sanity_failed = True
+                                break
+                        if sanity_failed: break
+                            
+                    if not sanity_failed:
+                        new_rows = []
+                        for exercise in selected_exercises:
+                            is_uni = exercise in UNILATERAL_EXERCISES
+                            uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
+                            for i in range(1, num_sets + 1):
+                                key = f"{exercise}_{i}"
+                                b_val = bands[key] if uses_band else "None"
+                                if (is_uni and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_uni and reps[key] > 0):
+                                    base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
+                                    if is_uni:
+                                        if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
+                                        if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
+                                    else: new_rows.append({**base_data, 'Reps_or_Mins': reps[key], 'Side': 'Both'})
+                        if new_rows:
+                            save_to_sheet(ws_lifts, pd.DataFrame(new_rows), LIFTS_COLS)
+                            
+                            if is_deload:
+                                try:
+                                    ws_system.update_acell('B1', date_input.strftime('%Y-%m-%d'))
+                                    get_last_deload.clear()
+                                except Exception: pass
+                                
+                            st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
+                        else: st.warning("No reps logged.")
 
     with sub_cardio:
         st.subheader("🏃‍♂️ Aerobic Cardio Engine")
