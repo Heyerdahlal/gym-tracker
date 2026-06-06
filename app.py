@@ -55,7 +55,7 @@ except Exception as e:
 USER_HEIGHT = float(st.secrets.get("user_height_cm", 180.0))
 
 # --- COLUMNS ---
-LIFTS_COLS = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR']
+LIFTS_COLS = ['Date', 'Workout_Day', 'Exercise', 'Set_Number', 'Weight', 'Band', 'Variation', 'Reps_or_Mins', 'Distance_km', 'Side', 'Bodyweight', 'RIR']
 HEALTH_COLS = ['Date', 'Weight_kg', 'Body_Fat_Pct', 'Muscle_Mass_kg', 'Sleep_Score', 'RHR', 'HRV', 'FFMI', 'Height_cm']
 CARDIO_COLS = ['Date', 'Exercise', 'Duration_Mins', 'Distance_km', 'Avg_HR', 'Max_HR', 'Avg_Resp', 'Z1_Mins', 'Z2_Mins', 'Z3_Mins', 'Z4_Mins', 'Z5_Mins']
 
@@ -65,11 +65,11 @@ PROGRAM = {
         "Block 1: Heavy Front Squat": ["Heavy Barbell Front Squat"],
         "Block 2 (Superset): Landmine Squat & Core": ["Heels-Elevated Landmine Squat", "Anchored Reverse Crunch"],
         "Block 3 (Superset): KB Swings & Nordics": ["Heavy Russian Kettlebell Swings", "Nordic Curls"],
-        "Block 4 (Tri-Set): Calves, Tibs & Core": ["Squat Wedge Dumbbell Calf Raises", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
+        "Block 4 (Tri-Set): Calves, Tibs & Core": ["Single-Leg Supported Dumbbell Calf Raise", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
     },
     "Wednesday: Upper A": {
         "Block 1 (Alternating): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
-        "Block 2 (Alternating): DB Row & Push-Ups": ["Chest-Supported Dumbbell Row", "Elevated Push-Ups"],
+        "Block 2 (Alternating): DB Row & Push-Ups": ["Chest-Supported Dumbbell Row", "Push-Ups"],
         "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
         "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
     },
@@ -77,7 +77,7 @@ PROGRAM = {
         "Block 1: RDL": ["Romanian Deadlift (RDL)"],
         "Block 2 (Superset): Bulgarians & Rollouts": ["Bulgarian Split Squats", "Ab-Wheel Rollouts"],
         "Block 3 (Superset): Hip Thrusts & Hamstrings": ["Barbell Hip Thrusts", "Hamstring-Focused Roman Chair Extension"],
-        "Block 4 (Quad-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Squat Wedge Dumbbell Calf Raises", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+        "Block 4 (Quad-Set): Erectors, Calves & Carries": ["Erector-Focused Roman Chair Extension", "Single-Leg Supported Dumbbell Calf Raise", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
     },
     "Friday: Upper B": {
         "Block 1 (Alternating): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
@@ -86,7 +86,7 @@ PROGRAM = {
     },
     "✈️ Travel: Bands & DBs": {
         "Block 1 (Superset): Quads & Hams": ["Bulgarian Split Squats", "Dumbbell Romanian Deadlift"],
-        "Block 2 (Alternating): Chest & Back": ["Elevated Push-Ups", "Chest-Supported Dumbbell Row"],
+        "Block 2 (Alternating): Chest & Back": ["Push-Ups", "Chest-Supported Dumbbell Row"],
         "Block 3 (Tri-Set): Arms & Shoulders": ["Dumbbell Hammer Curls", "Overhead Tricep Extension", "Standing Dumbbell Lateral Raise"],
         "Block 4 (Superset): Posture & Core": ["Banded Face Pulls", "Anchored Reverse Crunch"]
     },
@@ -102,12 +102,12 @@ PROGRAM = {
             "Banded Face Pulls", "Banded Tricep Pushdowns", "Barbell Hip Thrusts", "Bulgarian Split Squats", 
             "Cable Lateral Raise", "Cable Tricep Pushdown", "Chest-Supported Dumbbell Row", "Chest-Supported Lateral Raise", 
             "Chest-Supported Rear Delt Flye", "Dumbbell Bench Press", "Dumbbell Hammer Curls", "Dumbbell Romanian Deadlift", 
-            "Elevated Push-Ups", "Erector-Focused Roman Chair Extension", "Front-Rack Kettlebell Marches", 
+            "Erector-Focused Roman Chair Extension", "Front-Rack Kettlebell Marches", 
             "Half-Kneeling Pallof Press", "Hamstring-Focused Roman Chair Extension", "Heavy Barbell Front Squat", 
             "Heavy Russian Kettlebell Swings", "Heavy Suitcase Holds", "Heels-Elevated Landmine Squat", 
             "Incline Supinated Dumbbell Curls", "Landmine Press", "Lat Pulldown", "Machine Chest Press", "Machine Leg Press", 
             "Neutral Grip Pull-Ups", "Nordic Curls", "Overhead Tricep Extension", "Push-Ups", "Romanian Deadlift (RDL)", 
-            "Seated Leg Curl", "Single-Arm Bench-Supported Dumbbell Row", "Squat Wedge Dumbbell Calf Raises", 
+            "Seated Leg Curl", "Single-Arm Bench-Supported Dumbbell Row", "Single-Leg Supported Dumbbell Calf Raise", 
             "Standing Dumbbell Lateral Raise", "T-Bar Landmine Row", "Wall Tibialis Raises"
         ]
     },
@@ -202,13 +202,13 @@ DAY_PHILOSOPHY = {
 REP_TARGETS = {
     "T-Bar Landmine Row": "4 Sets × 8–10 Reps", "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
     "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm", "Chest-Supported Dumbbell Row": "3 Sets × 10–12 Reps",
-    "Push-Ups": "3 Sets × 10–15 Reps", "Elevated Push-Ups": "3 Sets × 10–15 Reps",
+    "Push-Ups": "3 Sets × 10–15 Reps",
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps", "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps", "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
     "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps", "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
     "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps", "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
     "Hamstring-Focused Roman Chair Extension": "3 Sets × 12–15 Reps", "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
-    "Wall Tibialis Raises": "3 Sets × 15–20 Reps", "Squat Wedge Dumbbell Calf Raises": "4 Sets × 10–12 Reps",
+    "Wall Tibialis Raises": "3 Sets × 15–20 Reps", "Single-Leg Supported Dumbbell Calf Raise": "4 Sets × 10–12 Reps/leg",
     "Half-Kneeling Pallof Press": "3 Sets × 10–12 Reps/side", "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
     "Band-Assisted Dips": "4 Sets × 10–12 Reps", "Landmine Press": "3 Sets × 8–10 Reps",
     "Banded Face Pulls": "3 Sets × 15–20 Reps", "Incline Supinated Dumbbell Curls": "4 Sets × 10–12 Reps",
@@ -224,12 +224,12 @@ REP_TARGETS = {
 }
 
 EXERCISE_GUIDES = {
+    "Single-Leg Supported Dumbbell Calf Raise": {"Setup": "Hold a heavy dumbbell in one hand. Place that same-side foot on a wedge/plate. Use your free hand to firmly hold a wall or rack for perfect balance.", "Execution": "Let your heel drop as deep as possible into a stretch. Pause for 2 full seconds. Explode up to the top and pause.", "Why": "Removing the balance requirement allows 100% of your central nervous system to focus on calf tension, and the single-leg approach maximizes the load."},
+    "Push-Ups": {"Setup": "Hands shoulder-width, core braced tightly (hollow body). Elevate hands on a bench if you cannot easily hit 10 perfect floor reps.", "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the surface, then explode up. Keep elbows tucked at 45 degrees.", "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. Hand elevation mechanically scales the resistance down so you can maintain perfect form."},
+    "Chest-Supported Dumbbell Row": {"Setup": "Set an incline bench to 45 degrees. Lay chest flat against the pad, feet anchored securely on the floor.", "Execution": "Let long arms hang straight down. Row both dumbbells up by driving your elbows back toward your hips.", "Why": "Completely removes the lower back and core stabilization requirement, allowing you to use clunky dumbbells perfectly without them hitting the floor or ribs."},
     "T-Bar Landmine Row": {"Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.", "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.", "Why": "Stable pulling builds back thickness without the systemic lower back fatigue of a standard bent-over barbell row."},
     "Dumbbell Bench Press": {"Setup": "Set bench to a slight incline (15-30 degrees). Shoulder blades pinned down and back.", "Execution": "Lower slowly (3s) to a deep stretch. Press up, but STOP a few inches before the dumbbells touch. Do not lock out.", "Why": "A slight incline perfectly aligns with the pec fibers. Stopping before the bells touch prevents the joints from 'stacking', keeping 100% of the tension on the chest."},
     "Single-Arm Bench-Supported Dumbbell Row": {"Setup": "Hand and same-side knee on the bench. Back perfectly flat.", "Execution": "Pull the dumbbell towards your HIP, not your armpit. Pause for 1 full second at the top contraction.", "Why": "Bench support removes lower back strain. Pulling to the hip isolates the lats instead of shrugging with your upper traps."},
-    "Chest-Supported Dumbbell Row": {"Setup": "Set an incline bench to 45 degrees. Lay chest flat against the pad, feet anchored securely on the floor.", "Execution": "Let long arms hang straight down. Row both dumbbells up by driving your elbows back toward your hips.", "Why": "Completely removes the lower back and core stabilization requirement, allowing you to use clunky dumbbells perfectly without them hitting the floor or ribs."},
-    "Push-Ups": {"Setup": "Hands shoulder-width, core braced tightly (hollow body).", "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the floor, then explode up.", "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. A high-rep finisher with zero joint wear."},
-    "Elevated Push-Ups": {"Setup": "Place hands firmly on a bench, box, or barbell set in a rack. Keep your core tight in a hollow body position.", "Execution": "Lower chest to the edge of the elevated surface. Keep elbows tucked at a 45-degree angle. Press up forcefully.", "Why": "Mechanically scales the push-up to reduce resistance. This allows perfect elbow tracking and full range of motion while building the strength required for the floor."},
     "Overhead Tricep Extension": {"Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.", "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.", "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest, while keeping constant tension in the stretch."},
     "Dumbbell Hammer Curls": {"Setup": "Standing, neutral grip (palms facing each other).", "Execution": "Squeeze up cleanly, then a strict 2-second negative. Zero swinging or momentum.", "Why": "Targets the brachialis and brachioradialis. This pushes the bicep up (creating a larger peak) and prevents elbow tendonitis."},
     "Banded Crossovers": {"Setup": "Anchor bands HIGH (above head). Step forward to create tension.", "Execution": "Pull down and across your body (high-to-low). Squeeze for 2 full seconds at the bottom contraction where your hands overlap.", "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers, brilliantly complementing the upper-pec focus of your incline DB presses."},
@@ -240,7 +240,6 @@ EXERCISE_GUIDES = {
     "Anchored Reverse Crunch": {"Setup": "Lying on back, gripping a heavy kettlebell or pole behind your head.", "Execution": "Roll pelvis UP towards sternum. Control descent (3 seconds) until tailbone gently touches the floor.", "Why": "Flexes the spine against resistance (true abdominal function) rather than just working hip flexors."},
     "Heavy Russian Kettlebell Swings": {"Setup": "Hinge position, KB slightly in front of you.", "Execution": "Hike it back between your legs, then snap hips forward violently. Arms are just ropes. Stop at chest height.", "Why": "Builds explosive posterior chain power, hamstring resilience, and glute lockout strength."},
     "Nordic Curls": {"Setup": "Kneeling, ankles secured under a bar or by a partner.", "Execution": "Squeeze glutes to lock hips. Fall forward as slowly as possible. Catch yourself, push back up.", "Why": "The ultimate hamstring bulletproofing exercise. Lengthens muscle fascicles, reducing tear risk."},
-    "Squat Wedge Dumbbell Calf Raises": {"Setup": "Toes elevated on a wedge, holding heavy dumbbells.", "Execution": "PAUSE for 2 full seconds at the absolute bottom stretch. Explode up, pause 1 second at the top.", "Why": "The bottom pause kills spring energy in the Achilles, forcing the calf muscle to do 100% of the lifting."},
     "Wall Tibialis Raises": {"Setup": "Lean back against a wall, feet placed out in front of you.", "Execution": "Pull toes up towards shins as hard as possible. Hold for 1 second.", "Why": "Bulletproofs the knees. Strengthening the tibialis anterior prevents shin splints and patellar pain."},
     "Half-Kneeling Pallof Press": {"Setup": "Half-kneeling, band anchored to side at chest height.", "Execution": "Press band straight out in front. Hold for 2 seconds, violently resisting the urge to twist.", "Why": "Elite anti-rotation core training. Teaches deep core to brace against twisting forces."},
     "Neutral Grip Pull-Ups": {"Setup": "Palms facing each other.", "Execution": "Start from a dead hang. Pull upper chest to the bar. Control the eccentric phase.", "Why": "Neutral grip is highly shoulder-friendly and gives the lats a massive mechanical advantage for growth."},
@@ -267,17 +266,6 @@ EXERCISE_GUIDES = {
     "Cable Tricep Pushdown": {"Setup": "Attach a rope to a high cable. Tuck elbows strictly to your ribs.", "Execution": "Push down and pull the rope APART at the very bottom. Control it on the way up.", "Why": "Maintains tension at the peak contraction where the triceps are mechanically strongest."}
 }
 
-DAILY_SYSTEM_RESET = {
-    "1. The Shin Breaker": {"Target": "1-2min: Stretches the anterior tibialis to prevent shin splints and keep knees healthy.", "Execution": "Kneel with toes pointed back (laces flat), sit butt onto heels. Lean back slightly and lift knees 1 inch off the floor.", "Progression": "Increase the height you lift your knees off the floor."},
-    "2. The Combat Stretch (Ankle Mobility)": {"Target": "1-2min per side: Unlocks true ankle dorsiflexion for deep squatting.", "Execution": "Half-kneeling lunge. Place a heavy kettlebell on your front knee. Drive the knee as far over your toes as humanly possible while keeping the heel glued to the floor.", "Progression": "Increase the weight of the kettlebell to force a deeper fascial stretch."},
-    "3. The Couch Stretch": {"Target": "2min per side: Deep stretch of the quadriceps and hip flexors.", "Execution": "Place knee into a wall/couch corner, shin vertical. Squeeze the glute of the stretching leg HARD and lift torso upright.", "Progression": "Move from resting hands on a box/chair to a fully upright, unsupported torso."},
-    "4. The 90/90 Hip Switch": {"Target": "2min: Restores internal and external rotation of the hip capsule.", "Execution": "Sit on the floor, both legs bent at 90 degrees (one in front, one behind). Pivot on your heels to windshield-wiper your knees to the other side.", "Progression": "Perform the movement without using your hands on the floor for support."},
-    "5. The 'Paleo Chair'": {"Target": "2min: Recalibrates hips and ankles for deep squatting.", "Execution": "Drop into the deepest squat you can hold with heels flat. Drive knees out with elbows, keep chest tall.", "Progression": "Shift from holding a doorframe for support to a completely free-standing hold."},
-    "6. The Lateral Child’s Pose": {"Target": "1min each side: Stretches the latissimus dorsi and quadratus lumborum (lower back).", "Execution": "Sit in Child's pose, walk both hands far to one side, and push the opposite hip down into your heel.", "Progression": "Walk the hands further laterally to increase the fascial pull."},
-    "7. Wall 'Snow Angels'": {"Target": "15 reps: Restores thoracic spine (upper back) mobility and shoulder health.", "Execution": "Back flat against wall, touch lower back, head, elbows, and wrists to the wall. Slide arms up to a 'Y' and down to a 'W'.", "Progression": "Move feet closer to the wall while maintaining full lower back contact."},
-    "8. The 'Neck Anchor'": {"Target": "1min per side: Releases tension in the upper traps and neck.", "Execution": "Place right hand behind back, tilt left ear to left shoulder, rotate chin toward armpit.", "Progression": "Gently use the non-anchored hand to apply microscopic overpressure to the stretch."}
-}
-
 VOLUME_THRESHOLDS = {
     "Chest": {"MEV": 10, "MRV": 20}, "Back": {"MEV": 10, "MRV": 20},
     "Quads": {"MEV": 8, "MRV": 18}, "Hamstrings": {"MEV": 6, "MRV": 14}, "Glutes": {"MEV": 4, "MRV": 16},
@@ -292,9 +280,9 @@ EXERCISE_CAPS = {
     "Heavy Russian Kettlebell Swings": 4, "Barbell Hip Thrusts": 4, "Nordic Curls": 4,
     "Machine Leg Press": 4, "Machine Chest Press": 4, "Lat Pulldown": 5, "Dumbbell Romanian Deadlift": 4,
     "Single-Arm Bench-Supported Dumbbell Row": 6, "Chest-Supported Dumbbell Row": 6, "Push-Ups": 6, 
-    "Elevated Push-Ups": 6, "Overhead Tricep Extension": 6, "Dumbbell Hammer Curls": 6, "Banded Crossovers": 6, 
+    "Overhead Tricep Extension": 6, "Dumbbell Hammer Curls": 6, "Banded Crossovers": 6, 
     "Chest-Supported Lateral Raise": 6, "Chest-Supported Rear Delt Flye": 6, "Anchored Reverse Crunch": 6, 
-    "Wall Tibialis Raises": 6, "Squat Wedge Dumbbell Calf Raises": 6, "Half-Kneeling Pallof Press": 6, 
+    "Wall Tibialis Raises": 6, "Single-Leg Supported Dumbbell Calf Raise": 6, "Half-Kneeling Pallof Press": 6, 
     "Banded Face Pulls": 6, "Incline Supinated Dumbbell Curls": 6, "Banded Tricep Pushdowns": 6, 
     "Ab-Wheel Rollouts": 6, "Erector-Focused Roman Chair Extension": 6, "Heavy Suitcase Holds": 6, 
     "Front-Rack Kettlebell Marches": 6, "Hamstring-Focused Roman Chair Extension": 6, 
@@ -304,13 +292,13 @@ EXERCISE_CAPS = {
 MUSCLE_MAP = {
     "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5}, "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
     "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Chest-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5},
-    "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5}, "Elevated Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
+    "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5}, 
     "Overhead Tricep Extension": {"Triceps": 1.0}, "Dumbbell Hammer Curls": {"Biceps": 1.0},
     "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5}, "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
     "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5}, "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
     "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5}, "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
     "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5}, "Anchored Reverse Crunch": {"Abs": 1.0},
-    "Wall Tibialis Raises": {"Calves": 1.0}, "Squat Wedge Dumbbell Calf Raises": {"Calves": 1.0},
+    "Wall Tibialis Raises": {"Calves": 1.0}, "Single-Leg Supported Dumbbell Calf Raise": {"Calves": 1.0},
     "Half-Kneeling Pallof Press": {"Abs": 1.0}, "Neutral Grip Pull-Ups": {"Back": 1.0, "Biceps": 0.5},
     "Band-Assisted Dips": {"Chest": 1.0, "Triceps": 1.0, "Shoulders": 0.5}, "Landmine Press": {"Shoulders": 1.0, "Chest": 0.5, "Triceps": 0.5},
     "Banded Face Pulls": {"Shoulders": 1.0, "Back": 0.5}, "Incline Supinated Dumbbell Curls": {"Biceps": 1.0},
@@ -326,9 +314,9 @@ MUSCLE_MAP = {
 }
 
 BW_MULTIPLIERS = {
-    "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65, "Elevated Push-Ups": 0.45,
+    "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65,
     "Nordic Curls": 0.60, "Anchored Reverse Crunch": 0.40, "Ab-Wheel Rollouts": 0.50,
-    "Squat Wedge Dumbbell Calf Raises": 1.0, "Bulgarian Split Squats": 0.85, 
+    "Single-Leg Supported Dumbbell Calf Raise": 1.0, "Bulgarian Split Squats": 0.85, 
     "Erector-Focused Roman Chair Extension": 0.50, "Glute-Focused Roman Chair Extension": 0.50,
     "Hamstring-Focused Roman Chair Extension": 0.50, "Heavy Barbell Front Squat": 0.85,
     "Wall Tibialis Raises": 0.30, "Machine Leg Press": 0.0, "Seated Leg Curl": 0.0,
@@ -345,19 +333,23 @@ BAND_SUBTRACTIONS = {
     "Orange + Yellow (127.0kg)": 127.0
 }
 
-# --- FIX: HARDWARE ARRAYS FOR SNAPPING ---
 ADJUSTABLE_DBS = [0.0, 4.0, 7.0, 9.0, 11.0, 14.0, 16.0, 18.0, 20.0, 23.0, 25.0, 27.0, 30.0, 32.0, 34.0, 36.0, 39.0, 41.0]
+KETTLEBELLS = [0.0, 4.0, 6.0, 8.0, 12.0, 16.0, 20.0]
+PUSH_UP_VARIATIONS = ["Elevated", "Flat", "Deficit"]
 
-UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
+UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches", "Single-Leg Supported Dumbbell Calf Raise"]
 HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press", "Machine Leg Press", "Machine Chest Press"]
 
-# --- GLOBAL EXERCISE CATEGORIES FOR FATIGUE LOGIC ---
 ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
 RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+BODYWEIGHT_ONLY = ["Anchored Reverse Crunch", "Nordic Curls", "Ab-Wheel Rollouts"]
+PURE_BAND_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
 
 def snap_to_weight(target_weight, exercise_name):
     if "Dumbbell" in exercise_name or "DB" in exercise_name:
         return min(ADJUSTABLE_DBS, key=lambda x: abs(x - target_weight))
+    elif "Kettlebell" in exercise_name or "KB" in exercise_name:
+        return min(KETTLEBELLS, key=lambda x: abs(x - target_weight))
     else:
         return round(target_weight / 2.5) * 2.5
 
@@ -366,6 +358,10 @@ def get_next_weight(current_weight, exercise_name):
         closest = min(ADJUSTABLE_DBS, key=lambda x: abs(x - current_weight))
         idx = ADJUSTABLE_DBS.index(closest)
         return ADJUSTABLE_DBS[min(idx + 1, len(ADJUSTABLE_DBS) - 1)]
+    elif "Kettlebell" in exercise_name or "KB" in exercise_name:
+        closest = min(KETTLEBELLS, key=lambda x: abs(x - current_weight))
+        idx = KETTLEBELLS.index(closest)
+        return KETTLEBELLS[min(idx + 1, len(KETTLEBELLS) - 1)]
     else:
         return current_weight + 2.5
 
@@ -388,7 +384,7 @@ def load_data():
     except Exception: l_recs = []
     df_lifts = pd.DataFrame(l_recs) if l_recs else pd.DataFrame(columns=LIFTS_COLS)
     for col in LIFTS_COLS:
-        if col not in df_lifts.columns: df_lifts[col] = 0.0 if col not in ['Date', 'Workout_Day', 'Exercise', 'Band', 'Side'] else ""
+        if col not in df_lifts.columns: df_lifts[col] = 0.0 if col not in ['Date', 'Workout_Day', 'Exercise', 'Band', 'Variation', 'Side'] else ("None" if col == 'Variation' else "")
     
     try: h_recs = ws_health.get_all_records()
     except Exception: h_recs = []
@@ -418,6 +414,13 @@ def load_data():
         is_resisted = df_lifts['Exercise'].isin(RESISTED_EXERCISES)
         
         eff_wt = df_lifts['Weight'] + base_body_load
+        
+        # Override for Push-up variations
+        is_pushup = df_lifts['Exercise'] == "Push-Ups"
+        if is_pushup.any():
+            var_mult = df_lifts.loc[is_pushup, 'Variation'].map({"Elevated": 0.45, "Flat": 0.65, "Deficit": 0.70}).fillna(0.65)
+            eff_wt.loc[is_pushup] = df_lifts.loc[is_pushup, 'Weight'] + (df_lifts.loc[is_pushup, 'Bodyweight'] * var_mult)
+
         eff_wt = np.where(is_assisted, eff_wt - avg_band_force, eff_wt)
         eff_wt = np.where(is_resisted, eff_wt + avg_band_force, eff_wt)
         
@@ -637,6 +640,7 @@ with tab_sessions:
                         last_weight = float(s1_data['Weight'])
                         last_reps = int(s1_data['Reps_or_Mins'])
                         last_band = s1_data['Band']
+                        last_var = s1_data.get('Variation', 'Flat') if 'Variation' in s1_data else 'Flat'
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         
@@ -644,6 +648,10 @@ with tab_sessions:
                         last_3 = s1_history.tail(3)
                         plateau = False
                         bleed_out = False
+                        
+                        is_bw_only = exercise in BODYWEIGHT_ONLY
+                        is_pure_band = exercise in PURE_BAND_EXERCISES
+                        is_kb = "Kettlebell" in exercise or "KB" in exercise
                         
                         if len(last_3) >= 3 and not is_deload:
                             w_vals = last_3['Weight'].tolist()
@@ -654,9 +662,7 @@ with tab_sessions:
                                 bleed_out = True
 
                         if is_deload:
-                            # --- SNAP LOGIC IN DELOAD ---
-                            raw_calc = last_weight * 0.8
-                            calc_w = snap_to_weight(raw_calc, exercise)
+                            calc_w = 0.0 if (is_bw_only or is_pure_band) else snap_to_weight(last_weight * 0.8, exercise)
                             calc_b = last_band
                             
                             if calc_w == 0.0 and last_band != "None":
@@ -667,60 +673,100 @@ with tab_sessions:
                                 elif exercise in RESISTED_EXERCISES and b_idx > 0:
                                     calc_b = band_keys[b_idx - 1]
                             
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': calc_b, 'fatigue': False}
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': calc_b, 'v': last_var, 'fatigue': False}
                             if calc_b != last_band:
-                                st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg** and shifted band to **{calc_b}**.")
-                            else:
+                                st.info(f"🧘 **{exercise}:** Deload week. Shifted band to **{calc_b}**.")
+                            elif not is_bw_only and not is_pure_band:
                                 st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
+                            else:
+                                st.info(f"🧘 **{exercise}:** Deload week. Focus on light technique execution.")
 
                         elif plateau:
-                            calc_w = max(0.0, snap_to_weight(last_weight * 0.9, exercise))
-                            st.warning(f"🚧 **Plateau Alert:** Stuck at {last_weight}kg for {last_reps} reps for 3 weeks. Neurological stagnation. Drop weight to **{calc_w}kg** and push high reps today to force adaptation.")
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
+                            calc_w = 0.0 if (is_bw_only or is_pure_band) else max(0.0, snap_to_weight(last_weight * 0.9, exercise))
+                            st.warning(f"🚧 **Plateau Alert:** Stuck for 3 weeks. Neurological stagnation. Drop to **{calc_w}kg** and push high reps today.")
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'v': last_var, 'fatigue': False}
                         elif bleed_out:
-                            calc_w = max(0.0, snap_to_weight(last_weight * 0.85, exercise))
-                            if hrv_alert: st.error(f"🛑 **CNS FRIED:** {exercise} reps are regressing and HRV is tanking. Mandatory 15% drop to **{calc_w}kg** for localized active recovery.")
-                            else: st.error(f"🩸 **Bleed-Out Alert:** {exercise} reps are regressing. Tissue fatigue detected. Dropping weight by 15% to **{calc_w}kg** to recover joints.")
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
+                            calc_w = 0.0 if (is_bw_only or is_pure_band) else max(0.0, snap_to_weight(last_weight * 0.85, exercise))
+                            if hrv_alert: st.error(f"🛑 **CNS FRIED:** {exercise} reps regressing & HRV tanking. Mandatory drop for localized active recovery.")
+                            else: st.error(f"🩸 **Bleed-Out Alert:** {exercise} reps regressing. Tissue fatigue detected. Dropping weight.")
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'v': last_var, 'fatigue': False}
                         else:
                             if min_reps_last_session < 5: 
                                 fatigue_drop = True
-                                if hrv_alert: st.error(f"🛑 **CNS Alert:** {exercise} dropped below target AND your HRV is tanking. Your nervous system is resisting this load.")
+                                if hrv_alert: st.error(f"🛑 **CNS Alert:** {exercise} dropped below target AND your HRV is tanking.")
                                 
                                 if exercise in ASSISTED_EXERCISES:
                                     if last_weight > 0.0:
                                         raw_new = last_weight - max(2.5, last_weight * 0.10)
                                         new_w = max(0.0, snap_to_weight(raw_new, exercise))
-                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Strip **{last_weight - new_w}kg** plate for Sets 2+.")
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. Strip plate for Sets 2+.")
                                     else:
                                         band_keys = list(BAND_SUBTRACTIONS.keys())
                                         b_idx = band_keys.index(last_band) if last_band in band_keys else 0
                                         if b_idx < len(band_keys) - 1:
                                             next_band = band_keys[b_idx + 1]
-                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Switch to **{next_band}** for Sets 2+.")
+                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. Switch to **{next_band}** for Sets 2+.")
                                         else:
-                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Max band reached.")
+                                            st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. Max band reached.")
                                 elif exercise in RESISTED_EXERCISES:
                                     band_keys = list(BAND_SUBTRACTIONS.keys())
                                     b_idx = band_keys.index(last_band) if last_band in band_keys else 0
                                     if b_idx > 0:
                                         prev_band = band_keys[b_idx - 1]
-                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop to **{prev_band}** for Sets 2+.")
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. Drop to **{prev_band}** for Sets 2+.")
                                     else:
-                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. No lighter band available.")
-                                else:
+                                        st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. No lighter band available.")
+                                elif not is_bw_only:
                                     raw_new = last_weight - max(2.5, last_weight * 0.10)
                                     new_w = max(0.0, snap_to_weight(raw_new, exercise))
-                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop load to **{new_w}kg** for Sets 2+.")
+                                    st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped. Drop load for Sets 2+.")
 
-                            if last_reps >= top_rep: 
-                                # --- SNAP LOGIC PROGRESSION ---
-                                calc_w = get_next_weight(last_weight, exercise)
-                                st.success(f"📈 **{exercise}:** Hit {last_reps} reps last week. Load increased to **{calc_w}kg**.")
-                            else: 
-                                calc_w = last_weight
-                                st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Hold at **{calc_w}kg** and fight.")
-                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': fatigue_drop}
+                            # PROGRESSION LOGIC
+                            if is_bw_only:
+                                calc_w = 0.0
+                                if last_reps >= top_rep:
+                                    st.success(f"✅ **{exercise}:** Hit {last_reps} reps! To overload, slow the eccentric phase by 2s or push beyond the rep cap.")
+                                else:
+                                    st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Keep fighting for reps.")
+                                calc_b = last_band
+                                
+                            elif is_pure_band:
+                                calc_w = 0.0
+                                band_keys = list(BAND_SUBTRACTIONS.keys())
+                                b_idx = band_keys.index(last_band) if last_band in band_keys else 0
+                                if last_reps >= top_rep:
+                                    next_b = band_keys[min(b_idx + 1, len(band_keys) - 1)]
+                                    calc_b = next_b
+                                    if next_b != last_band:
+                                        st.success(f"📈 **{exercise}:** Hit {last_reps} reps. Band resistance increased to **{next_b}**!")
+                                    else:
+                                        st.success(f"🏆 **{exercise}:** Max band reached! Focus on density or slower reps.")
+                                else:
+                                    calc_b = last_band
+                                    st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps. Hold at **{last_band}**.")
+                                    
+                            elif is_kb:
+                                calc_b = last_band
+                                if last_reps >= top_rep:
+                                    calc_w = get_next_weight(last_weight, exercise)
+                                    if calc_w == last_weight and last_weight >= 20.0:
+                                        st.success(f"🏆 **{exercise}:** Max Kettlebell (20kg) reached! Overload by reducing rest times or increasing reps.")
+                                    else:
+                                        st.success(f"📈 **{exercise}:** Hit {last_reps} reps. Load increased to **{calc_w}kg**.")
+                                else:
+                                    calc_w = last_weight
+                                    st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps. Hold at **{calc_w}kg**.")
+                                    
+                            else:
+                                calc_b = last_band
+                                if last_reps >= top_rep: 
+                                    calc_w = get_next_weight(last_weight, exercise)
+                                    st.success(f"📈 **{exercise}:** Hit {last_reps} reps last week. Load increased to **{calc_w}kg**.")
+                                else: 
+                                    calc_w = last_weight
+                                    st.warning(f"🎯 **{exercise}:** Hit {last_reps}/{top_rep} reps last week. Hold at **{calc_w}kg** and fight.")
+                                    
+                            default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': calc_b, 'v': last_var, 'fatigue': fatigue_drop}
                             
                         if exercise in HEAVY_COMPOUNDS and default_vals[exercise]['w'] >= 20.0:
                             with st.expander(f"🔥 Warm-Up Load: {exercise}", expanded=False):
@@ -735,20 +781,20 @@ with tab_sessions:
 
                     else:
                         st.info(f"**{exercise}:** Establish baseline weight today.")
-                        default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'fatigue': False}
+                        default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'v': "Flat", 'fatigue': False}
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
                             with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
                 else:
                     st.info(f"**{exercise}:** Establish baseline weight today.")
-                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'fatigue': False}
+                    default_vals[exercise] = {'w': 0.0, 'r': 0, 'b': "None", 'v': "Flat", 'fatigue': False}
                     guide = EXERCISE_GUIDES.get(exercise)
                     if guide:
                         with st.expander(f"📖 Form & Setup: {exercise}", expanded=False): st.markdown(f"**Setup:** {guide.get('Setup', '')}\n**Execution:** {guide.get('Execution', '')}\n**Why:** {guide.get('Why', '')}")
             
             st.write("---")
             with st.form("lifting_form", clear_on_submit=True):
-                weights, reps, reps_l, reps_r, rirs, bands = {}, {}, {}, {}, {}, {}
+                weights, reps, reps_l, reps_r, rirs, bands, variations = {}, {}, {}, {}, {}, {}, {}
                 for i in range(1, num_sets + 1):
                     st.markdown(f"#### 🔁 Round {i}")
                     
@@ -760,14 +806,20 @@ with tab_sessions:
                     for exercise in selected_exercises:
                         is_uni = exercise in UNILATERAL_EXERCISES
                         uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
+                        is_bw_only = exercise in BODYWEIGHT_ONLY
+                        is_pure_band = exercise in PURE_BAND_EXERCISES
+                        is_pushup = exercise == "Push-Ups"
+                        
                         _, top_rep = get_target_reps_and_sets(exercise)
                         st.markdown(f"**{exercise}** *(Target: {top_rep} reps)*")
                         
                         def_w = float(default_vals.get(exercise, {}).get('w', 0.0))
                         def_b = default_vals.get(exercise, {}).get('b', "None")
+                        def_v = default_vals.get(exercise, {}).get('v', "Flat")
                         
                         band_keys = list(BAND_SUBTRACTIONS.keys())
                         b_idx = band_keys.index(def_b) if def_b in band_keys else 0
+                        v_idx = PUSH_UP_VARIATIONS.index(def_v) if def_v in PUSH_UP_VARIATIONS else 1
                         
                         if i > 1 and default_vals.get(exercise, {}).get('fatigue', False):
                             if exercise in ASSISTED_EXERCISES:
@@ -782,7 +834,7 @@ with tab_sessions:
                                 if b_idx > 0:
                                     b_idx -= 1 
                                     def_b = band_keys[b_idx]
-                            else:
+                            elif not is_bw_only and not is_pure_band:
                                 raw_new = def_w - max(2.5, def_w * 0.10)
                                 def_w = max(0.0, snap_to_weight(raw_new, exercise))
 
@@ -790,7 +842,7 @@ with tab_sessions:
                         
                         if uses_band:
                             c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=def_w, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_pure_band else def_w, disabled=is_pure_band, key=f"w_{key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
@@ -798,9 +850,15 @@ with tab_sessions:
                             else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
                             bands[key] = c3.selectbox("Band", band_keys, index=b_idx, key=f"b_{key}")
                             rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
+                        elif is_pushup:
+                            c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0, disabled=True, key=f"w_{key}")
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
+                            variations[key] = c3.selectbox("Variation", PUSH_UP_VARIATIONS, index=v_idx, key=f"v_{key}")
+                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=def_w, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_bw_only else def_w, disabled=is_bw_only, key=f"w_{key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
@@ -816,7 +874,7 @@ with tab_sessions:
                         max_hist_w = df_lifts[df_lifts['Exercise'] == exercise]['Weight'].max() if not df_lifts.empty else 0.0
                         for i in range(1, num_sets + 1):
                             key = f"{exercise}_{i}"
-                            w_val = weights[key]
+                            w_val = weights.get(key, 0.0)
                             is_uni = exercise in UNILATERAL_EXERCISES
                             reps_val = max(reps_l.get(key, 0), reps_r.get(key, 0)) if is_uni else reps.get(key, 0)
                             
@@ -831,11 +889,13 @@ with tab_sessions:
                         for exercise in selected_exercises:
                             is_uni = exercise in UNILATERAL_EXERCISES
                             uses_band = exercise in ASSISTED_EXERCISES or exercise in RESISTED_EXERCISES
+                            is_pushup = exercise == "Push-Ups"
                             for i in range(1, num_sets + 1):
                                 key = f"{exercise}_{i}"
                                 b_val = bands[key] if uses_band else "None"
+                                v_val = variations[key] if is_pushup else "None"
                                 if (is_uni and (reps_l[key] > 0 or reps_r[key] > 0)) or (not is_uni and reps[key] > 0):
-                                    base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
+                                    base_data = {'Date': date_input, 'Workout_Day': workout_day, 'Exercise': exercise, 'Set_Number': i, 'Weight': weights[key], 'Band': b_val, 'Variation': v_val, 'Distance_km': 0.0, 'Bodyweight': st.session_state['h_weight'], 'RIR': rirs[key]}
                                     if is_uni:
                                         if reps_l[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_l[key], 'Side': 'Left'})
                                         if reps_r[key] > 0: new_rows.append({**base_data, 'Reps_or_Mins': reps_r[key], 'Side': 'Right'})
