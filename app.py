@@ -345,12 +345,29 @@ BAND_SUBTRACTIONS = {
     "Orange + Yellow (127.0kg)": 127.0
 }
 
+# --- FIX: HARDWARE ARRAYS FOR SNAPPING ---
+ADJUSTABLE_DBS = [0.0, 4.0, 7.0, 9.0, 11.0, 14.0, 16.0, 18.0, 20.0, 23.0, 25.0, 27.0, 30.0, 32.0, 34.0, 36.0, 39.0, 41.0]
+
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
 HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press", "Machine Leg Press", "Machine Chest Press"]
 
 # --- GLOBAL EXERCISE CATEGORIES FOR FATIGUE LOGIC ---
 ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
 RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
+
+def snap_to_weight(target_weight, exercise_name):
+    if "Dumbbell" in exercise_name or "DB" in exercise_name:
+        return min(ADJUSTABLE_DBS, key=lambda x: abs(x - target_weight))
+    else:
+        return round(target_weight / 2.5) * 2.5
+
+def get_next_weight(current_weight, exercise_name):
+    if "Dumbbell" in exercise_name or "DB" in exercise_name:
+        closest = min(ADJUSTABLE_DBS, key=lambda x: abs(x - current_weight))
+        idx = ADJUSTABLE_DBS.index(closest)
+        return ADJUSTABLE_DBS[min(idx + 1, len(ADJUSTABLE_DBS) - 1)]
+    else:
+        return current_weight + 2.5
 
 def get_target_reps_and_sets(exercise_name):
     target_str = REP_TARGETS.get(exercise_name, "")
@@ -637,7 +654,9 @@ with tab_sessions:
                                 bleed_out = True
 
                         if is_deload:
-                            calc_w = round((last_weight * 0.8) / 2.5) * 2.5 
+                            # --- SNAP LOGIC IN DELOAD ---
+                            raw_calc = last_weight * 0.8
+                            calc_w = snap_to_weight(raw_calc, exercise)
                             calc_b = last_band
                             
                             if calc_w == 0.0 and last_band != "None":
@@ -655,11 +674,11 @@ with tab_sessions:
                                 st.info(f"🧘 **{exercise}:** Deload week. Dropped to **{calc_w}kg**.")
 
                         elif plateau:
-                            calc_w = max(0.0, round((last_weight * 0.9) / 2.5) * 2.5)
+                            calc_w = max(0.0, snap_to_weight(last_weight * 0.9, exercise))
                             st.warning(f"🚧 **Plateau Alert:** Stuck at {last_weight}kg for {last_reps} reps for 3 weeks. Neurological stagnation. Drop weight to **{calc_w}kg** and push high reps today to force adaptation.")
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
                         elif bleed_out:
-                            calc_w = max(0.0, round((last_weight * 0.85) / 2.5) * 2.5)
+                            calc_w = max(0.0, snap_to_weight(last_weight * 0.85, exercise))
                             if hrv_alert: st.error(f"🛑 **CNS FRIED:** {exercise} reps are regressing and HRV is tanking. Mandatory 15% drop to **{calc_w}kg** for localized active recovery.")
                             else: st.error(f"🩸 **Bleed-Out Alert:** {exercise} reps are regressing. Tissue fatigue detected. Dropping weight by 15% to **{calc_w}kg** to recover joints.")
                             default_vals[exercise] = {'w': calc_w, 'r': last_reps, 'b': last_band, 'fatigue': False}
@@ -670,8 +689,8 @@ with tab_sessions:
                                 
                                 if exercise in ASSISTED_EXERCISES:
                                     if last_weight > 0.0:
-                                        drop_amt = max(2.5, last_weight * 0.10)
-                                        new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                        raw_new = last_weight - max(2.5, last_weight * 0.10)
+                                        new_w = max(0.0, snap_to_weight(raw_new, exercise))
                                         st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Strip **{last_weight - new_w}kg** plate for Sets 2+.")
                                     else:
                                         band_keys = list(BAND_SUBTRACTIONS.keys())
@@ -690,12 +709,13 @@ with tab_sessions:
                                     else:
                                         st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. No lighter band available.")
                                 else:
-                                    drop_amt = max(2.5, last_weight * 0.10)
-                                    new_w = max(0.0, round((last_weight - drop_amt) / 2.5) * 2.5)
+                                    raw_new = last_weight - max(2.5, last_weight * 0.10)
+                                    new_w = max(0.0, snap_to_weight(raw_new, exercise))
                                     st.error(f"⚠️ **Fatigue Alert:** {exercise} dropped to {int(min_reps_last_session)} reps. Drop load to **{new_w}kg** for Sets 2+.")
 
                             if last_reps >= top_rep: 
-                                calc_w = last_weight + 2.5
+                                # --- SNAP LOGIC PROGRESSION ---
+                                calc_w = get_next_weight(last_weight, exercise)
                                 st.success(f"📈 **{exercise}:** Hit {last_reps} reps last week. Load increased to **{calc_w}kg**.")
                             else: 
                                 calc_w = last_weight
@@ -705,9 +725,9 @@ with tab_sessions:
                         if exercise in HEAVY_COMPOUNDS and default_vals[exercise]['w'] >= 20.0:
                             with st.expander(f"🔥 Warm-Up Load: {exercise}", expanded=False):
                                 trg_w = default_vals[exercise]['w']
-                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, round((trg_w*0.3)/2.5)*2.5)
-                                w2 = round((trg_w * 0.5) / 2.5) * 2.5
-                                w3 = round((trg_w * 0.8) / 2.5) * 2.5
+                                w1 = 20.0 if "Barbell" in exercise or "RDL" in exercise else max(5.0, snap_to_weight(trg_w*0.3, exercise))
+                                w2 = snap_to_weight(trg_w * 0.5, exercise)
+                                w3 = snap_to_weight(trg_w * 0.8, exercise)
                                 st.markdown(f"- **Set 1:** {w1}kg × 8-10 reps\n- **Set 2:** {w2}kg × 5 reps\n- **Set 3:** {w3}kg × 2-3 reps")
                         guide = EXERCISE_GUIDES.get(exercise)
                         if guide:
@@ -752,8 +772,8 @@ with tab_sessions:
                         if i > 1 and default_vals.get(exercise, {}).get('fatigue', False):
                             if exercise in ASSISTED_EXERCISES:
                                 if def_w > 0.0:
-                                    drop_amt = max(2.5, def_w * 0.10)
-                                    def_w = max(0.0, round((def_w - drop_amt) / 2.5) * 2.5)
+                                    raw_new = def_w - max(2.5, def_w * 0.10)
+                                    def_w = max(0.0, snap_to_weight(raw_new, exercise))
                                 else:
                                     if b_idx < len(band_keys) - 1:
                                         b_idx += 1 
@@ -763,14 +783,14 @@ with tab_sessions:
                                     b_idx -= 1 
                                     def_b = band_keys[b_idx]
                             else:
-                                drop_amt = max(2.5, def_w * 0.10)
-                                def_w = max(0.0, round((def_w - drop_amt) / 2.5) * 2.5)
+                                raw_new = def_w - max(2.5, def_w * 0.10)
+                                def_w = max(0.0, snap_to_weight(raw_new, exercise))
 
                         key = f"{exercise}_{i}" 
                         
                         if uses_band:
                             c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=def_w, key=f"w_{key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
@@ -780,7 +800,7 @@ with tab_sessions:
                             rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=2.5, value=def_w, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=def_w, key=f"w_{key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
                                 reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
