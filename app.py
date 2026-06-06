@@ -69,7 +69,7 @@ PROGRAM = {
     },
     "Wednesday: Upper A": {
         "Block 1 (Alternating): T-Bar Row & DB Bench": ["T-Bar Landmine Row", "Dumbbell Bench Press"],
-        "Block 2 (Alternating): DB Row & Push-Ups": ["Single-Arm Bench-Supported Dumbbell Row", "Push-Ups"],
+        "Block 2 (Alternating): DB Row & Push-Ups": ["Chest-Supported Dumbbell Row", "Elevated Push-Ups"],
         "Block 3 (Tri-Set): Triceps, Biceps & Chest": ["Overhead Tricep Extension", "Dumbbell Hammer Curls", "Banded Crossovers"],
         "Block 4 (Superset): Lateral & Rear Delts": ["Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye"]
     },
@@ -84,17 +84,31 @@ PROGRAM = {
         "Block 2 (Alternating): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
         "Block 3 (Tri-Set): Curls, Pushdowns & Lateral Raises": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns", "Chest-Supported Lateral Raise"]
     },
+    "✈️ Travel: Bands & DBs": {
+        "Block 1 (Superset): Quads & Hams": ["Bulgarian Split Squats", "Dumbbell Romanian Deadlift"],
+        "Block 2 (Alternating): Chest & Back": ["Elevated Push-Ups", "Chest-Supported Dumbbell Row"],
+        "Block 3 (Tri-Set): Arms & Shoulders": ["Dumbbell Hammer Curls", "Overhead Tricep Extension", "Standing Dumbbell Lateral Raise"],
+        "Block 4 (Superset): Posture & Core": ["Banded Face Pulls", "Anchored Reverse Crunch"]
+    },
+    "🏨 Travel: Commercial Gym": {
+        "Block 1 (Alternating): Legs": ["Machine Leg Press", "Seated Leg Curl"],
+        "Block 2 (Alternating): Chest & Back": ["Machine Chest Press", "Lat Pulldown"],
+        "Block 3 (Superset): Shoulders & Triceps": ["Cable Lateral Raise", "Cable Tricep Pushdown"],
+        "Block 4 (Superset): Biceps & Core": ["Incline Supinated Dumbbell Curls", "Heavy Suitcase Holds"]
+    },
     "Freestyle / Custom Day": {
         "Select Any Exercise(s)": [
             "Ab-Wheel Rollouts", "Anchored Reverse Crunch", "Band-Assisted Dips", "Banded Crossovers", 
             "Banded Face Pulls", "Banded Tricep Pushdowns", "Barbell Hip Thrusts", "Bulgarian Split Squats", 
-            "Chest-Supported Lateral Raise", "Chest-Supported Rear Delt Flye", "Dumbbell Bench Press", 
-            "Dumbbell Hammer Curls", "Erector-Focused Roman Chair Extension", "Front-Rack Kettlebell Marches", 
+            "Cable Lateral Raise", "Cable Tricep Pushdown", "Chest-Supported Dumbbell Row", "Chest-Supported Lateral Raise", 
+            "Chest-Supported Rear Delt Flye", "Dumbbell Bench Press", "Dumbbell Hammer Curls", "Dumbbell Romanian Deadlift", 
+            "Elevated Push-Ups", "Erector-Focused Roman Chair Extension", "Front-Rack Kettlebell Marches", 
             "Half-Kneeling Pallof Press", "Hamstring-Focused Roman Chair Extension", "Heavy Barbell Front Squat", 
             "Heavy Russian Kettlebell Swings", "Heavy Suitcase Holds", "Heels-Elevated Landmine Squat", 
-            "Incline Supinated Dumbbell Curls", "Landmine Press", "Neutral Grip Pull-Ups", "Nordic Curls", 
-            "Overhead Tricep Extension", "Push-Ups", "Romanian Deadlift (RDL)", "Single-Arm Bench-Supported Dumbbell Row", 
-            "Squat Wedge Dumbbell Calf Raises", "T-Bar Landmine Row", "Wall Tibialis Raises"
+            "Incline Supinated Dumbbell Curls", "Landmine Press", "Lat Pulldown", "Machine Chest Press", "Machine Leg Press", 
+            "Neutral Grip Pull-Ups", "Nordic Curls", "Overhead Tricep Extension", "Push-Ups", "Romanian Deadlift (RDL)", 
+            "Seated Leg Curl", "Single-Arm Bench-Supported Dumbbell Row", "Squat Wedge Dumbbell Calf Raises", 
+            "Standing Dumbbell Lateral Raise", "T-Bar Landmine Row", "Wall Tibialis Raises"
         ]
     },
     "🧬 Life Event (Sick/Travel)": {
@@ -125,6 +139,18 @@ REST_PROTOCOLS = {
         "Block 1 (Alternating): Pull-Ups & Dips": "Pull-Ups ➔ Rest 90-120s ➔ Dips ➔ Rest 90-120s.",
         "Block 2 (Alternating): Landmine Press & Face Pulls": "Landmine Press ➔ Rest 60s ➔ Face Pulls ➔ Rest 60s.",
         "Block 3 (Tri-Set): Curls, Pushdowns & Lateral Raises": "Curls ➔ Pushdowns ➔ Lateral Raises ➔ Rest 60s."
+    },
+    "✈️ Travel: Bands & DBs": {
+        "Block 1 (Superset): Quads & Hams": "Split Squats ➔ DB RDL ➔ Rest 90-120s.",
+        "Block 2 (Alternating): Chest & Back": "Push-Ups ➔ Rest 60s ➔ DB Row ➔ Rest 60s.",
+        "Block 3 (Tri-Set): Arms & Shoulders": "Hammer Curls ➔ Tricep Ext ➔ Lateral Raise ➔ Rest 60s.",
+        "Block 4 (Superset): Posture & Core": "Face Pulls ➔ Reverse Crunch ➔ Rest 60s."
+    },
+    "🏨 Travel: Commercial Gym": {
+        "Block 1 (Alternating): Legs": "Leg Press ➔ Rest 90-120s ➔ Seated Leg Curl ➔ Rest 90-120s.",
+        "Block 2 (Alternating): Chest & Back": "Chest Press ➔ Rest 90s ➔ Lat Pulldown ➔ Rest 90s.",
+        "Block 3 (Superset): Shoulders & Triceps": "Cable Lateral Raise ➔ Cable Pushdown ➔ Rest 60-90s.",
+        "Block 4 (Superset): Biceps & Core": "Incline Curls ➔ Suitcase Holds ➔ Rest 60s."
     }
 }
 
@@ -132,14 +158,18 @@ WARM_UPS = {
     "Tuesday: Lower A": "2x10 Deep Bodyweight Squats (pry the hips), 2x10 Cossack Squats, 90-sec Couch Stretch per leg, 1x20 Wall Tibialis Raises.",
     "Wednesday: Upper A": "2x15 Band Pull-aparts, 2x10 Push-up to Downward Dog (shoulder flow), 2x15 light Tricep Pushdowns (elbow blood flow).",
     "Thursday: Lower B": "2x15 BW Glute Bridges, 1x15 KB Goblet Squats (stay at bottom to open hips), 2x10 BW Good Mornings, 90-sec Couch Stretch.",
-    "Friday: Upper B": "Dead hang from pull-up bar for 30-45s, 2x10 Scapular Pull-ups (activate lats), 2x15 Banded Face Pulls (rotator cuff prep)."
+    "Friday: Upper B": "Dead hang from pull-up bar for 30-45s, 2x10 Scapular Pull-ups (activate lats), 2x15 Banded Face Pulls (rotator cuff prep).",
+    "✈️ Travel: Bands & DBs": "2x15 Band Pull-aparts, 2x10 BW Squats, 2x10 BW Glute Bridges to wake up the body after travel.",
+    "🏨 Travel: Commercial Gym": "5 mins light incline walking on treadmill. 2x15 Band Pull-aparts, 2x10 Push-up to Downward Dog."
 }
 
 COOL_DOWNS = {
     "Tuesday: Lower A": "2 mins 90/90 hip breathing. 90-sec deep couch stretch per leg to reset quad/hip flexor length.",
     "Wednesday: Upper A": "90-sec Floor Scorpion Pec Stretch per side. 60-sec dead hang from pull-up bar to completely decompress the spine.",
     "Thursday: Lower B": "90-sec Banded hamstring stretch per leg (lying on back). 2 mins Seated pigeon/glute stretch.",
-    "Friday: Upper B": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole."
+    "Friday: Upper B": "2 mins foam rolling thoracic spine. 60-sec cross-body shoulder stretch. 60-sec Lat stretch holding an upright pole.",
+    "✈️ Travel: Bands & DBs": "90-sec Couch Stretch per leg. 60-sec Lat stretch holding a doorway.",
+    "🏨 Travel: Commercial Gym": "2 mins Seated pigeon/glute stretch. 60-sec dead hang from a pull-up bar to decompress."
 }
 
 MOBILITY_GUIDES = {
@@ -164,12 +194,15 @@ DAY_PHILOSOPHY = {
     "Tuesday: Lower A": "Quad-dominant strength focus. The goal here is anterior chain power (Front Squats) followed by intense core bracing and armor-building to protect the spine.",
     "Wednesday: Upper A": "A heavy horizontal emphasis. Pairing pushes with pulls in supersets ensures structural balance across the shoulder joint while allowing you to accumulate dense volume efficiently.",
     "Thursday: Lower B": "Posterior chain obliteration. The RDL stretches the hamstrings under extreme load, while unilateral split squats fix imbalances. Finishes with intense erector and glute isolation.",
-    "Friday: Upper B": "Vertical plane dominance. Pull-ups and overhead-angled presses (Landmine) build width and shoulder health, followed by targeted isolation for the arms and lateral delts."
+    "Friday: Upper B": "Vertical plane dominance. Pull-ups and overhead-angled presses (Landmine) build width and shoulder health, followed by targeted isolation for the arms and lateral delts.",
+    "✈️ Travel: Bands & DBs": "Metabolic Stress Focus. Lacking heavy barbells, we compensate with extreme stretch, slow eccentrics, and high-density supersets to force growth through blood accumulation rather than heavy mechanical tension.",
+    "🏨 Travel: Commercial Gym": "Machine Tension Focus. Capitalize on equipment you don't own. Machines offer zero instability, meaning 100% of your energy goes strictly into the target muscle with minimal CNS fatigue."
 }
 
 REP_TARGETS = {
     "T-Bar Landmine Row": "4 Sets × 8–10 Reps", "Dumbbell Bench Press": "4 Sets × 8–10 Reps",
-    "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm", "Push-Ups": "3 Sets × 10–15 Reps",
+    "Single-Arm Bench-Supported Dumbbell Row": "3 Sets × 10–12 Reps/arm", "Chest-Supported Dumbbell Row": "3 Sets × 10–12 Reps",
+    "Push-Ups": "3 Sets × 10–15 Reps", "Elevated Push-Ups": "3 Sets × 10–15 Reps",
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps", "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps", "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
     "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps", "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
@@ -183,14 +216,20 @@ REP_TARGETS = {
     "Heavy Russian Kettlebell Swings": "3 Sets × 12–15 Reps", "Barbell Hip Thrusts": "3 Sets × 10–12 Reps",
     "Ab-Wheel Rollouts": "3 Sets × 8–10 Reps", "Nordic Curls": "3 Sets × 5–8 Reps",
     "Erector-Focused Roman Chair Extension": "3 Sets × 8–10 Reps", "Heavy Suitcase Holds": "3 Sets × 45 Seconds/side",
-    "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side"
+    "Front-Rack Kettlebell Marches": "3 Sets × 45 Seconds/side",
+    "Dumbbell Romanian Deadlift": "4 Sets × 10–12 Reps", "Standing Dumbbell Lateral Raise": "4 Sets × 15–20 Reps",
+    "Machine Leg Press": "4 Sets × 8–10 Reps", "Seated Leg Curl": "4 Sets × 10–15 Reps",
+    "Machine Chest Press": "4 Sets × 8–10 Reps", "Lat Pulldown": "4 Sets × 8–12 Reps",
+    "Cable Lateral Raise": "4 Sets × 12–15 Reps", "Cable Tricep Pushdown": "3 Sets × 12–15 Reps"
 }
 
 EXERCISE_GUIDES = {
     "T-Bar Landmine Row": {"Setup": "Straddle the barbell facing away from the landmine anchor. Use a V-grip handle hooked under the bar.", "Execution": "Hinge at hips so torso is almost parallel. Row plates to your chest. Slow 3-second negative (lowering) phase.", "Why": "Stable pulling builds back thickness without the systemic lower back fatigue of a standard bent-over barbell row."},
     "Dumbbell Bench Press": {"Setup": "Set bench to a slight incline (15-30 degrees). Shoulder blades pinned down and back.", "Execution": "Lower slowly (3s) to a deep stretch. Press up, but STOP a few inches before the dumbbells touch. Do not lock out.", "Why": "A slight incline perfectly aligns with the pec fibers. Stopping before the bells touch prevents the joints from 'stacking', keeping 100% of the tension on the chest."},
     "Single-Arm Bench-Supported Dumbbell Row": {"Setup": "Hand and same-side knee on the bench. Back perfectly flat.", "Execution": "Pull the dumbbell towards your HIP, not your armpit. Pause for 1 full second at the top contraction.", "Why": "Bench support removes lower back strain. Pulling to the hip isolates the lats instead of shrugging with your upper traps."},
+    "Chest-Supported Dumbbell Row": {"Setup": "Set an incline bench to 45 degrees. Lay chest flat against the pad, feet anchored securely on the floor.", "Execution": "Let long arms hang straight down. Row both dumbbells up by driving your elbows back toward your hips.", "Why": "Completely removes the lower back and core stabilization requirement, allowing you to use clunky dumbbells perfectly without them hitting the floor or ribs."},
     "Push-Ups": {"Setup": "Hands shoulder-width, core braced tightly (hollow body).", "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the floor, then explode up.", "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. A high-rep finisher with zero joint wear."},
+    "Elevated Push-Ups": {"Setup": "Place hands firmly on a bench, box, or barbell set in a rack. Keep your core tight in a hollow body position.", "Execution": "Lower chest to the edge of the elevated surface. Keep elbows tucked at a 45-degree angle. Press up forcefully.", "Why": "Mechanically scales the push-up to reduce resistance. This allows perfect elbow tracking and full range of motion while building the strength required for the floor."},
     "Overhead Tricep Extension": {"Setup": "Anchor band at waist height behind you (or step on it). Grab band, face away, and bring hands behind head with elbows pointing up.", "Execution": "Press the band straight up to the ceiling. Control the descent back into a deep stretch.", "Why": "Bands provide an 'ascending resistance curve', meaning tension increases at the lockout where the triceps are mechanically strongest, while keeping constant tension in the stretch."},
     "Dumbbell Hammer Curls": {"Setup": "Standing, neutral grip (palms facing each other).", "Execution": "Squeeze up cleanly, then a strict 2-second negative. Zero swinging or momentum.", "Why": "Targets the brachialis and brachioradialis. This pushes the bicep up (creating a larger peak) and prevents elbow tendonitis."},
     "Banded Crossovers": {"Setup": "Anchor bands HIGH (above head). Step forward to create tension.", "Execution": "Pull down and across your body (high-to-low). Squeeze for 2 full seconds at the bottom contraction where your hands overlap.", "Why": "The high-to-low angle perfectly targets the lower/sternocostal pec fibers, brilliantly complementing the upper-pec focus of your incline DB presses."},
@@ -217,7 +256,15 @@ EXERCISE_GUIDES = {
     "Hamstring-Focused Roman Chair Extension": {"Setup": "45-degree hyperextension bench. Pad sits BELOW hips.", "Execution": "Keep back flat. Hinge down, pull up using only hamstrings and glutes.", "Why": "Provides a fantastic, loaded stretch for hamstrings without axial loading on the spine."},
     "Erector-Focused Roman Chair Extension": {"Setup": "45-degree bench. Pad sits AT hips.", "Execution": "Allow upper back to round over the pad, then pull up by extending the spine.", "Why": "Directly trains the spinal erectors through full range of motion, building a thick, resilient lower back."},
     "Heavy Suitcase Holds": {"Setup": "Hold heavy kettlebell/dumbbell in one hand. Stand perfectly tall.", "Execution": "Perform slow, highly controlled march in place. Do not let weight pull shoulder down.", "Why": "Dynamic pelvic stabilizer, bulletproofing the glute medius and preventing hip drop."},
-    "Front-Rack Kettlebell Marches": {"Setup": "Two heavy KBs held at chest.", "Execution": "Slowly march in place, lifting knees above hip level with immense control.", "Why": "Heavy core stabilization. Forces upper back and core to work isometrically to keep you upright."}
+    "Front-Rack Kettlebell Marches": {"Setup": "Two heavy KBs held at chest.", "Execution": "Slowly march in place, lifting knees above hip level with immense control.", "Why": "Heavy core stabilization. Forces upper back and core to work isometrically to keep you upright."},
+    "Dumbbell Romanian Deadlift": {"Setup": "Hold DBs in front of thighs, feet hip-width. Unlock knees.", "Execution": "Push hips straight back until you feel a massive hamstring stretch. Keep back perfectly flat.", "Why": "Excellent for travel. Provides deep hamstring loaded stretch without needing a heavy barbell."},
+    "Standing Dumbbell Lateral Raise": {"Setup": "Stand tall, DBs at sides. Slight forward lean.", "Execution": "Sweep the dumbbells OUT and AWAY from you, not just up. Stop at shoulder height.", "Why": "Pure isolation of the lateral deltoid for width."},
+    "Machine Leg Press": {"Setup": "Feet shoulder-width on the sled. Pull yourself deep into the seat to protect your lower back.", "Execution": "Lower the sled as deep as your mobility allows without your tailbone tucking under. Drive back up but do NOT lock the knees.", "Why": "Zero balancing required. Allows you to take the quads perfectly to muscular failure safely."},
+    "Seated Leg Curl": {"Setup": "Align the machine axis perfectly with your knee joint. Pin the thigh pad down hard.", "Execution": "Curl the weight under, pausing for 1 second at the peak contraction.", "Why": "The seated position uniquely stretches the hamstrings at the hip, triggering massive stretch-mediated hypertrophy."},
+    "Machine Chest Press": {"Setup": "Set seat height so the handles align with your mid/lower chest. Pin shoulder blades back.", "Execution": "Press the handles forward, focusing on bringing your biceps across your chest. Control the negative.", "Why": "Locks you into a safe plane of motion, allowing you to fry the pecs without shoulder instability."},
+    "Lat Pulldown": {"Setup": "Use a medium/wide grip. Lock your knees under the pad tightly.", "Execution": "Pull the bar down to your upper chest, driving your elbows down toward your back pockets.", "Why": "Replaces pull-ups with adjustable tension, letting you build back width perfectly at any strength level."},
+    "Cable Lateral Raise": {"Setup": "Set a cable to the lowest position. Grab it with the opposite hand (cable crosses in front of you).", "Execution": "Sweep the arm out to the side. Control the descent as the cable pulls your arm across your body.", "Why": "Unlike dumbbells which lose tension at the bottom, cables provide constant tension through the entire range of motion."},
+    "Cable Tricep Pushdown": {"Setup": "Attach a rope to a high cable. Tuck elbows strictly to your ribs.", "Execution": "Push down and pull the rope APART at the very bottom. Control it on the way up.", "Why": "Maintains tension at the peak contraction where the triceps are mechanically strongest."}
 }
 
 DAILY_SYSTEM_RESET = {
@@ -243,18 +290,21 @@ EXERCISE_CAPS = {
     "Bulgarian Split Squats": 4, "T-Bar Landmine Row": 4, "Dumbbell Bench Press": 4,
     "Landmine Press": 4, "Neutral Grip Pull-Ups": 4, "Band-Assisted Dips": 4,
     "Heavy Russian Kettlebell Swings": 4, "Barbell Hip Thrusts": 4, "Nordic Curls": 4,
-    "Single-Arm Bench-Supported Dumbbell Row": 6, "Push-Ups": 6, "Overhead Tricep Extension": 6,
-    "Dumbbell Hammer Curls": 6, "Banded Crossovers": 6, "Chest-Supported Lateral Raise": 6,
-    "Chest-Supported Rear Delt Flye": 6, "Anchored Reverse Crunch": 6, "Wall Tibialis Raises": 6,
-    "Squat Wedge Dumbbell Calf Raises": 6, "Half-Kneeling Pallof Press": 6, "Banded Face Pulls": 6,
-    "Incline Supinated Dumbbell Curls": 6, "Banded Tricep Pushdowns": 6, "Ab-Wheel Rollouts": 6,
-    "Erector-Focused Roman Chair Extension": 6, "Heavy Suitcase Holds": 6, "Front-Rack Kettlebell Marches": 6,
-    "Hamstring-Focused Roman Chair Extension": 6
+    "Machine Leg Press": 4, "Machine Chest Press": 4, "Lat Pulldown": 5, "Dumbbell Romanian Deadlift": 4,
+    "Single-Arm Bench-Supported Dumbbell Row": 6, "Chest-Supported Dumbbell Row": 6, "Push-Ups": 6, 
+    "Elevated Push-Ups": 6, "Overhead Tricep Extension": 6, "Dumbbell Hammer Curls": 6, "Banded Crossovers": 6, 
+    "Chest-Supported Lateral Raise": 6, "Chest-Supported Rear Delt Flye": 6, "Anchored Reverse Crunch": 6, 
+    "Wall Tibialis Raises": 6, "Squat Wedge Dumbbell Calf Raises": 6, "Half-Kneeling Pallof Press": 6, 
+    "Banded Face Pulls": 6, "Incline Supinated Dumbbell Curls": 6, "Banded Tricep Pushdowns": 6, 
+    "Ab-Wheel Rollouts": 6, "Erector-Focused Roman Chair Extension": 6, "Heavy Suitcase Holds": 6, 
+    "Front-Rack Kettlebell Marches": 6, "Hamstring-Focused Roman Chair Extension": 6, 
+    "Standing Dumbbell Lateral Raise": 6, "Seated Leg Curl": 6, "Cable Lateral Raise": 6, "Cable Tricep Pushdown": 6
 }
 
 MUSCLE_MAP = {
     "T-Bar Landmine Row": {"Back": 1.0, "Biceps": 0.5}, "Dumbbell Bench Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
-    "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
+    "Single-Arm Bench-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5}, "Chest-Supported Dumbbell Row": {"Back": 1.0, "Biceps": 0.5},
+    "Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5}, "Elevated Push-Ups": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5},
     "Overhead Tricep Extension": {"Triceps": 1.0}, "Dumbbell Hammer Curls": {"Biceps": 1.0},
     "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5}, "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
     "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5}, "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
@@ -268,16 +318,22 @@ MUSCLE_MAP = {
     "Heavy Russian Kettlebell Swings": {"Glutes": 1.0, "Hamstrings": 0.5}, "Barbell Hip Thrusts": {"Glutes": 1.0, "Hamstrings": 0.5},
     "Ab-Wheel Rollouts": {"Abs": 1.0}, "Nordic Curls": {"Hamstrings": 1.0, "Glutes": 0.5},
     "Erector-Focused Roman Chair Extension": {"Back": 1.0, "Glutes": 0.5}, "Heavy Suitcase Holds": {"Abs": 1.0},
-    "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5}
+    "Front-Rack Kettlebell Marches": {"Abs": 1.0, "Quads": 0.5},
+    "Dumbbell Romanian Deadlift": {"Hamstrings": 1.0, "Glutes": 0.5}, "Standing Dumbbell Lateral Raise": {"Shoulders": 1.0},
+    "Machine Leg Press": {"Quads": 1.0, "Glutes": 0.5}, "Seated Leg Curl": {"Hamstrings": 1.0},
+    "Machine Chest Press": {"Chest": 1.0, "Shoulders": 0.5, "Triceps": 0.5}, "Lat Pulldown": {"Back": 1.0, "Biceps": 0.5},
+    "Cable Lateral Raise": {"Shoulders": 1.0}, "Cable Tricep Pushdown": {"Triceps": 1.0}
 }
 
 BW_MULTIPLIERS = {
-    "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65, 
+    "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65, "Elevated Push-Ups": 0.45,
     "Nordic Curls": 0.60, "Anchored Reverse Crunch": 0.40, "Ab-Wheel Rollouts": 0.50,
     "Squat Wedge Dumbbell Calf Raises": 1.0, "Bulgarian Split Squats": 0.85, 
     "Erector-Focused Roman Chair Extension": 0.50, "Glute-Focused Roman Chair Extension": 0.50,
     "Hamstring-Focused Roman Chair Extension": 0.50, "Heavy Barbell Front Squat": 0.85,
-    "Wall Tibialis Raises": 0.30
+    "Wall Tibialis Raises": 0.30, "Machine Leg Press": 0.0, "Seated Leg Curl": 0.0,
+    "Machine Chest Press": 0.0, "Lat Pulldown": 0.0, "Cable Lateral Raise": 0.0, "Cable Tricep Pushdown": 0.0,
+    "Dumbbell Romanian Deadlift": 0.40, "Standing Dumbbell Lateral Raise": 0.0, "Chest-Supported Dumbbell Row": 0.0
 }
 
 BAND_SUBTRACTIONS = {
@@ -290,7 +346,7 @@ BAND_SUBTRACTIONS = {
 }
 
 UNILATERAL_EXERCISES = ["Bulgarian Split Squats", "Single-Arm Bench-Supported Dumbbell Row", "Half-Kneeling Pallof Press", "Heavy Suitcase Holds", "Front-Rack Kettlebell Marches"]
-HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press"]
+HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumbbell Bench Press", "T-Bar Landmine Row", "Landmine Press", "Machine Leg Press", "Machine Chest Press"]
 
 # --- GLOBAL EXERCISE CATEGORIES FOR FATIGUE LOGIC ---
 ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
@@ -446,7 +502,6 @@ if 'h_sleep' not in st.session_state: st.session_state['h_sleep'] = int(get_late
 if 'h_rhr' not in st.session_state: st.session_state['h_rhr'] = int(get_latest_nonzero(df_health, 'RHR', 50))
 if 'h_hrv' not in st.session_state: st.session_state['h_hrv'] = int(get_latest_nonzero(df_health, 'HRV', 60))
 
-# --- FAST-PATH RECENT LIFTS DATAFRAME FOR SESSIONS ---
 df_lifts_recent = df_lifts[df_lifts['Date'] >= pd.to_datetime(date.today()) - pd.Timedelta(days=90)] if not df_lifts.empty else df_lifts
 
 st.title("🔬 Sports Science Dashboard")
@@ -1141,6 +1196,12 @@ with tab_overview:
         st.write("") 
         for block_name, exercises in blocks.items():
             st.markdown(f"#### {block_name}")
+            
+            # --- REST PROTOCOL OVERVIEW ---
+            rest_flow = REST_PROTOCOLS.get(day, {}).get(block_name, "")
+            if rest_flow:
+                st.info(f"⏱️ **Execution Flow:** {rest_flow}")
+                
             for ex in exercises:
                 target = REP_TARGETS.get(ex, "Sets x Reps")
                 guide = EXERCISE_GUIDES.get(ex, {})
