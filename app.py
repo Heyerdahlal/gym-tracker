@@ -266,6 +266,17 @@ EXERCISE_GUIDES = {
     "Cable Tricep Pushdown": {"Setup": "Attach a rope to a high cable. Tuck elbows strictly to your ribs.", "Execution": "Push down and pull the rope APART at the very bottom. Control it on the way up.", "Why": "Maintains tension at the peak contraction where the triceps are mechanically strongest."}
 }
 
+DAILY_SYSTEM_RESET = {
+    "1. The Shin Breaker": {"Target": "1-2min: Stretches the anterior tibialis to prevent shin splints and keep knees healthy.", "Execution": "Kneel with toes pointed back (laces flat), sit butt onto heels. Lean back slightly and lift knees 1 inch off the floor.", "Progression": "Increase the height you lift your knees off the floor."},
+    "2. The Combat Stretch (Ankle Mobility)": {"Target": "1-2min per side: Unlocks true ankle dorsiflexion for deep squatting.", "Execution": "Half-kneeling lunge. Place a heavy kettlebell on your front knee. Drive the knee as far over your toes as humanly possible while keeping the heel glued to the floor.", "Progression": "Increase the weight of the kettlebell to force a deeper fascial stretch."},
+    "3. The Couch Stretch": {"Target": "2min per side: Deep stretch of the quadriceps and hip flexors.", "Execution": "Place knee into a wall/couch corner, shin vertical. Squeeze the glute of the stretching leg HARD and lift torso upright.", "Progression": "Move from resting hands on a box/chair to a fully upright, unsupported torso."},
+    "4. The 90/90 Hip Switch": {"Target": "2min: Restores internal and external rotation of the hip capsule.", "Execution": "Sit on the floor, both legs bent at 90 degrees (one in front, one behind). Pivot on your heels to windshield-wiper your knees to the other side.", "Progression": "Perform the movement without using your hands on the floor for support."},
+    "5. The 'Paleo Chair'": {"Target": "2min: Recalibrates hips and ankles for deep squatting.", "Execution": "Drop into the deepest squat you can hold with heels flat. Drive knees out with elbows, keep chest tall.", "Progression": "Shift from holding a doorframe for support to a completely free-standing hold."},
+    "6. The Lateral Child’s Pose": {"Target": "1min each side: Stretches the latissimus dorsi and quadratus lumborum (lower back).", "Execution": "Sit in Child's pose, walk both hands far to one side, and push the opposite hip down into your heel.", "Progression": "Walk the hands further laterally to increase the fascial pull."},
+    "7. Wall 'Snow Angels'": {"Target": "15 reps: Restores thoracic spine (upper back) mobility and shoulder health.", "Execution": "Back flat against wall, touch lower back, head, elbows, and wrists to the wall. Slide arms up to a 'Y' and down to a 'W'.", "Progression": "Move feet closer to the wall while maintaining full lower back contact."},
+    "8. The 'Neck Anchor'": {"Target": "1min per side: Releases tension in the upper traps and neck.", "Execution": "Place right hand behind back, tilt left ear to left shoulder, rotate chin toward armpit.", "Progression": "Gently use the non-anchored hand to apply microscopic overpressure to the stretch."}
+}
+
 VOLUME_THRESHOLDS = {
     "Chest": {"MEV": 10, "MRV": 20}, "Back": {"MEV": 10, "MRV": 20},
     "Quads": {"MEV": 8, "MRV": 18}, "Hamstrings": {"MEV": 6, "MRV": 14}, "Glutes": {"MEV": 4, "MRV": 16},
