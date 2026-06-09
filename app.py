@@ -63,7 +63,7 @@ CARDIO_COLS = ['Date', 'Exercise', 'Duration_Mins', 'Distance_km', 'Avg_HR', 'Ma
 PROGRAM = {
     "Tuesday: Lower A": {
         "Block 1: Heavy Front Squat": ["Heavy Barbell Front Squat"],
-        "Block 2 (Superset): Landmine Squat & Core": ["Heels-Elevated Landmine Squat", "Strict Hanging Leg Raises"],
+        "Block 2 (Superset): Reverse Nordics & Core": ["Reverse Nordic Curls", "Strict Hanging Leg Raises"],
         "Block 3 (Superset): KB Swings & Nordics": ["Heavy Russian Kettlebell Swings", "Nordic Curls"],
         "Block 4 (Tri-Set): Calves, Tibs & Core": ["Single-Leg Supported Dumbbell Calf Raise", "Wall Tibialis Raises", "Half-Kneeling Pallof Press"]
     },
@@ -106,7 +106,7 @@ PROGRAM = {
             "Half-Kneeling Pallof Press", "Hamstring-Focused Roman Chair Extension", "Heavy Barbell Front Squat", 
             "Heavy Russian Kettlebell Swings", "Heavy Suitcase Holds", "Heavy Suitcase Marches", "Heels-Elevated Landmine Squat", 
             "Incline Supinated Dumbbell Curls", "Landmine Press", "Lat Pulldown", "Machine Chest Press", "Machine Leg Press", 
-            "Neutral Grip Pull-Ups", "Nordic Curls", "Overhead Tricep Extension", "Push-Ups", "Romanian Deadlift (RDL)", 
+            "Neutral Grip Pull-Ups", "Nordic Curls", "Overhead Tricep Extension", "Push-Ups", "Reverse Nordic Curls", "Romanian Deadlift (RDL)", 
             "Seated Leg Curl", "Single-Arm Bench-Supported Dumbbell Row", "Single-Leg Supported Dumbbell Calf Raise", 
             "Standing Dumbbell Lateral Raise", "Strict Hanging Leg Raises", "T-Bar Landmine Row", "Wall Tibialis Raises"
         ]
@@ -119,7 +119,7 @@ PROGRAM = {
 REST_PROTOCOLS = {
     "Tuesday: Lower A": {
         "Block 1: Heavy Front Squat": "Perform Squats ➔ Rest 3 full minutes.",
-        "Block 2 (Superset): Landmine Squat & Core": "Landmine Squat ➔ Hanging Leg Raises ➔ Rest 90s.",
+        "Block 2 (Superset): Reverse Nordics & Core": "Reverse Nordics ➔ Hanging Leg Raises ➔ Rest 90s.",
         "Block 3 (Superset): KB Swings & Nordics": "KB Swings ➔ Nordic Curls ➔ Rest 90-120s.",
         "Block 4 (Tri-Set): Calves, Tibs & Core": "Calves ➔ Tibs ➔ Pallof Press ➔ Rest 60s."
     },
@@ -206,7 +206,7 @@ REP_TARGETS = {
     "Overhead Tricep Extension": "3 Sets × 12–15 Reps", "Dumbbell Hammer Curls": "3 Sets × 10–12 Reps",
     "Banded Crossovers": "3 Sets × 15–20 Reps", "Chest-Supported Lateral Raise": "4 Sets × 15–20 Reps",
     "Chest-Supported Rear Delt Flye": "4 Sets × 15–20 Reps", "Heavy Barbell Front Squat": "3 Sets × 4–6 Reps",
-    "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps", "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
+    "Reverse Nordic Curls": "4 Sets × 5–8 Reps", "Heels-Elevated Landmine Squat": "4 Sets × 6–8 Reps", "Bulgarian Split Squats": "4 Sets × 8–10 Reps/leg",
     "Hamstring-Focused Roman Chair Extension": "3 Sets × 12–15 Reps", "Anchored Reverse Crunch": "3 Sets × 10–12 Reps",
     "Wall Tibialis Raises": "3 Sets × 15–20 Reps", "Single-Leg Supported Dumbbell Calf Raise": "4 Sets × 10–12 Reps/leg",
     "Half-Kneeling Pallof Press": "3 Sets × 10–12 Reps/side", "Neutral Grip Pull-Ups": "4 Sets × 5–8 Reps",
@@ -224,6 +224,7 @@ REP_TARGETS = {
 }
 
 EXERCISE_GUIDES = {
+    "Reverse Nordic Curls": {"Setup": "Kneel on a soft pad with knees hip-width apart, toes pointed straight back (or tucked if more comfortable). Squeeze glutes to lock your hips into full extension.", "Execution": "Keeping a perfectly straight line from your knees to your shoulders, slowly lean backward as far as you can control. Use your quads to pull yourself back up to the starting position.", "Why": "Delivers an unparalleled loaded stretch to the rectus femoris (quads) using pure bodyweight leverage, eliminating lower back fatigue entirely."},
     "Single-Leg Supported Dumbbell Calf Raise": {"Setup": "Hold a heavy dumbbell in one hand. Place that same-side foot on a wedge/plate. Use your free hand to firmly hold a wall or rack for perfect balance.", "Execution": "Let your heel drop as deep as possible into a stretch. Pause for 2 full seconds. Explode up to the top and pause.", "Why": "Removing the balance requirement allows 100% of your central nervous system to focus on calf tension, and the single-leg approach maximizes the load."},
     "Push-Ups": {"Setup": "Hands shoulder-width, core braced tightly (hollow body). Elevate hands on a bench if you cannot easily hit 10 perfect floor reps.", "Execution": "Descend slowly. PAUSE for 1 second with your chest hovering 1 inch off the surface, then explode up. Keep elbows tucked at 45 degrees.", "Why": "The dead-stop pause kills the stretch reflex, forcing raw pec/triceps activation. Hand elevation mechanically scales the resistance down so you can maintain perfect form."},
     "Strict Hanging Leg Raises": {"Setup": "Hang from a pull-up bar with a hollow body position.", "Execution": "Initiate by tilting your pelvis upward, then raise your legs (or knees if scaling) until they reach 90 degrees. Lower strictly over 3 seconds.", "Why": "Elite anti-extension core training that also builds grip and lat endurance."},
@@ -287,7 +288,7 @@ VOLUME_THRESHOLDS = {
 }
 
 EXERCISE_CAPS = {
-    "Heavy Barbell Front Squat": 4, "Heels-Elevated Landmine Squat": 4, "Romanian Deadlift (RDL)": 4,
+    "Heavy Barbell Front Squat": 4, "Heels-Elevated Landmine Squat": 4, "Reverse Nordic Curls": 4, "Romanian Deadlift (RDL)": 4,
     "Bulgarian Split Squats": 4, "T-Bar Landmine Row": 4, "Dumbbell Bench Press": 4,
     "Landmine Press": 4, "Neutral Grip Pull-Ups": 4, "Band-Assisted Dips": 4,
     "Heavy Russian Kettlebell Swings": 4, "Barbell Hip Thrusts": 4, "Nordic Curls": 4,
@@ -309,7 +310,7 @@ MUSCLE_MAP = {
     "Overhead Tricep Extension": {"Triceps": 1.0}, "Dumbbell Hammer Curls": {"Biceps": 1.0},
     "Banded Crossovers": {"Chest": 1.0, "Shoulders": 0.5}, "Chest-Supported Lateral Raise": {"Shoulders": 1.0},
     "Chest-Supported Rear Delt Flye": {"Shoulders": 1.0, "Back": 0.5}, "Heavy Barbell Front Squat": {"Quads": 1.0, "Glutes": 0.5},
-    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5}, "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
+    "Heels-Elevated Landmine Squat": {"Quads": 1.0, "Glutes": 0.5}, "Reverse Nordic Curls": {"Quads": 1.0, "Abs": 0.5}, "Bulgarian Split Squats": {"Quads": 1.0, "Glutes": 1.0},
     "Hamstring-Focused Roman Chair Extension": {"Hamstrings": 1.0, "Glutes": 0.5}, "Anchored Reverse Crunch": {"Abs": 1.0},
     "Strict Hanging Leg Raises": {"Abs": 1.0},
     "Wall Tibialis Raises": {"Calves": 1.0}, "Single-Leg Supported Dumbbell Calf Raise": {"Calves": 1.0},
@@ -329,7 +330,7 @@ MUSCLE_MAP = {
 
 BW_MULTIPLIERS = {
     "Neutral Grip Pull-Ups": 0.95, "Band-Assisted Dips": 0.95, "Push-Ups": 0.65,
-    "Nordic Curls": 0.60, "Anchored Reverse Crunch": 0.40, "Strict Hanging Leg Raises": 0.50, "Ab-Wheel Rollouts": 0.50,
+    "Nordic Curls": 0.60, "Reverse Nordic Curls": 0.65, "Anchored Reverse Crunch": 0.40, "Strict Hanging Leg Raises": 0.50, "Ab-Wheel Rollouts": 0.50,
     "Single-Leg Supported Dumbbell Calf Raise": 1.0, "Bulgarian Split Squats": 0.85, 
     "Erector-Focused Roman Chair Extension": 0.50, "Glute-Focused Roman Chair Extension": 0.50,
     "Hamstring-Focused Roman Chair Extension": 0.50, "Heavy Barbell Front Squat": 0.85,
@@ -357,7 +358,7 @@ HEAVY_COMPOUNDS = ["Heavy Barbell Front Squat", "Romanian Deadlift (RDL)", "Dumb
 
 ASSISTED_EXERCISES = ["Neutral Grip Pull-Ups", "Band-Assisted Dips"]
 RESISTED_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
-BODYWEIGHT_ONLY = ["Anchored Reverse Crunch", "Strict Hanging Leg Raises", "Nordic Curls", "Ab-Wheel Rollouts"]
+BODYWEIGHT_ONLY = ["Anchored Reverse Crunch", "Strict Hanging Leg Raises", "Nordic Curls", "Reverse Nordic Curls", "Ab-Wheel Rollouts"]
 PURE_BAND_EXERCISES = ["Banded Face Pulls", "Banded Crossovers", "Banded Tricep Pushdowns", "Half-Kneeling Pallof Press", "Overhead Tricep Extension"]
 
 def snap_to_weight(target_weight, exercise_name):
