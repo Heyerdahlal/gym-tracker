@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 from garminconnect import Garmin
+from gym_config import PROGRAM, REST_PROTOCOLS, WARM_UPS, COOL_DOWNS, MOBILITY_GUIDES, DAY_PHILOSOPHY, REP_TARGETS, EXERCISE_GUIDES, DAILY_SYSTEM_RESET, VOLUME_THRESHOLDS, EXERCISE_CAPS, MUSCLE_MAP, BW_MULTIPLIERS, BAND_SUBTRACTIONS, ADJUSTABLE_DBS, KETTLEBELLS, PUSH_UP_VARIATIONS, UNILATERAL_EXERCISES, HEAVY_COMPOUNDS, ASSISTED_EXERCISES, RESISTED_EXERCISES, BODYWEIGHT_ONLY, PURE_BAND_EXERCISES 
 
 st.set_page_config(page_title="My Gym Tracker", page_icon="🏋️‍♂️", layout="wide")
 
@@ -184,9 +185,26 @@ def overwrite_sheet(ws, df_new, required_cols):
     df_to_save = df_to_save[required_cols]
     df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime('%Y-%m-%d')
     df_to_save = df_to_save.fillna('')
-    ws.clear()
-    ws.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
-    st.cache_data.clear()
+    
+    # SAFEGUARD: Grab the current data as a backup before clearing
+    try:
+        backup_data = ws.get_all_values()
+    except Exception as e:
+        st.error(f"Failed to create backup. Aborting save! Error: {e}")
+        return False
+
+    try:
+        # Clear and write new data
+        ws.clear()
+        ws.update(values=[df_to_save.columns.values.tolist()] + df_to_save.values.tolist(), range_name="A1")
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        # PUSH THE BACKUP IF IT FAILS
+        st.error("Connection failed mid-save! Restoring backup...")
+        if backup_data:
+            ws.update(values=backup_data, range_name="A1")
+        return False
 
 def get_garmin_client(mfa_val=""):
     if 'garmin_vip_client' in st.session_state: return st.session_state['garmin_vip_client']
