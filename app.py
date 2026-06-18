@@ -151,8 +151,9 @@ def load_data():
     
     if not df_lifts.empty:
         df_lifts.loc[is_lift, 'Volume'] = df_lifts.loc[is_lift, 'Effective_Weight'] * df_lifts.loc[is_lift, 'Reps_or_Mins']
-        capped_reps = df_lifts.loc[is_lift, 'Reps_or_Mins'].clip(upper=12)
-        df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + capped_reps / 30)
+        is_bw_only = df_lifts['Exercise'].isin(BODYWEIGHT_ONLY) | (df_lifts['Exercise'] == "Push-Ups")
+        df_lifts['Used_Reps'] = np.where(is_bw_only, df_lifts['Reps_or_Mins'], df_lifts['Reps_or_Mins'].clip(upper=12))
+        df_lifts.loc[is_lift, 'Epley_1RM'] = df_lifts.loc[is_lift, 'Effective_Weight'] * (1 + df_lifts.loc[is_lift, 'Used_Reps'] / 30)
     
     df_health['Date'] = pd.to_datetime(df_health['Date'], errors='coerce')
     num_cols_health = [c for c in HEALTH_COLS if c != 'Date']
@@ -770,12 +771,12 @@ with tab_health:
     st.write("---")
     with st.form("health_form", clear_on_submit=True):
         st.markdown("**Current Bio Data (Manual Override):**")
-        h_weight = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1)
-        h_bf = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1)
-        h_muscle = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1)
-        h_sleep = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1)
-        h_rhr = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1)
-        h_hrv = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1)
+        h_weight = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1, key='h_weight')
+        h_bf = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1, key='h_bf')
+        h_muscle = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1, key='h_muscle')
+        h_sleep = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1, key='h_sleep')
+        h_rhr = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1, key='h_rhr')
+        h_hrv = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1, key='h_hrv')
         if st.form_submit_button("Save Manual Entry"):
             lean_mass = h_weight * (1 - (h_bf / 100))
             ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
@@ -828,9 +829,9 @@ with tab_analytics:
                 inol_ex = st.selectbox("Analyze Exercise", lift_df['Exercise'].unique(), key='inol_ex')
                 i_df = lift_df[lift_df['Exercise'] == inol_ex].copy()
                 if not i_df.empty:
-                    global_max = i_df['Epley_1RM'].max()
-                    i_df['Intensity_%'] = (i_df['Effective_Weight'] / global_max) * 100
-                    i_df['INOL'] = (i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'].clip(upper=99))) * 0.5
+                    i_df['Rolling_Max'] = i_df['Epley_1RM'].rolling(window=90, min_periods=1).max()
+                    i_df['Intensity_%'] = (i_df['Effective_Weight'] / i_df['Rolling_Max']) * 100
+                    i_df['INOL'] = i_df['Reps_or_Mins'] / (100 - i_df['Intensity_%'].clip(upper=99))
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
                     fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
                     fig2.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
@@ -897,8 +898,8 @@ with tab_analytics:
                 st.markdown("### ⚠️ Acute:Chronic Workload Ratio (ACWR)")
                 st.write("Tracks injury risk. **Sweet Spot:** 0.8 - 1.3. **Danger Zone:** > 1.5.")
                 daily_vol = lift_df.groupby('Date')['Volume'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
-                daily_vol['Acute_7D'] = daily_vol['Volume'].rolling(window=7, min_periods=1).sum()
-                daily_vol['Chronic_28D'] = daily_vol['Volume'].rolling(window=28, min_periods=1).sum() / 4
+                daily_vol['Acute_7D'] = daily_vol['Volume'].ewm(span=7, min_periods=1).mean() * 7
+                daily_vol['Chronic_28D'] = daily_vol['Volume'].ewm(span=28, min_periods=1).mean() * 7
                 daily_vol['ACWR'] = daily_vol['Acute_7D'] / daily_vol['Chronic_28D'].replace(0, np.nan)
                 fig_acwr = go.Figure()
                 fig_acwr.add_trace(go.Scatter(x=daily_vol.index, y=daily_vol['ACWR'], mode='lines+markers', name='ACWR', line=dict(color='#8A2BE2', width=3)))
