@@ -95,7 +95,7 @@ def get_last_deload():
     try: return ws_system.acell('B1').value
     except Exception: return None
 
-@st.cache_data(ttl=1)  # <-- Changed from 600 to 1 to force the cache to reset instantly!
+@st.cache_data(ttl=600)  # <-- Changed from 600 to 1 to force the cache to reset instantly!
 def load_data():
     try: 
         l_recs = ws_lifts_read.get_all_records()
@@ -345,12 +345,33 @@ with tab_sessions:
                 suggested_sets = max(1, base_sets - 1)
             else:
                 ex_df_primary = df_lifts_recent[(df_lifts_recent['Exercise'] == primary_ex) & (df_lifts_recent['Reps_or_Mins'] > 0)]
+                
+                # --- MRV GOVERNOR CHECK ---
+                primary_muscle = max(MUSCLE_MAP.get(primary_ex, {'None': 0}), key=MUSCLE_MAP.get(primary_ex, {'None': 0}).get)
+                muscle_mrv = VOLUME_THRESHOLDS.get(primary_muscle, {}).get('MRV', 20)
+                
+                # Calculate how many sets of this muscle you've already done in the last 7 days
+                recent_7 = df_lifts_recent[df_lifts_recent['Date'] >= pd.to_datetime(date_input) - pd.Timedelta(days=7)]
+                current_weekly_sets = 0
+                for _, r in recent_7.iterrows():
+                    if r['Exercise'] in MUSCLE_MAP and primary_muscle in MUSCLE_MAP[r['Exercise']]:
+                        current_weekly_sets += (1 * MUSCLE_MAP[r['Exercise']][primary_muscle])
+                # -------------------------
+                
                 if not ex_df_primary.empty:
                     last_date = ex_df_primary['Date'].max()
                     last_session = ex_df_primary[ex_df_primary['Date'] == last_date]
                     last_sets_done = last_session['Set_Number'].max()
-                    if last_sets_done < base_sets: suggested_sets = base_sets
-                    else: suggested_sets = min(ex_cap, last_sets_done + 1)
+                    
+                    if last_sets_done < base_sets: 
+                        suggested_sets = base_sets
+                    else: 
+                        # Only allow +1 progression if we are safely under the MRV threshold
+                        if current_weekly_sets < muscle_mrv:
+                            suggested_sets = min(ex_cap, last_sets_done + 1)
+                        else:
+                            st.warning(f"🛑 **MRV Governor Active:** Your 7-day {primary_muscle} volume is at {current_weekly_sets} sets (MRV: {muscle_mrv}). Holding sets at {last_sets_done} to prevent overtraining.")
+                            suggested_sets = last_sets_done
             
             num_sets = st.number_input("🎯 Target Rounds (Auto-Calculated by Mesocycle):", min_value=1, max_value=10, value=int(suggested_sets), step=1)
             
