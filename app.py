@@ -706,7 +706,7 @@ with tab_sessions:
             z4 = zc4.number_input("Z4", min_value=0.0, step=1.0)
             z5 = zc5.number_input("Z5", min_value=0.0, step=1.0)
             if st.form_submit_button("Save Cardio to Database", type="primary"):
-                cardio_data = {'Date': c_date, 'Exercise': c_ex, 'Duration_Mins': duration, 'Distance_km': distance, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5}
+                cardio_data = {'Date': c_date.strftime('%Y-%m-%d'), 'Exercise': c_ex, 'Duration_Mins': duration, 'Distance_km': distance, 'Avg_HR': avg_hr, 'Max_HR': max_hr, 'Avg_Resp': avg_resp, 'Z1_Mins': z1, 'Z2_Mins': z2, 'Z3_Mins': z3, 'Z4_Mins': z4, 'Z5_Mins': z5}
                 save_to_sheet(ws_cardio, pd.DataFrame([cardio_data]), CARDIO_COLS)
                 st.success("✅ Cardio Data isolated into pure Cardio DB!")
 
@@ -762,7 +762,7 @@ with tab_health:
                 
                 lean_mass = st.session_state['h_weight'] * (1 - (st.session_state['h_bf'] / 100))
                 ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-                health_data = {'Date': h_date, 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
+                health_data = {'Date': h_date.strftime('%Y-%m-%d'), 'Weight_kg': st.session_state['h_weight'], 'Body_Fat_Pct': st.session_state['h_bf'], 'Muscle_Mass_kg': st.session_state['h_muscle'], 'Sleep_Score': st.session_state['h_sleep'], 'FFMI': ffmi, 'RHR': st.session_state['h_rhr'], 'HRV': st.session_state['h_hrv'], 'Height_cm': USER_HEIGHT}
                 save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
                 st.success(f"✅ Biological data safely isolated in Health DB for {h_date}!")
 
@@ -778,7 +778,7 @@ with tab_health:
         if st.form_submit_button("Save Manual Entry"):
             lean_mass = h_weight * (1 - (h_bf / 100))
             ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
-            health_data = {'Date': h_date, 'Weight_kg': h_weight, 'Body_Fat_Pct': h_bf, 'Muscle_Mass_kg': h_muscle, 'Sleep_Score': h_sleep, 'FFMI': ffmi, 'RHR': h_rhr, 'HRV': h_hrv, 'Height_cm': USER_HEIGHT}
+            health_data = {'Date': h_date.strftime('%Y-%m-%d'), 'Weight_kg': h_weight, 'Body_Fat_Pct': h_bf, 'Muscle_Mass_kg': h_muscle, 'Sleep_Score': h_sleep, 'FFMI': ffmi, 'RHR': h_rhr, 'HRV': h_hrv, 'Height_cm': USER_HEIGHT}
             save_to_sheet(ws_health, pd.DataFrame([health_data]), HEALTH_COLS)
             st.success("✅ Saved manual health entry!")
 
