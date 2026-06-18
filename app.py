@@ -95,10 +95,13 @@ def get_last_deload():
     try: return ws_system.acell('B1').value
     except Exception: return None
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=1)  # <-- Changed from 600 to 1 to force the cache to reset instantly!
 def load_data():
-    try: l_recs = ws_lifts_read.get_all_records()
-    except Exception: l_recs = []
+    try: 
+        l_recs = ws_lifts_read.get_all_records()
+    except Exception as e: 
+        st.error(f"Lifts Tab Error: {e}") # <-- This will show us if it's breaking!
+        l_recs = []
     df_lifts = pd.DataFrame(l_recs) if l_recs else pd.DataFrame(columns=LIFTS_COLS)
     for col in LIFTS_COLS:
         if col not in df_lifts.columns: df_lifts[col] = 0.0 if col not in ['Date', 'Workout_Day', 'Exercise', 'Band', 'Variation', 'Side'] else ("None" if col == 'Variation' else "")
