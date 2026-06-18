@@ -771,12 +771,12 @@ with tab_health:
     st.write("---")
     with st.form("health_form", clear_on_submit=True):
         st.markdown("**Current Bio Data (Manual Override):**")
-        h_weight = st.number_input("Weight (kg)", value=st.session_state['h_weight'], step=0.1, key='h_weight')
-        h_bf = st.number_input("Body Fat (%)", value=st.session_state['h_bf'], step=0.1, key='h_bf')
-        h_muscle = st.number_input("Muscle (kg)", value=st.session_state['h_muscle'], step=0.1, key='h_muscle')
-        h_sleep = st.number_input("Sleep Score (0-100)", value=st.session_state['h_sleep'], step=1, key='h_sleep')
-        h_rhr = st.number_input("Resting HR (bpm)", value=st.session_state['h_rhr'], step=1, key='h_rhr')
-        h_hrv = st.number_input("HRV (ms)", value=st.session_state['h_hrv'], step=1, key='h_hrv')
+        h_weight = st.number_input("Weight (kg)", step=0.1, key='h_weight')
+        h_bf = st.number_input("Body Fat (%)", step=0.1, key='h_bf')
+        h_muscle = st.number_input("Muscle (kg)", step=0.1, key='h_muscle')
+        h_sleep = st.number_input("Sleep Score (0-100)", step=1, key='h_sleep')
+        h_rhr = st.number_input("Resting HR (bpm)", step=1, key='h_rhr')
+        h_hrv = st.number_input("HRV (ms)", step=1, key='h_hrv')
         if st.form_submit_button("Save Manual Entry"):
             lean_mass = h_weight * (1 - (h_bf / 100))
             ffmi = lean_mass / ((USER_HEIGHT / 100) ** 2) if USER_HEIGHT > 0 else 0
