@@ -43,13 +43,14 @@ gc = init_connection()
 try:
     sh = gc.open("Gym_Tracker_DB")
     ws_lifts = sh.worksheet("Lifts")
+    ws_lifts_read = sh.worksheet("Lifts_Recent") # <-- THIS IS THE ONLY NEW LINE
     ws_health = sh.worksheet("Health")
     try: ws_cardio = sh.worksheet("Cardio")
     except gspread.exceptions.WorksheetNotFound: ws_cardio = sh.add_worksheet(title="Cardio", rows="100", cols="15")
     try: ws_system = sh.worksheet("System")
     except gspread.exceptions.WorksheetNotFound: ws_system = sh.add_worksheet(title="System", rows="10", cols="5")
 except Exception as e:
-    st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts' and 'Health' tabs! Error: {e}")
+    st.error(f"⚠️ **Google Connection Error:** Make sure you created the 'Lifts', 'Lifts_Recent', and 'Health' tabs! Error: {e}")
     st.stop()
 
 # --- STATIC USER PROFILE ---
@@ -96,7 +97,7 @@ def get_last_deload():
 
 @st.cache_data(ttl=600)
 def load_data():
-    try: l_recs = ws_lifts.get_all_records()
+    try: l_recs = ws_lifts_read.get_all_records()
     except Exception: l_recs = []
     df_lifts = pd.DataFrame(l_recs) if l_recs else pd.DataFrame(columns=LIFTS_COLS)
     for col in LIFTS_COLS:
