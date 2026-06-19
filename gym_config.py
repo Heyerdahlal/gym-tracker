@@ -15,13 +15,13 @@ PROGRAM = {
     "Thursday: Lower B": {
         "Block 1: RDL": ["Romanian Deadlift (RDL)"],
         "Block 2 (Superset): Bulgarians & Rollouts": ["Bulgarian Split Squats", "Ab-Wheel Rollouts"],
-        "Block 3 (Superset): Hip Thrusts": ["Barbell Hip Thrusts"],
-        "Block 4 (Quad-Set): Erectors, Calves & Core": ["Erector-Focused Roman Chair Extension", "Single-Leg Supported Dumbbell Calf Raise", "Heavy Suitcase Marches"]
+        "Block 3: Hip Thrusts": ["Barbell Hip Thrusts"],
+        "Block 4 (Tri-Set): Erectors, Calves & Core": ["Erector-Focused Roman Chair Extension", "Single-Leg Supported Dumbbell Calf Raise", "Heavy Suitcase Marches"]
     },
     "Friday: Upper B": {
         "Block 1 (Alternating): Pull-Ups & Dips": ["Neutral Grip Pull-Ups", "Band-Assisted Dips"],
         "Block 2 (Alternating): Landmine Press & Face Pulls": ["Landmine Press", "Banded Face Pulls"],
-        "Block 3 (Tri-Set): Curls & Pushdowns: ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"]
+        "Block 3 (Superset): Curls & Pushdowns": ["Incline Supinated Dumbbell Curls", "Banded Tricep Pushdowns"]
     },
     "✈️ Travel: Bands & DBs": {
         "Block 1 (Superset): Quads & Hams": ["Bulgarian Split Squats", "Dumbbell Romanian Deadlift"],
@@ -71,13 +71,13 @@ REST_PROTOCOLS = {
     "Thursday: Lower B": {
         "Block 1: RDL": "Perform RDL ➔ Rest 3 full minutes.",
         "Block 2 (Superset): Bulgarians & Rollouts": "Split Squats ➔ Rollouts ➔ Rest 90s.",
-        "Block 3 (Superset): Hip Thrusts & Hamstrings": "Hip Thrusts ➔ Rest 90s.",
-        "Block 4 (Quad-Set): Erectors, Calves & Core": "Erectors ➔ Calves ➔ Suitcase Marches ➔ Rest 60s."
+        "Block 3: Hip Thrusts": "Perform Hip Thrusts ➔ Rest 90-120s.",
+        "Block 4 (Tri-Set): Erectors, Calves & Core": "Erectors ➔ Calves ➔ Suitcase Marches ➔ Rest 60s."
     },
     "Friday: Upper B": {
         "Block 1 (Alternating): Pull-Ups & Dips": "Pull-Ups ➔ Rest 90-120s ➔ Dips ➔ Rest 90-120s.",
         "Block 2 (Alternating): Landmine Press & Face Pulls": "Landmine Press ➔ Rest 60s ➔ Face Pulls ➔ Rest 60s.",
-        "Block 3 (Tri-Set): Curls, Pushdowns & Lateral Raises": "Curls ➔ Pushdowns ➔ Rest 60s."
+        "Block 3 (Superset): Curls & Pushdowns": "Curls ➔ Pushdowns ➔ Rest 60s."
     },
     "✈️ Travel: Bands & DBs": {
         "Block 1 (Superset): Quads & Hams": "Split Squats ➔ DB RDL ➔ Rest 90-120s.",
