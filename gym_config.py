@@ -209,14 +209,81 @@ EXERCISE_GUIDES = {
 }
 
 DAILY_SYSTEM_RESET = {
-    "1. The Shin Breaker": {"Target": "1-2min: Stretches the anterior tibialis to prevent shin splints and keep knees healthy.", "Execution": "Kneel with toes pointed back (laces flat), sit butt onto heels. Lean back slightly and lift knees 1 inch off the floor.", "Progression": "Increase the height you lift your knees off the floor."},
-    "2. The Combat Stretch (Ankle Mobility)": {"Target": "1-2min per side: Unlocks true ankle dorsiflexion for deep squatting.", "Execution": "Half-kneeling lunge. Place a heavy kettlebell on your front knee. Drive the knee as far over your toes as humanly possible while keeping the heel glued to the floor.", "Progression": "Increase the weight of the kettlebell to force a deeper fascial stretch."},
-    "3. The Couch Stretch": {"Target": "2min per side: Deep stretch of the quadriceps and hip flexors.", "Execution": "Place knee into a wall/couch corner, shin vertical. Squeeze the glute of the stretching leg HARD and lift torso upright.", "Progression": "Move from resting hands on a box/chair to a fully upright, unsupported torso."},
-    "4. The 90/90 Hip Switch": {"Target": "2min: Restores internal and external rotation of the hip capsule.", "Execution": "Sit on the floor, both legs bent at 90 degrees (one in front, one behind). Pivot on your heels to windshield-wiper your knees to the other side.", "Progression": "Perform the movement without using your hands on the floor for support."},
-    "5. The 'Paleo Chair'": {"Target": "2min: Recalibrates hips and ankles for deep squatting.", "Execution": "Drop into the deepest squat you can hold with heels flat. Drive knees out with elbows, keep chest tall.", "Progression": "Shift from holding a doorframe for support to a completely free-standing hold."},
-    "6. The Lateral Child’s Pose": {"Target": "1min each side: Stretches the latissimus dorsi and quadratus lumborum (lower back).", "Execution": "Sit in Child's pose, walk both hands far to one side, and push the opposite hip down into your heel.", "Progression": "Walk the hands further laterally to increase the fascial pull."},
-    "7. Wall 'Snow Angels'": {"Target": "15 reps: Restores thoracic spine (upper back) mobility and shoulder health.", "Execution": "Back flat against wall, touch lower back, head, elbows, and wrists to the wall. Slide arms up to a 'Y' and down to a 'W'.", "Progression": "Move feet closer to the wall while maintaining full lower back contact."},
-    "8. The 'Neck Anchor'": {"Target": "1min per side: Releases tension in the upper traps and neck.", "Execution": "Place right hand behind back, tilt left ear to left shoulder, rotate chin toward armpit.", "Progression": "Gently use the non-anchored hand to apply microscopic overpressure to the stretch."}
+    "☀️ AM: The 'Wake Up' Routine (Joint Lubrication & Posture)": {
+        "1. Passive Dead Hang (Spine & Shoulders)": {
+            "Time/Reps": "1 set of 45-60 seconds",
+            "Target": "Decompresses the spine and shoulder capsules after sleeping.",
+            "Execution": "Grab a pull-up bar. Relax your core, exhale fully, and let your shoulders rise to your ears. Let gravity do the work.",
+            "Regression": "Keep your toes lightly touching a box or the floor to support some of your bodyweight.",
+            "Progression": "Single-arm hangs (alternating sides) for maximum lateral decompression."
+        },
+        "2. Thoracic Roller Extensions (Upper Back)": {
+            "Time/Reps": "1-2 minutes",
+            "Target": "Reverses desk posture by ungluing the upper spine.",
+            "Execution": "Place a foam roller perpendicular to your mid-back. Support your head with your hands. Lean back over the roller, exhaling as you extend. Roll up an inch and repeat.",
+            "Regression": "Use a rolled-up towel instead of a foam roller for a softer, less aggressive arch.",
+            "Progression": "Reach your arms completely straight overhead while extending back over the roller."
+        },
+        "3. Band Pull-Aparts (Desk Fix)": {
+            "Time/Reps": "2 sets of 20 reps",
+            "Target": "Wakes up the rhomboids and rear delts to hold your shoulders back all day.",
+            "Execution": "Hold a light band at chest height. Pull it apart until it touches your sternum, squeezing shoulder blades hard. Do not shrug your neck.",
+            "Regression": "Use a lighter band or only hold a single strand of the band.",
+            "Progression": "Hold the peak contraction (band touching chest) for 2 full seconds on every rep."
+        },
+        "4. Reverse Step-Ups (Knee Oil)": {
+            "Time/Reps": "2 sets of 15 reps per leg",
+            "Target": "Pumps synovial fluid into the knee and strengthens the patellar tendon safely.",
+            "Execution": "Stand on a low step (like a staircase). Keep your working foot flat. Slowly reach your OTHER heel down to tap the floor in front of you. Keep your torso completely upright.",
+            "Regression": "Use a very low step (2 inches) and hold onto a wall or railing for balance.",
+            "Progression": "Increase the step height to 6 inches or hold light dumbbells."
+        },
+        "5. The 90/90 Hip Switch": {
+            "Time/Reps": "1-2 minutes continuous",
+            "Target": "Gently lubricates the hip capsules for daily movement.",
+            "Execution": "Sit on the floor, both legs bent at 90 degrees. Pivot on your heels to windshield-wiper your knees slowly from side to side.",
+            "Regression": "Lean back and place your hands on the floor behind you to support your torso.",
+            "Progression": "Perform with no hands, and lean your chest over your front knee at the end of each swipe."
+        }
+    },
+
+    "🌙 PM: The 'Wind Down' Routine (Tissue Lengthening)": {
+        "1. The Couch Stretch (Quads/Hips)": {
+            "Time/Reps": "2 minutes per side",
+            "Target": "Deep tissue stretch for hip flexors shortened by sitting all day.",
+            "Execution": "Place your knee flush into a wall/couch corner, shin vertical. Squeeze the glute of the stretching leg HARD and lift your torso upright.",
+            "Regression": "Keep your hands on the floor or a low box. Don't force your torso upright if your lower back arches.",
+            "Progression": "Torso perfectly vertical, arms reaching overhead, back flat against the wall."
+        },
+        "2. The Combat Stretch (Ankles)": {
+            "Time/Reps": "2 minutes per side",
+            "Target": "Unlocks true ankle dorsiflexion to eventually eliminate raised-heel squats.",
+            "Execution": "Half-kneeling lunge. Place a kettlebell on your front knee. Drive the knee as far over your toes as humanly possible. The heel MUST stay glued to the floor.",
+            "Regression": "Use no weight. Just lean your bodyweight onto your knee.",
+            "Progression": "While in the deep stretch, actively try to lift your toes off the floor (tibialis liftoffs) for 5-second holds."
+        },
+        "3. Side-Lying Thoracic Windmills": {
+            "Time/Reps": "10 slow, controlled reps per side",
+            "Target": "Opens the chest and restores rotation to shoulders compressed from side-sleeping.",
+            "Execution": "Lie on your side, knees stacked at 90 degrees. Bottom hand holds knees down. Top arm sweeps in a massive circle overhead until your upper back touches the floor behind you.",
+            "Regression": "Just open the arm straight across your body ('Open Book') instead of sweeping a full circle.",
+            "Progression": "Hold a very light weight (1-2 lbs) in the sweeping hand to pull the stretch deeper."
+        },
+        "4. Lateral Child’s Pose": {
+            "Time/Reps": "1 minute per side",
+            "Target": "Stretches the lats/lower back while triggering the parasympathetic (sleep) nervous system.",
+            "Execution": "Sit in Child's pose. Walk both hands far to the right, push your left hip down into your heel. Breathe deep into your belly.",
+            "Regression": "Stay in a standard, straight-forward Child's pose.",
+            "Progression": "Cross your outside hand completely over your inside hand to lock out the lat."
+        },
+        "5. The 'Neck Anchor'": {
+            "Time/Reps": "1 minute per side",
+            "Target": "Releases upper trap tension to prevent neck stiffness and headaches.",
+            "Execution": "Place your right hand behind your lower back. Tilt your left ear to your left shoulder, then rotate your chin slightly toward your armpit.",
+            "Regression": "Do not anchor the hand behind the back; just let it hang by your side.",
+            "Progression": "Gently use your free hand to apply microscopic overpressure to the top of your head."
+        }
+    }
 }
 
 VOLUME_THRESHOLDS = {
