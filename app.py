@@ -898,6 +898,7 @@ with tab_analytics:
                     daily_inol = i_df.groupby('Date')['INOL'].sum().reset_index()
                     fig2 = px.bar(daily_inol, x='Date', y='INOL', title="Daily Session INOL Score", color='INOL', color_continuous_scale='RdYlGn_r')
                     fig2.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
+                    fig2.update_traces(width=86400000) # Forces bar width to exactly 1 day
                     st.plotly_chart(fig2, use_container_width=True)
 
             st.write("---")
@@ -909,6 +910,7 @@ with tab_analytics:
                     fig_rir = px.bar(rir_df, x='Date', y='RIR', title="Average Daily Reps in Reserve (RIR)", color='RIR', color_continuous_scale='RdYlGn')
                     fig_rir.update_yaxes(autorange="reversed") 
                     fig_rir.update_xaxes(tickformat="%Y-%m-%d", dtick="86400000")
+                    fig_rir.update_traces(width=86400000) # Forces bar width to exactly 1 day
                     st.plotly_chart(fig_rir, use_container_width=True)
 
         with at4:
