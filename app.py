@@ -442,8 +442,22 @@ with tab_sessions:
                 fatigue_drop = False
                 
                 if not ex_df.empty:
+                    is_bw_only = exercise in BODYWEIGHT_ONLY
+                    is_pure_band = exercise in PURE_BAND_EXERCISES
+                    is_kb = "Kettlebell" in exercise or "KB" in exercise
+
                     max_all_time_weight = ex_df['Weight'].max()
-                    working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
+                    max_all_time_reps = ex_df['Reps_or_Mins'].max()
+                    
+                    # --- DELOAD GHOSTING LOGIC ---
+                    if is_bw_only or is_pure_band:
+                        # For bodyweight/bands, we filter out deload sets by looking for > 60% of max reps
+                        working_sessions = ex_df[ex_df['Reps_or_Mins'] >= (max_all_time_reps * 0.6)]
+                    else:
+                        # Weighted exercises automatically filter out deloads because they are < 85% of max weight
+                        working_sessions = ex_df[ex_df['Weight'] >= (max_all_time_weight * 0.85)]
+                    # -----------------------------
+
                     dates = working_sessions['Date'].unique() if not working_sessions.empty else ex_df['Date'].unique()
                     last_date = dates[-1]
                     last_session = ex_df[ex_df['Date'] == last_date]
@@ -458,14 +472,13 @@ with tab_sessions:
                         target_sets, top_rep = get_target_reps_and_sets(exercise)
                         min_reps_last_session = last_session['Reps_or_Mins'].min()
                         
-                        s1_history = ex_df[ex_df['Set_Number'] == 1].sort_values('Date')
+                        # Use working_sessions to calculate plateau/bleed so deloads are ignored
+                        history_df = working_sessions if not working_sessions.empty else ex_df
+                        s1_history = history_df[history_df['Set_Number'] == 1].sort_values('Date')
                         last_3 = s1_history.tail(3)
+                        
                         plateau = False
                         bleed_out = False
-                        
-                        is_bw_only = exercise in BODYWEIGHT_ONLY
-                        is_pure_band = exercise in PURE_BAND_EXERCISES
-                        is_kb = "Kettlebell" in exercise or "KB" in exercise
                         
                         if len(last_3) >= 3 and not is_deload:
                             w_vals = last_3['Weight'].tolist()
