@@ -782,11 +782,15 @@ with tab_sessions:
             col.checkbox(ex_name, key=f"reset_chk_{i}")
         st.write("---")
         st.markdown("### 📖 Execution Guides")
-        for ex_name, details in DAILY_SYSTEM_RESET.items():
-            with st.expander(ex_name, expanded=False):
-                st.markdown(f"**Target:** {details['Target']}")
-                st.markdown(f"**Execution:** {details['Execution']}")
-                st.markdown(f"**Progression:** {details['Progression']}")
+        for routine_name, routine_exercises in DAILY_SYSTEM_RESET.items():
+            st.subheader(routine_name)
+            for ex_name, details in routine_exercises.items():
+                with st.expander(ex_name, expanded=False):
+                    st.markdown(f"**Time/Reps:** {details.get('Time/Reps', 'N/A')}")
+                    st.markdown(f"**Target:** {details.get('Target', 'N/A')}")
+                    st.markdown(f"**Execution:** {details.get('Execution', 'N/A')}")
+                    st.markdown(f"**Regression:** {details.get('Regression', 'N/A')}")
+                    st.markdown(f"**Progression:** {details.get('Progression', 'N/A')}")
 
 with tab_health:
     st.subheader("🧬 Bio Data Sync")
