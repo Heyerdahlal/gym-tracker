@@ -264,6 +264,37 @@ df_lifts_recent = df_lifts[df_lifts['Date'] >= pd.to_datetime(date.today()) - pd
 
 st.title("🔬 Sports Science Dashboard")
 
+# --- MESOCYCLE AUTOMATION ---
+st.sidebar.markdown("### 🎯 Mesocycle Periodization")
+active_phase = st.sidebar.radio(
+    "Active Specialization Block:", 
+    [
+        "Phase 1: Chest & Back (V-Taper)",
+        "Phase 2: Shoulders & Arms",
+        "Phase 3: Legs & Core",
+        "Balanced / Baseline"
+    ],
+    help="Automatically adjusts your MRV limits to prevent systemic overtraining."
+)
+
+# Dynamic Target Generator based on Phase
+def get_dynamic_thresholds(muscle, base_mev, base_mrv, phase):
+    if phase == "Balanced / Baseline":
+        return base_mev, base_mrv
+        
+    focus_map = {
+        "Phase 1: Chest & Back (V-Taper)": ["Chest", "Back"],
+        "Phase 2: Shoulders & Arms": ["Shoulders", "Biceps", "Triceps"],
+        "Phase 3: Legs & Core": ["Quads", "Hamstrings", "Glutes", "Calves", "Abs"]
+    }
+    
+    if muscle in focus_map[phase]:
+        # FOCUS: Push MRV cap higher (120%) so you can add sets
+        return base_mev, int(base_mrv * 1.2)
+    else:
+        # MAINTENANCE: Drop MRV to 60% to save systemic energy
+        return max(2, int(base_mev * 0.5)), int(base_mrv * 0.6)
+
 tab_sessions, tab_health, tab_analytics, tab_overview, tab_db = st.tabs(["🏋️‍♂️ Sessions", "🧬 Bio Data", "📊 Analytics", "📋 Program Overview", "⚙️ Database"])
 
 with tab_sessions:
@@ -278,9 +309,10 @@ with tab_sessions:
         last_deload_date = pd.to_datetime(last_deload_str) if last_deload_str else pd.to_datetime('2000-01-01')
         
         if not df_lifts.empty:
-            post_deload_lifts = df_lifts[df_lifts['Date'] >= last_deload_date]
+            # Count unique weeks logged strictly AFTER the last deload date
+            post_deload_lifts = df_lifts[df_lifts['Date'] > last_deload_date]
             active_weeks = len(post_deload_lifts['Date'].dt.isocalendar().week.unique())
-            if active_weeks >= 5: meso_alert = True
+            if active_weeks >= 4: meso_alert = True
                 
             daily_vol = df_lifts.groupby('Date')['Volume'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
             if len(daily_vol) >= 7:
@@ -303,7 +335,7 @@ with tab_sessions:
                      ("Your 7-Day HRV has crashed significantly below baseline. " if hrv_alert else "") +
                      "Your CNS is fried. Mandatory Deload advised today.")
         elif meso_alert:
-            st.warning("📅 **Mesocycle Peak Reached:** You have accumulated 5+ weeks of volume since your last rest period. A systemic deload is highly recommended.")
+            st.warning(f"📅 **Phase Complete:** You have logged {active_weeks} active training weeks since your last rest. You have reached the end of **{active_phase}**. It is time to flip the '🧘 Activate Deload Week' toggle!")
 
         col1, col2 = st.columns([1, 2])
         with col1:
@@ -348,7 +380,10 @@ with tab_sessions:
                 
                 # --- MRV GOVERNOR CHECK ---
                 primary_muscle = max(MUSCLE_MAP.get(primary_ex, {'None': 0}), key=MUSCLE_MAP.get(primary_ex, {'None': 0}).get)
-                muscle_mrv = VOLUME_THRESHOLDS.get(primary_muscle, {}).get('MRV', 20)
+                # Get the dynamic MRV based on your current Phase
+                base_mev = VOLUME_THRESHOLDS.get(primary_muscle, {}).get('MEV', 10)
+                base_mrv = VOLUME_THRESHOLDS.get(primary_muscle, {}).get('MRV', 20)
+                _, muscle_mrv = get_dynamic_thresholds(primary_muscle, base_mev, base_mrv, active_phase)
                 
                 # Calculate how many sets of this muscle you've already done in the last 7 days
                 recent_7 = df_lifts_recent[df_lifts_recent['Date'] >= pd.to_datetime(date_input) - pd.Timedelta(days=7)]
@@ -885,8 +920,15 @@ with tab_analytics:
                 
                 if muscle_sets:
                     mev_df = pd.DataFrame(list(muscle_sets.items()), columns=['Muscle', 'Sets'])
-                    mev_df['MEV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MEV', 10))
-                    mev_df['MRV'] = mev_df['Muscle'].apply(lambda x: VOLUME_THRESHOLDS.get(x, {}).get('MRV', 20))
+                    # Apply Dynamic Phase Multipliers
+                    mev_df[['MEV', 'MRV']] = mev_df['Muscle'].apply(
+                        lambda x: pd.Series(get_dynamic_thresholds(
+                            x, 
+                            VOLUME_THRESHOLDS.get(x, {}).get('MEV', 10), 
+                            VOLUME_THRESHOLDS.get(x, {}).get('MRV', 20),
+                            active_phase
+                        ))
+                    )
                     
                     def assign_color(row):
                         if row['Sets'] < row['MEV']: return '#A0AEC0'
