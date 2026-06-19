@@ -301,6 +301,12 @@ with tab_sessions:
     sub_lift, sub_cardio, sub_mob = st.tabs(["💪 Strength Training", "🫀 Cardio Engine", "🧘 System Reset"])
     
     with sub_lift:
+        # --- AUTO-ADVANCE SUCCESS MESSAGE ---
+        if 'save_msg' in st.session_state and st.session_state['save_msg']:
+            st.success(st.session_state['save_msg'])
+            st.session_state['save_msg'] = "" # Clear it so it only shows once
+        # ------------------------------------
+
         acwr_alert = False
         hrv_alert = False
         meso_alert = False
@@ -351,7 +357,21 @@ with tab_sessions:
                     break
                     
             workout_day = st.selectbox("Select Workout Day", program_keys, index=default_idx)
-            workout_block = st.selectbox("Select Workout Block", list(PROGRAM[workout_day].keys()))
+            # --- AUTO-ADVANCE BLOCK LOGIC (Part 1) ---
+            blocks_list = list(PROGRAM[workout_day].keys())
+            
+            # If the user manually changes the day, reset the block back to the top
+            if 'last_day' not in st.session_state: st.session_state['last_day'] = workout_day
+            if st.session_state['last_day'] != workout_day:
+                st.session_state['block_selectbox_key'] = blocks_list[0]
+                st.session_state['last_day'] = workout_day
+
+            # Safety catch to initialize the block state
+            if 'block_selectbox_key' not in st.session_state or st.session_state['block_selectbox_key'] not in blocks_list:
+                st.session_state['block_selectbox_key'] = blocks_list[0]
+
+            workout_block = st.selectbox("Select Workout Block", blocks_list, key='block_selectbox_key')
+            # -----------------------------------------
             
             if "Freestyle" in workout_day: selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=[])
             else: selected_exercises = st.multiselect("Select Exercise(s)", PROGRAM[workout_day][workout_block], default=PROGRAM[workout_day][workout_block])
@@ -633,33 +653,34 @@ with tab_sessions:
                                 def_w = max(0.0, snap_to_weight(raw_new, exercise))
 
                         key = f"{exercise}_{i}" 
+                        ui_key = f"{key}_{is_deload}" # Forces Streamlit to reset the inputs when toggled!
                         
                         if uses_band:
                             c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_pure_band else def_w, disabled=is_pure_band, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_pure_band else def_w, disabled=is_pure_band, key=f"w_{ui_key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
-                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            bands[key] = c3.selectbox("Band", band_keys, index=b_idx, key=f"b_{key}")
-                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
+                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{ui_key}")
+                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{ui_key}")
+                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{ui_key}")
+                            bands[key] = c3.selectbox("Band", band_keys, index=b_idx, key=f"b_{ui_key}")
+                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{ui_key}")
                         elif is_pushup:
                             c1, c2, c3, c4 = st.columns([1, 1, 1.5, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0, disabled=True, key=f"w_{key}")
-                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            variations[key] = c3.selectbox("Variation", PUSH_UP_VARIATIONS, index=v_idx, key=f"v_{key}")
-                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0, disabled=True, key=f"w_{ui_key}")
+                            reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{ui_key}")
+                            variations[key] = c3.selectbox("Variation", PUSH_UP_VARIATIONS, index=v_idx, key=f"v_{ui_key}")
+                            rirs[key] = c4.slider("RIR", 0, 5, 2, 1, key=f"rir_{ui_key}")
                         else:
                             c1, c2, c3 = st.columns([1, 1, 2])
-                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_bw_only else def_w, disabled=is_bw_only, key=f"w_{key}")
+                            weights[key] = c1.number_input("Kg", min_value=0.0, step=0.5, value=0.0 if is_bw_only else def_w, disabled=is_bw_only, key=f"w_{ui_key}")
                             if is_uni:
                                 sc1, sc2 = c2.columns(2)
-                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{key}")
-                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{key}")
-                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{key}")
-                            rirs[key] = c3.slider("RIR", 0, 5, 2, 1, key=f"rir_{key}")
-                    st.write("---") 
+                                reps_l[key] = sc1.number_input("L", min_value=0, step=1, key=f"rl_{ui_key}")
+                                reps_r[key] = sc2.number_input("R", min_value=0, step=1, key=f"rr_{ui_key}")
+                            else: reps[key] = c2.number_input("Reps", min_value=0, step=1, key=f"r_{ui_key}")
+                            rirs[key] = c3.slider("RIR", 0, 5, 2, 1, key=f"rir_{ui_key}")
+                    st.write("---")
                 
                 if st.form_submit_button("Save Workouts To Database", type="primary"):
                     
@@ -703,7 +724,17 @@ with tab_sessions:
                                     get_last_deload.clear()
                                 except Exception: pass
                                 
-                            st.success(f"✅ Logged {len(new_rows)} sets to the Lifts database!")
+                            # --- AUTO-ADVANCE BLOCK LOGIC (Part 2) ---
+                            current_idx = blocks_list.index(workout_block)
+                            if current_idx < len(blocks_list) - 1:
+                                next_block = blocks_list[current_idx + 1]
+                                st.session_state['block_selectbox_key'] = next_block
+                                st.session_state['save_msg'] = f"✅ Saved {len(new_rows)} sets! Auto-advanced to **{next_block}**."
+                            else:
+                                st.session_state['save_msg'] = f"✅ Saved {len(new_rows)} sets! 🎉 **Workout Complete!**"
+                            
+                            st.rerun() # Force the app to immediately reload with the new block selected
+                            # -----------------------------------------
                         else: st.warning("No reps logged.")
 
     with sub_cardio:
