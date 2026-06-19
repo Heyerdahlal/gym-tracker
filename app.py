@@ -1060,6 +1060,33 @@ with tab_overview:
     st.subheader("📋 Program Overview & Documentation")
     st.write("Easily copy this page to share your exact programming, logic, and execution cues with a coach or training partner.")
     st.write("---")
+    with st.expander("🧠 Mesocycle Management & Life Rules (Read When Stuck)", expanded=False):
+        st.markdown("""
+        ### 🔄 The 15-Week V-Taper Marathon
+        * **Phase 1 (Chest & Back):** Pushes V-Taper MRV limits to 120%. Legs and Shoulders drop to 60% Maintenance.
+        * **Phase 2 (Shoulders & Arms):** Pushes 3D delts and arms. Chest and Back go on Maintenance to resensitize.
+        * **Phase 3 (Legs & Core):** Complete upper body Maintenance. Brutal specialization on Quads, Hams, and Glutes.
+        * **Balanced / Baseline:** Use for post-vacation, post-illness, or general maintenance periods.
+        
+        ### 🧘 The Deload Protocol
+        * **Trigger:** The app will warn you when you log a workout in your 4th active week.
+        * **Execution:** Finish your current week. The following week, flip the 'Activate Deload Week' toggle. 
+        * **Action:** The app will automatically slash volume and band tension. Focus purely on blood flow and joint recovery. 
+        * **Post-Deload:** Turn the toggle OFF, switch to your next Phase, and start fresh.
+        
+        ### 🦠 The Sickness Protocol (Broken Chains)
+        * **Missed 1-4 Days (A Cold):** The chain is bent. Repeat the exact weights/sets from your last logged week. Do not attempt to progress.
+        * **Missed 1-2+ Weeks (The Flu):** The chain is broken. Log a 'Rest' day under 'Life Event', trigger a Deload week to reset the app's clock, and restart your phase at Week 1.
+        
+        ### ✈️ Travel & Equipment Rules
+        * **Commercial Gym:** Proceed as normal. The heavy mechanical tension allows you to continue your mesocycle.
+        * **Bands & DBs Only:** Treat this as an Active Recovery week. Switch your Phase to 'Balanced', use the Travel block, and chase metabolic stress (the pump) rather than heavy mechanical damage.
+        
+        ### 🛑 The MRV Governor
+        * If the app refuses to let you add sets, your systemic joint and CNS limits have been reached for that muscle. 
+        * **Do NOT force volume.** Instead, progress by adding weight, slowing your eccentric tempo (3-seconds down), or pushing closer to absolute failure (0 RIR).
+        """)
+    st.write("---")
     for day, blocks in PROGRAM.items():
         if "Freestyle" in day or "Life Event" in day: continue
         st.markdown(f"## {day}")
